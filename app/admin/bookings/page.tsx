@@ -280,7 +280,7 @@ export default function AdminBookingsPage() {
       'Payment Method': b.advance_payment_method,
       'Status': b.status,
       'Created At': new Date(b.created_at).toLocaleString(),
-      'Slots': b.slots.map(s => `${s.slot_hour}:00`).join(', '),
+      'Slots': b.slots.map(s => formatTimeDisplay(s.slot_hour)).join(', '),
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -460,7 +460,7 @@ export default function AdminBookingsPage() {
                             variant="dot"
                             color={slot.is_night_rate ? 'indigo' : 'yellow'}
                           >
-                            {slot.slot_hour}h
+                            {formatTimeDisplay(slot.slot_hour)}
                           </Badge>
                         ))}
                         {booking.slots.length > 3 && (

@@ -24,6 +24,7 @@ import {
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { formatTimeDisplay, formatTimeRange } from '@/lib/supabase/bookings';
 
 interface ManualBookingModalProps {
   opened: boolean;
@@ -239,7 +240,7 @@ export default function ManualBookingModal({
                 placeholder="Select hour"
                 data={Array.from({ length: 24 }, (_, i) => ({
                   value: String(i),
-                  label: `${i}:00 ${isNightHour(i) ? '(Night Rate)' : '(Day Rate)'}`,
+                  label: `${formatTimeDisplay(i)} ${isNightHour(i) ? '(Night Rate)' : '(Day Rate)'}`,
                 }))}
                 value={String(selectedHour)}
                 onChange={(value) => setSelectedHour(parseInt(value || '9'))}
@@ -262,7 +263,7 @@ export default function ManualBookingModal({
                       size="lg"
                       color={slot.isNightRate ? 'indigo' : 'yellow'}
                     >
-                      {slot.hour}:00 - {slot.hour + 1}:00
+                      {formatTimeRange(slot.hour)}
                       {slot.isNightRate && ' 🌙'}
                     </Badge>
                     <Text size="sm" fw={500}>

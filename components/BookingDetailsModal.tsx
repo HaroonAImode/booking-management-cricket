@@ -237,8 +237,9 @@ export default function BookingDetailsModal({
 
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   };
 

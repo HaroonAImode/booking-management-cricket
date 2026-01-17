@@ -384,13 +384,60 @@ export function isNightRate(hour: number, nightStartHour: number, nightEndHour: 
 }
 
 /**
- * Format time for display (24-hour to 12-hour)
+ * Format time for display (24-hour to 12-hour AM/PM)
+ * @param hour - Hour in 24-hour format (0-23)
+ * @returns Formatted time string (e.g., "2:00 PM", "12:00 AM")
  */
 export function formatTimeDisplay(hour: number): string {
   if (hour === 0) return '12:00 AM';
   if (hour === 12) return '12:00 PM';
   if (hour < 12) return `${hour}:00 AM`;
   return `${hour - 12}:00 PM`;
+}
+
+/**
+ * Format time range (e.g., "2:00 PM - 3:00 PM")
+ * @param startHour - Start hour in 24-hour format
+ * @param endHour - End hour in 24-hour format (optional, defaults to startHour + 1)
+ * @returns Formatted time range string
+ */
+export function formatTimeRange(startHour: number, endHour?: number): string {
+  const end = endHour !== undefined ? endHour : startHour + 1;
+  return `${formatTimeDisplay(startHour)} - ${formatTimeDisplay(end)}`;
+}
+
+/**
+ * Format slot hour with range (e.g., "2:00 PM - 3:00 PM")
+ * @param slotHour - Hour in 24-hour format
+ * @returns Formatted slot time range
+ */
+export function formatSlotTime(slotHour: number): string {
+  return formatTimeRange(slotHour);
+}
+
+/**
+ * Convert 24-hour time string to 12-hour format
+ * @param time24 - Time in 24-hour format (e.g., "14:00:00" or "14:00")
+ * @returns Formatted time (e.g., "2:00 PM")
+ */
+export function convert24To12Hour(time24: string): string {
+  const [hourStr] = time24.split(':');
+  const hour = parseInt(hourStr, 10);
+  return formatTimeDisplay(hour);
+}
+
+/**
+ * Format date object to 12-hour time
+ * @param date - Date object or ISO string
+ * @returns Formatted time (e.g., "2:30 PM")
+ */
+export function formatDateTime12Hour(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 /**

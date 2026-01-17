@@ -225,7 +225,7 @@ export default function SlotSelector({
                   ta="center"
                   c={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
                 >
-                  {slot.slot_hour.toString().padStart(2, '0')}:00
+                  {formatTimeDisplay(slot.slot_hour)}
                 </Text>
                 <Badge
                   size="xs"

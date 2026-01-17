@@ -247,14 +247,14 @@ export default function AdminCalendarPage() {
             allDaySlot={false}
             nowIndicator={true}
             eventTimeFormat={{
-              hour: '2-digit',
+              hour: 'numeric',
               minute: '2-digit',
-              hour12: false,
+              hour12: true,
             }}
             slotLabelFormat={{
-              hour: '2-digit',
+              hour: 'numeric',
               minute: '2-digit',
-              hour12: false,
+              hour12: true,
             }}
             eventDisplay="block"
             displayEventTime={true}
