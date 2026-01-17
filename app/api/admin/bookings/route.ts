@@ -129,8 +129,6 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     // Call create booking function
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
       p_customer_name: customerName,
-      p_customer_phone: customerPhone || null,
-      p_customer_notes: notes || null,
       p_booking_date: bookingDate,
       p_total_hours: slots.length,
       p_total_amount: totalAmount,
@@ -138,6 +136,8 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       p_advance_payment_method: advancePaymentMethod || 'cash',
       p_advance_payment_proof: 'manual-booking-no-proof',
       p_slots: JSON.stringify(formattedSlots),
+      p_customer_phone: customerPhone || null,
+      p_customer_notes: notes || null,
     });
 
     const result = typeof data === 'string' ? JSON.parse(data) : data;

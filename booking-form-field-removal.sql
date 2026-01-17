@@ -41,9 +41,8 @@ COMMENT ON COLUMN customers.phone IS 'Primary contact number (optional)';
 DROP FUNCTION IF EXISTS create_booking_with_slots(TEXT, TEXT, DATE, INTEGER, NUMERIC, NUMERIC, TEXT, TEXT, JSONB, TEXT, TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION create_booking_with_slots(
-  -- Customer data (required)
+  -- Customer data (required name)
   p_customer_name TEXT,
-  p_customer_phone TEXT DEFAULT NULL, -- Now optional
   -- Booking data (required)
   p_booking_date DATE,
   p_total_hours INTEGER,
@@ -53,7 +52,8 @@ CREATE OR REPLACE FUNCTION create_booking_with_slots(
   p_advance_payment_proof TEXT,
   -- Slots data (required)
   p_slots JSONB, -- Array of {slot_hour, slot_time, is_night_rate, hourly_rate}
-  -- Optional parameters (with defaults)
+  -- Optional parameters (with defaults) - MUST be at the end
+  p_customer_phone TEXT DEFAULT NULL,
   p_customer_notes TEXT DEFAULT NULL
 )
 RETURNS TABLE (

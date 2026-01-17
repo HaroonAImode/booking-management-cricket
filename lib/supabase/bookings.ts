@@ -297,7 +297,6 @@ export async function createCompleteBooking(params: {
     // Call atomic database function
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
       p_customer_name: params.customer.name,
-      p_customer_phone: params.customer.phone || null,
       p_booking_date: params.booking.booking_date,
       p_total_hours: params.booking.total_hours,
       p_total_amount: params.booking.total_amount,
@@ -305,6 +304,7 @@ export async function createCompleteBooking(params: {
       p_advance_payment_method: params.booking.advance_payment_method,
       p_advance_payment_proof: params.booking.advance_payment_proof,
       p_slots: slotsJson,
+      p_customer_phone: params.customer.phone || null,
       p_customer_notes: params.booking.customer_notes || null,
     });
 
