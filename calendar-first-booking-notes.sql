@@ -1,0 +1,27 @@
+-- Calendar-First Booking Flow - Database Notes
+-- 
+-- NO DATABASE SCHEMA CHANGES REQUIRED
+-- 
+-- This redesign is purely frontend/UX:
+-- - Shows calendar and availability FIRST
+-- - Customer selects date/slots BEFORE filling form
+-- - Same booking table structure
+-- - Same API endpoints
+-- - Same data validation
+--
+-- The booking flow now prioritizes transparency:
+-- 1. Customer sees what's available
+-- 2. Customer selects preferred slots
+-- 3. Customer fills contact/payment details
+-- 4. Admin approves as before
+--
+-- Benefits:
+-- - Better UX - see availability before committing
+-- - Fewer abandoned bookings
+-- - Easier for customers to discuss slots with team
+-- - Mobile-optimized calendar view
+-- - Color-coded status (yellow=available, dashed=pending, gray=booked)
+--
+-- All existing database functions, RLS policies, and triggers remain unchanged.
+
+SELECT 'Calendar-first booking flow implemented - No database changes needed' AS status;

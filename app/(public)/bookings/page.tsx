@@ -1,15 +1,19 @@
 /**
  * Bookings Page (Public Route)
  * 
- * Purpose: Public booking page for customers to book cricket ground time slots.
- * No login required - customers can directly book and submit payment proof.
+ * Purpose: Public booking page with calendar-first flow
+ * NEW FLOW:
+ * 1. Customer views calendar and availability FIRST
+ * 2. Selects date and time slots
+ * 3. THEN fills booking form
+ * No login required - direct booking with payment proof.
  */
 
 'use client';
 
-import BookingForm from '@/components/BookingForm';
+import CalendarFirstBooking from '@/components/CalendarFirstBooking';
 
 export default function BookingsPage() {
-  return <BookingForm />;
+  return <CalendarFirstBooking />;
 }
 

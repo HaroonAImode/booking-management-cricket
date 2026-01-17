@@ -206,28 +206,37 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <Container size="xl" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }} className="animate-fade-in">
+    <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '1px' }}>
+      <Container size="xl" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }} className="animate-fade-in">
       <Stack gap={{ base: 'md', sm: 'xl' }}>
         {/* Header */}
         <Paper
           p={{ base: 'md', sm: 'xl' }}
           radius="lg"
           style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            border: 'none',
+            background: '#1A1A1A',
+            border: '2px solid #F5B800',
+            boxShadow: '0 4px 16px rgba(245, 184, 0, 0.2)',
           }}
         >
           <Group justify="space-between" align="center">
             <div>
-              <Title order={1} c="white" size={{ base: 'h2', sm: 'h1' }}>
+              <Title order={1} c="white" size={{ base: 'h2', sm: 'h1' }} fw={900}>
                 Dashboard
               </Title>
-              <Text c="rgba(255,255,255,0.95)" size={{ base: 'sm', sm: 'md' }} mt={4}>
-                Overview of your cricket booking business
+              <Text c="#D1D1D1" size={{ base: 'sm', sm: 'md' }} mt={4}>
+                PowerPlay Cricket Arena - Live Business Overview
               </Text>
             </div>
-            <Badge size="lg" variant="white" color="dark">
-              Live
+            <Badge 
+              size="lg" 
+              style={{ 
+                background: '#F5B800', 
+                color: '#1A1A1A',
+                fontWeight: 900,
+              }}
+            >
+              LIVE
             </Badge>
           </Group>
         </Paper>
@@ -238,28 +247,28 @@ export default function AdminDashboardPage() {
             title="Total Revenue"
             value={formatCurrency(data.revenue.total_revenue)}
             icon={<IconCurrencyRupee size={24} />}
-            color="blue"
+            color="yellow"
             description={`Advance: ${formatCurrency(data.revenue.total_advance_received)}`}
           />
           <StatCard
             title="Pending Approvals"
             value={data.pending_approvals}
             icon={<IconClockHour4 size={24} />}
-            color="orange"
+            color="warning"
             description="Awaiting approval"
           />
           <StatCard
             title="Today's Bookings"
             value={data.today_bookings.total_bookings}
             icon={<IconCalendarEvent size={24} />}
-            color="green"
+            color="success"
             description={`${data.today_bookings.total_hours} hours booked`}
           />
           <StatCard
             title="Remaining Payments"
             value={formatCurrency(data.revenue.total_remaining_payment)}
             icon={<IconAlertCircle size={24} />}
-            color="red"
+            color="danger"
             description="To be collected"
           />
         </SimpleGrid>
@@ -270,8 +279,9 @@ export default function AdminDashboardPage() {
           p={{ base: 'md', sm: 'lg' }}
           radius="lg"
           style={{
-            background: 'linear-gradient(to right, #ffffff, #f8f9fa)',
-            borderColor: '#e9ecef',
+            background: '#FFFBF0',
+            borderColor: '#F5B800',
+            borderWidth: '2px',
           }}
         >
           <Title order={3} mb="md" size={{ base: 'h4', sm: 'h3' }}>
@@ -453,5 +463,6 @@ export default function AdminDashboardPage() {
         </Paper>
       </Stack>
     </Container>
+    </Box>
   );
 }

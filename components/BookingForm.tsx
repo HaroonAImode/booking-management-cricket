@@ -58,7 +58,17 @@ const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash (Advance)' },
 ];
 
-export default function BookingForm() {
+interface BookingFormProps {
+  preSelectedDate?: Date | null;
+  preSelectedSlots?: number[];
+  hideCalendar?: boolean;
+}
+
+export default function BookingForm({ 
+  preSelectedDate = null, 
+  preSelectedSlots = [], 
+  hideCalendar = false 
+}: BookingFormProps = {}) {
   const router = useRouter();
   
   // Form state
@@ -67,8 +77,8 @@ export default function BookingForm() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [alternatePhone, setAlternatePhone] = useState('');
-  const [bookingDate, setBookingDate] = useState<Date | null>(null);
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [bookingDate, setBookingDate] = useState<Date | null>(preSelectedDate);
+  const [selectedSlots, setSelectedSlots] = useState<number[]>(preSelectedSlots);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [customerNotes, setCustomerNotes] = useState('');
@@ -93,12 +103,24 @@ export default function BookingForm() {
     loadSettings();
   }, []);
 
+  // Sync preselected values from props
+  useEffect(() => {
+    if (preSelectedDate) {
+      setBookingDate(preSelectedDate);
+    }
+    if (preSelectedSlots && preSelectedSlots.length > 0) {
+      setSelectedSlots(preSelectedSlots);
+    }
+  }, [preSelectedDate, preSelectedSlots]);
+
   // Load slots when date changes
   useEffect(() => {
-    if (bookingDate) {
+    if (bookingDate && !hideCalendar) {
       loadAvailableSlots();
-      setSelectedSlots([]); // Reset selected slots when date changes
-    } else {
+      if (!preSelectedSlots || preSelectedSlots.length === 0) {
+        setSelectedSlots([]); // Reset selected slots when date changes (only if not pre-selected)
+      }
+    } else if (!hideCalendar) {
       setAvailableSlots(null);
       setSelectedSlots([]);
     }
@@ -520,53 +542,73 @@ export default function BookingForm() {
           </Paper>
 
           {/* Booking Details */}
-          <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
-            <Stack gap="md">
-              <Title order={3} size={{ base: "h4", sm: "h3" }}>Booking Details</Title>
-              <Divider />
+          {!hideCalendar && (
+            <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
+              <Stack gap="md">
+                <Title order={3} size={{ base: "h4", sm: "h3" }}>Booking Details</Title>
+                <Divider />
 
-              <DatePickerInput
-                label="Select Date"
-                placeholder="Pick a date"
-                value={bookingDate}
-                onChange={(value) => {
-                  if (typeof value === 'string') {
-                    setBookingDate(new Date(value));
-                  } else {
-                    setBookingDate(value);
-                  }
-                }}
-                error={errors.booking_date}
-                required
-                leftSection={<IconCalendar size={16} />}
-                minDate={new Date()}
-                clearable
-              />
+                <DatePickerInput
+                  label="Select Date"
+                  placeholder="Pick a date"
+                  value={bookingDate}
+                  onChange={(value) => {
+                    if (typeof value === 'string') {
+                      setBookingDate(new Date(value));
+                    } else {
+                      setBookingDate(value);
+                    }
+                  }}
+                  error={errors.booking_date}
+                  required
+                  leftSection={<IconCalendar size={16} />}
+                  minDate={new Date()}
+                  clearable
+                />
 
-              {errors.slots && (
-                <Alert icon={<IconAlertCircle size="1rem" />} color="red">
-                  {errors.slots}
-                </Alert>
-              )}
+                {errors.slots && (
+                  <Alert icon={<IconAlertCircle size="1rem" />} color="red">
+                    {errors.slots}
+                  </Alert>
+                )}
 
-              <SlotSelector
-                selectedDate={bookingDate}
-                selectedSlots={selectedSlots}
-                onSlotToggle={handleSlotToggle}
-                availableSlots={availableSlots}
-                loading={slotsLoading}
-                error={slotsError}
-              />
+                <SlotSelector
+                  selectedDate={bookingDate}
+                  selectedSlots={selectedSlots}
+                  onSlotToggle={handleSlotToggle}
+                  availableSlots={availableSlots}
+                  loading={slotsLoading}
+                  error={slotsError}
+                />
 
-              <Textarea
-                label="Additional Notes"
-                placeholder="Any special requests or notes (optional)"
-                value={customerNotes}
-                onChange={(e) => setCustomerNotes(e.currentTarget.value)}
-                minRows={3}
-              />
-            </Stack>
-          </Paper>
+                <Textarea
+                  label="Additional Notes"
+                  placeholder="Any special requests or notes (optional)"
+                  value={customerNotes}
+                  onChange={(e) => setCustomerNotes(e.currentTarget.value)}
+                  minRows={3}
+                />
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Additional Notes (when calendar is hidden) */}
+          {hideCalendar && (
+            <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
+              <Stack gap="md">
+                <Title order={3} size={{ base: "h4", sm: "h3" }}>Additional Information</Title>
+                <Divider />
+
+                <Textarea
+                  label="Additional Notes"
+                  placeholder="Any special requests or notes (optional)"
+                  value={customerNotes}
+                  onChange={(e) => setCustomerNotes(e.currentTarget.value)}
+                  minRows={3}
+                />
+              </Stack>
+            </Paper>
+          )}
 
           {/* Payment Information */}
           <Paper p={{ base: "md", sm: "lg" }} withBorder bg="blue.0">

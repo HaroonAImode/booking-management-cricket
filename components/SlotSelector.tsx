@@ -84,16 +84,16 @@ export default function SlotSelector({
   }
 
   const getSlotColor = (slot: SlotInfo) => {
-    if (selectedSlots.includes(slot.slot_hour)) return 'blue';
-    if (slot.current_status === 'booked') return 'red';
+    if (selectedSlots.includes(slot.slot_hour)) return 'yellow';
+    if (slot.current_status === 'booked') return 'gray';
     if (slot.current_status === 'pending') return 'orange';
-    return 'gray';
+    return 'yellow';
   };
 
   const getSlotVariant = (slot: SlotInfo) => {
     if (selectedSlots.includes(slot.slot_hour)) return 'filled';
-    if (slot.is_available) return 'light';
-    return 'outline';
+    if (slot.is_available) return 'outline';
+    return 'light';
   };
 
   const getSlotLabel = (slot: SlotInfo) => {
@@ -133,17 +133,17 @@ export default function SlotSelector({
       </Alert>
 
       {/* Legend */}
-      <Group gap="xs">
-        <Badge size="sm" color="gray" variant="light">
+      <Group gap="xs" style={{ flexWrap: 'wrap' }}>
+        <Badge size="sm" style={{ background: '#F5B800', color: '#1A1A1A', borderWidth: '2px', borderColor: '#F5B800', borderStyle: 'solid' }}>
           Available
         </Badge>
-        <Badge size="sm" color="blue" variant="filled">
+        <Badge size="sm" style={{ background: '#1A1A1A', color: '#F5B800' }}>
           Selected
         </Badge>
-        <Badge size="sm" color="orange" variant="outline">
-          Under Approval
+        <Badge size="sm" variant="light" color="orange" style={{ borderWidth: '2px', borderStyle: 'dashed' }}>
+          Pending Approval
         </Badge>
-        <Badge size="sm" color="red" variant="outline">
+        <Badge size="sm" variant="light" color="gray">
           Booked
         </Badge>
       </Group>
@@ -183,22 +183,28 @@ export default function SlotSelector({
               className="hover-lift"
               style={{
                 cursor: isDisabled(slot) ? 'not-allowed' : 'pointer',
-                opacity: isDisabled(slot) ? 0.6 : 1,
-                borderWidth: selectedSlots.includes(slot.slot_hour) ? 2 : 1,
+                opacity: isDisabled(slot) ? 0.5 : 1,
+                borderWidth: selectedSlots.includes(slot.slot_hour) ? 3 : 2,
                 borderColor: selectedSlots.includes(slot.slot_hour)
-                  ? 'var(--mantine-color-blue-6)'
-                  : undefined,
+                  ? '#1A1A1A'
+                  : slot.current_status === 'pending'
+                  ? '#f59e0b'
+                  : slot.is_available
+                  ? '#F5B800'
+                  : '#9E9E9E',
+                borderStyle: slot.current_status === 'pending' ? 'dashed' : 'solid',
                 backgroundColor: selectedSlots.includes(slot.slot_hour)
-                  ? 'var(--mantine-color-blue-0)'
+                  ? '#F5B800'
                   : slot.is_available
                   ? 'white'
-                  : 'var(--mantine-color-gray-0)',
-                transition: 'all 250ms ease',
+                  : '#F5F5F5',
+                transition: 'all 200ms ease',
                 transform: selectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : 'scale(1)',
-                minHeight: '68px',
+                minHeight: '80px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: selectedSlots.includes(slot.slot_hour) ? '0 4px 12px rgba(245, 184, 0, 0.3)' : 'none',
               }}
               onClick={() => {
                 if (!isDisabled(slot)) {
@@ -208,15 +214,16 @@ export default function SlotSelector({
             >
               <Stack gap={4} align="center">
                 <Group gap={4} justify="center">
-                  <IconClock size={14} />
+                  <IconClock size={14} color={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#4A4A4A'} />
                   {isNightSlot(slot.slot_hour) && (
                     <Text size="xs">🌙</Text>
                   )}
                 </Group>
                 <Text
-                  size="xs"
-                  fw={selectedSlots.includes(slot.slot_hour) ? 700 : 500}
+                  size={{ base: 'xs', sm: 'sm' }}
+                  fw={selectedSlots.includes(slot.slot_hour) ? 900 : 600}
                   ta="center"
+                  c={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
                 >
                   {slot.slot_hour.toString().padStart(2, '0')}:00
                 </Text>
@@ -225,6 +232,10 @@ export default function SlotSelector({
                   color={getSlotColor(slot)}
                   variant={getSlotVariant(slot)}
                   fullWidth
+                  style={{
+                    background: selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : undefined,
+                    color: selectedSlots.includes(slot.slot_hour) ? 'white' : undefined,
+                  }}
                 >
                   {selectedSlots.includes(slot.slot_hour)
                     ? '✓'
@@ -242,10 +253,10 @@ export default function SlotSelector({
 
       {/* Selection Summary */}
       {selectedSlots.length > 0 && (
-        <Paper p="md" withBorder bg="blue.0" className="animate-slide-up">
+        <Paper p="md" withBorder style={{ background: '#FFECB3', borderColor: '#F5B800', borderWidth: '2px' }} className="animate-slide-up">
           <Stack gap="xs">
-            <Text size="sm" fw={600}>
-              Selected Time Slots:
+            <Text size="sm" fw={700} c="#1A1A1A">
+              ✓ Selected Time Slots:
             </Text>
             <Group gap="xs">
               {selectedSlots
@@ -256,9 +267,7 @@ export default function SlotSelector({
                     <Badge
                       key={hour}
                       size="lg"
-                      color={isNightSlot(hour) ? 'violet' : 'blue'}
-                      variant="filled"
-                      style={{ cursor: 'pointer' }}
+                      style={{ background: '#1A1A1A', color: '#F5B800', cursor: 'pointer' }}
                       onClick={() => onSlotToggle(hour)}
                     >
                       {formatTimeDisplay(hour)}

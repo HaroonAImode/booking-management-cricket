@@ -5,16 +5,19 @@
 }
 
 .logo:hover {
-  color: var(--mantine-color-blue-6);
+  color: #F5B800;
 }
 
 .link {
   text-decoration: none;
-  color: inherit;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  color: #1A1A1A;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
 .link:hover {
-  color: var(--mantine-color-blue-6);
+  color: #1A1A1A;
+  background: rgba(245, 184, 0, 0.1);
 }

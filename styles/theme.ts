@@ -1,37 +1,53 @@
 /**
- * Mantine Theme Configuration
+ * Mantine Theme Configuration - PowerPlay Cricket Arena
  * 
- * Purpose: Professional theme with cricket-inspired colors and optimized UX
+ * Purpose: Premium black & yellow sports-tech branding
  * Features:
- * - Cricket green primary color
+ * - PowerPlay yellow (#F5B800) - Primary brand color
+ * - Deep black (#1A1A1A) - Structure and sophistication
  * - Smooth animations and transitions
  * - Mobile-optimized touch targets
- * - Professional shadows and borders
- * - Enhanced component defaults
+ * - Premium shadows and accents
+ * - High-end cricket arena aesthetic
  */
 
 import { createTheme, rem, MantineColorsTuple } from '@mantine/core';
 
-// Cricket-inspired green color palette
-const cricketGreen: MantineColorsTuple = [
-  '#e8f9f0',
-  '#d0f2e0',
-  '#a8e6c8',
-  '#7dd9ae',
-  '#5acf98',
-  '#3bc687',
-  '#2bb870',
-  '#1f9f5d',
-  '#17864d',
-  '#0d6d3d',
+// PowerPlay Yellow - Primary brand color
+const powerplayYellow: MantineColorsTuple = [
+  '#FFF9E6',  // Lightest - backgrounds
+  '#FFF3CC',
+  '#FFECB3',
+  '#FFE599',
+  '#FFDD80',
+  '#F5B800',  // Brand yellow (from logo)
+  '#E0A800',
+  '#CC9900',
+  '#B38600',
+  '#996B00',  // Darkest - text on light bg
+];
+
+// Deep Black - Premium structure
+const deepBlack: MantineColorsTuple = [
+  '#F5F5F5',  // Off-white
+  '#E8E8E8',  // Light gray
+  '#D1D1D1',  // Medium gray
+  '#9E9E9E',  // Gray
+  '#6B6B6B',  // Dark gray
+  '#4A4A4A',  // Charcoal
+  '#333333',  // Darker
+  '#262626',  // Very dark
+  '#1A1A1A',  // Deep black (primary)
+  '#0D0D0D',  // Pure black
 ];
 
 export const theme = createTheme({
-  /* Primary color - Cricket green */
-  primaryColor: 'cricketGreen',
+  /* Primary color - PowerPlay Yellow */
+  primaryColor: 'yellow',
   
   colors: {
-    cricketGreen,
+    yellow: powerplayYellow,
+    dark: deepBlack,
   },
 
   /* Font family - System fonts for best performance */
@@ -91,8 +107,145 @@ export const theme = createTheme({
         root: {
           fontWeight: 600,
           transition: 'all 250ms ease',
+          minHeight: '44px', // Touch-friendly
+          fontSize: '15px',
+          '@media (min-width: 768px)': {
+            fontSize: '16px',
+            minHeight: '42px',
+          },
           '&:active': {
             transform: 'scale(0.97)',
+          },
+        },
+      },
+    },
+
+    TextInput: {
+      styles: {
+        input: {
+          fontSize: '16px', // Prevents zoom on iOS
+          minHeight: '44px',
+          '@media (min-width: 768px)': {
+            fontSize: '15px',
+            minHeight: '40px',
+          },
+        },
+      },
+    },
+
+    Textarea: {
+      styles: {
+        input: {
+          fontSize: '16px',
+          '@media (min-width: 768px)': {
+            fontSize: '15px',
+          },
+        },
+      },
+    },
+
+    Select: {
+      styles: {
+        input: {
+          fontSize: '16px',
+          minHeight: '44px',
+          '@media (min-width: 768px)': {
+            fontSize: '15px',
+            minHeight: '40px',
+          },
+        },
+      },
+    },
+
+    PasswordInput: {
+      styles: {
+        input: {
+          fontSize: '16px',
+          minHeight: '44px',
+          '@media (min-width: 768px)': {
+            fontSize: '15px',
+            minHeight: '40px',
+          },
+        },
+      },
+    },
+
+    FileInput: {
+      styles: {
+        input: {
+          fontSize: '16px',
+          minHeight: '44px',
+          '@media (min-width: 768px)': {
+            fontSize: '15px',
+            minHeight: '40px',
+          },
+        },
+      },
+    },
+
+    Modal: {
+      styles: {
+        content: {
+          '@media (max-width: 768px)': {
+            margin: '0 !important',
+            maxWidth: '100% !important',
+            minHeight: '100vh',
+          },
+        },
+        body: {
+          '@media (max-width: 768px)': {
+            padding: '16px',
+          },
+        },
+        header: {
+          '@media (max-width: 768px)': {
+            padding: '16px',
+          },
+        },
+      },
+    },
+
+    Paper: {
+      styles: {
+        root: {
+          '@media (max-width: 768px)': {
+            padding: '12px',
+          },
+        },
+      },
+    },
+
+    Container: {
+      styles: {
+        root: {
+          '@media (max-width: 768px)': {
+            paddingLeft: '12px',
+            paddingRight: '12px',
+          },
+          '@media (min-width: 768px) and (max-width: 992px)': {
+            paddingLeft: '16px',
+            paddingRight: '16px',
+          },
+        },
+      },
+    },
+
+    Table: {
+      styles: {
+        root: {
+          '@media (max-width: 768px)': {
+            fontSize: '13px',
+          },
+        },
+        th: {
+          '@media (max-width: 768px)': {
+            padding: '8px',
+            fontSize: '12px',
+          },
+        },
+        td: {
+          '@media (max-width: 768px)': {
+            padding: '8px',
           },
         },
       },

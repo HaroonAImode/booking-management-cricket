@@ -137,7 +137,7 @@ export default function AdminHeader({
             onClick={toggleMobile}
             hiddenFrom="sm"
             size="sm"
-            color="white"
+            color="#F5B800"
           />
           {/* Desktop burger menu */}
           <Burger
@@ -145,22 +145,34 @@ export default function AdminHeader({
             onClick={toggleDesktop}
             visibleFrom="sm"
             size="sm"
-            color="white"
+            color="#F5B800"
           />
           
           <Group gap="xs" wrap="nowrap">
-            <ThemeIcon
-              size={40}
-              radius="md"
-              variant="white"
-              color="grape"
+            <Box
+              style={{
+                width: '40px',
+                height: '40px',
+                background: '#F5B800',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '20px',
+                color: '#1A1A1A',
+                boxShadow: '0 2px 8px rgba(245, 184, 0, 0.3)',
+              }}
             >
-              <IconTrophy size={24} />
-            </ThemeIcon>
+              P
+            </Box>
             <Box visibleFrom="xs">
-              <Title order={4} c="white" size={{ base: 'h5', sm: 'h4' }}>
-                Cricket Admin
-              </Title>
+              <Text size="sm" c="white" fw={900} style={{ lineHeight: 1, marginBottom: '2px', letterSpacing: '0.5px' }}>
+                POWERPLAY ADMIN
+              </Text>
+              <Text size="8px" c="#F5B800" style={{ lineHeight: 1, letterSpacing: '1px' }}>
+                CRICKET ARENA
+              </Text>
             </Box>
           </Group>
         </Group>

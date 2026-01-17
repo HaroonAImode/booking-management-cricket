@@ -39,7 +39,7 @@ export default function AdminLayout({
         padding="md"
         styles={{
           main: {
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            background: '#FFF9E6',
             minHeight: '100vh',
           },
         }}
@@ -47,8 +47,8 @@ export default function AdminLayout({
         {/* Admin header with user menu */}
         <AppShell.Header
           style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderBottom: 'none',
+            background: '#1A1A1A',
+            borderBottom: '2px solid #F5B800',
           }}
         >
           <AdminHeader
@@ -63,8 +63,8 @@ export default function AdminLayout({
         <AppShell.Navbar
           p="md"
           style={{
-            background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)',
-            borderRight: '1px solid #e9ecef',
+            background: 'white',
+            borderRight: '2px solid #F5B800',
           }}
         >
           <AdminNavbar />

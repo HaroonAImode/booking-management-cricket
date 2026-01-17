@@ -30,12 +30,19 @@ export default function StatCard({
   const isNegativeTrend = trend && trend.value < 0;
 
   const gradients: Record<string, string> = {
-    blue: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    green: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    orange: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    red: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    teal: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    grape: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    yellow: 'linear-gradient(135deg, #F5B800 0%, #FFDD80 100%)',
+    black: 'linear-gradient(135deg, #1A1A1A 0%, #333333 100%)',
+    gold: 'linear-gradient(135deg, #FFE599 0%, #F5B800 100%)',
+    charcoal: 'linear-gradient(135deg, #4A4A4A 0%, #1A1A1A 100%)',
+    success: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+    warning: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+    danger: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+    blue: 'linear-gradient(135deg, #F5B800 0%, #FFDD80 100%)',
+    green: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+    orange: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+    red: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+    teal: 'linear-gradient(135deg, #1A1A1A 0%, #333333 100%)',
+    grape: 'linear-gradient(135deg, #F5B800 0%, #FFDD80 100%)',
   };
 
   return (
@@ -44,8 +51,8 @@ export default function StatCard({
       p="lg"
       radius="lg"
       style={{
-        background: 'white',
-        borderColor: '#e9ecef',
+        background: '#FFFBF0',
+        borderColor: '#F5B800',
         transition: 'all 0.3s ease',
         cursor: 'pointer',
       }}

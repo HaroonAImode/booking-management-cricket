@@ -20,10 +20,10 @@ export default function AdminNavbar() {
   const pathname = usePathname();
 
   const links = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'blue' },
-    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'teal' },
-    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'grape' },
-    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'orange' },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow' },
+    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark' },
+    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow' },
+    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark' },
   ];
 
   return (
@@ -65,14 +65,17 @@ export default function AdminNavbar() {
                 padding: '12px',
                 fontWeight: 500,
                 transition: 'all 150ms ease',
+                background: isActive ? 'rgba(245, 184, 0, 0.1)' : 'transparent',
                 '&:hover': {
                   background: isActive
-                    ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
-                    : 'rgba(0, 0, 0, 0.03)',
+                    ? 'rgba(245, 184, 0, 0.15)'
+                    : 'rgba(245, 184, 0, 0.05)',
                 },
               },
               label: {
                 fontSize: '15px',
+                color: isActive ? '#1A1A1A' : '#4A4A4A',
+                fontWeight: isActive ? 700 : 500,
               },
             }}
           />

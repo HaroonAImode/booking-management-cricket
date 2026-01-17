@@ -72,7 +72,7 @@ function LoginForm() {
     <Box
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#1A1A1A',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -83,23 +83,29 @@ function LoginForm() {
         <Stack gap="xl">
           {/* Header with Icon */}
           <Box style={{ textAlign: 'center' }}>
-            <ThemeIcon
-              size={80}
-              radius="xl"
-              variant="white"
-              color="grape"
+            <Box
               style={{
+                width: '80px',
+                height: '80px',
+                background: '#F5B800',
+                borderRadius: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '48px',
+                color: '#1A1A1A',
                 margin: '0 auto 20px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
               }}
             >
-              <IconTrophy size={48} />
-            </ThemeIcon>
-            <Title order={1} c="white" mb="xs">
-              Admin Portal
+              P
+            </Box>
+            <Title order={1} c="white" mb="xs" fw={900} style={{ letterSpacing: '1px' }}>
+              POWERPLAY ADMIN
             </Title>
-            <Text c="rgba(255,255,255,0.95)" size="lg">
-              Cricket Booking Management System
+            <Text c="#F5B800" size="sm" fw={700} style={{ letterSpacing: '2px' }}>
+              CRICKET ARENA
             </Text>
           </Box>
 
@@ -127,7 +133,7 @@ function LoginForm() {
           >
             <Stack gap="xs" mb="xl">
               <Box style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <IconShield size={24} color="#667eea" />
+                <IconShield size={24} color="#F5B800" />
                 <Title order={3}>Secure Sign In</Title>
               </Box>
               <Text c="dimmed" size="sm">
@@ -187,10 +193,18 @@ function LoginForm() {
                   size="lg"
                   mt="md"
                   style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: '#F5B800',
+                    color: '#1A1A1A',
                     height: '50px',
                     fontSize: '16px',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                  }}
+                  styles={{
+                    root: {
+                      '&:hover': {
+                        background: '#FFDD80',
+                      },
+                    },
                   }}
                 >
                   {loading ? 'Signing In...' : 'Sign In to Dashboard'}
@@ -204,14 +218,14 @@ function LoginForm() {
             p="md"
             radius="md"
             style={{
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(245, 184, 0, 0.1)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.2)',
+              border: '1px solid rgba(245, 184, 0, 0.3)',
             }}
           >
             <Text c="white" size="sm" style={{ textAlign: 'center' }}>
-              🔒 This is a secure admin-only area. All login attempts are monitored
-              and logged. Unauthorized access is strictly prohibited.
+              🔒 Secure admin-only area. All login attempts are monitored.
+              Unauthorized access is prohibited.
             </Text>
           </Paper>
         </Stack>
