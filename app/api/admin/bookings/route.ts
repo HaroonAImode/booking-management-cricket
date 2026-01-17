@@ -101,8 +101,6 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     const {
       customerName,
       customerPhone,
-      customerEmail,
-      customerAddress,
       bookingDate,
       slots,
       totalAmount,
@@ -131,10 +129,7 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     // Call create booking function
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
       p_customer_name: customerName,
-      p_customer_phone: customerPhone,
-      p_customer_email: customerEmail || null,
-      p_customer_address: customerAddress || null,
-      p_customer_alternate_phone: null,
+      p_customer_phone: customerPhone || null,
       p_customer_notes: notes || null,
       p_booking_date: bookingDate,
       p_total_hours: slots.length,

@@ -23,7 +23,6 @@ import {
 import {
   IconUser,
   IconPhone,
-  IconMail,
   IconCalendar,
   IconClock,
   IconCurrencyRupee,
@@ -326,24 +325,8 @@ export default function BookingDetailsModal({
               </Group>
               <Group gap="xs">
                 <IconPhone size={18} />
-                <Text size="sm">{customer.phone}</Text>
-                {customer.alternate_phone && (
-                  <Text size="sm" c="dimmed">
-                    ({customer.alternate_phone})
-                  </Text>
-                )}
+                <Text size="sm">{customer.phone || 'Not provided'}</Text>
               </Group>
-              {customer.email && (
-                <Group gap="xs">
-                  <IconMail size={18} />
-                  <Text size="sm">{customer.email}</Text>
-                </Group>
-              )}
-              {customer.address && (
-                <Text size="sm" c="dimmed">
-                  {customer.address}
-                </Text>
-              )}
               <Badge size="sm" variant="light">
                 Total Bookings: {customer.total_bookings}
               </Badge>

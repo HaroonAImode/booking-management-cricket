@@ -18,8 +18,6 @@ import {
 import {
   IconUser,
   IconPhone,
-  IconMail,
-  IconMapPin,
   IconCalendar,
   IconClock,
   IconCurrencyDollar,
@@ -105,28 +103,8 @@ export default function BookingReview({
               <Text size="sm" fw={600}>
                 Phone:
               </Text>
-              <Text size="sm">{bookingData.customer.phone}</Text>
+              <Text size="sm">{bookingData.customer.phone || 'Not provided'}</Text>
             </Group>
-
-            {bookingData.customer.email && (
-              <Group gap="xs">
-                <IconMail size={16} />
-                <Text size="sm" fw={600}>
-                  Email:
-                </Text>
-                <Text size="sm">{bookingData.customer.email}</Text>
-              </Group>
-            )}
-
-            {bookingData.customer.address && (
-              <Group gap="xs">
-                <IconMapPin size={16} />
-                <Text size="sm" fw={600}>
-                  Address:
-                </Text>
-                <Text size="sm">{bookingData.customer.address}</Text>
-              </Group>
-            )}
           </Stack>
         </Paper>
 

@@ -18,10 +18,7 @@ export type Tables<T extends keyof Database['public']['Tables']> =
 export interface Customer {
   id: string;
   name: string;
-  email?: string;
-  phone: string;
-  alternate_phone?: string;
-  address?: string;
+  phone?: string;
   notes?: string;
   total_bookings: number;
   total_spent: number;
@@ -123,10 +120,7 @@ export interface SlotInfo {
 
 export interface CustomerFormData {
   name: string;
-  phone: string;
-  email?: string;
-  address?: string;
-  alternate_phone?: string;
+  phone?: string;
   notes?: string;
 }
 

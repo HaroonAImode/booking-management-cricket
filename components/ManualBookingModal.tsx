@@ -46,8 +46,6 @@ export default function ManualBookingModal({
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
-    customerAddress: '',
     bookingDate: new Date(),
     advancePayment: 500,
     advancePaymentMethod: 'cash',
@@ -121,9 +119,7 @@ export default function ManualBookingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          customerEmail: formData.customerEmail || null,
-          customerAddress: formData.customerAddress || null,
+          customerPhone: formData.customerPhone || null,
           bookingDate: formData.bookingDate.toISOString().split('T')[0],
           slots,
           totalAmount: calculateTotal(),
@@ -168,8 +164,6 @@ export default function ManualBookingModal({
     setFormData({
       customerName: '',
       customerPhone: '',
-      customerEmail: '',
-      customerAddress: '',
       bookingDate: new Date(),
       advancePayment: 500,
       advancePaymentMethod: 'cash',
@@ -209,32 +203,11 @@ export default function ManualBookingModal({
               </Grid.Col>
               <Grid.Col span={6}>
                 <TextInput
-                  label="Phone Number"
-                  placeholder="03001234567"
-                  required
+                  label="Phone Number (Optional)"
+                  placeholder="03001234567 (optional)"
                   value={formData.customerPhone}
                   onChange={(e) =>
                     setFormData({ ...formData, customerPhone: e.target.value })
-                  }
-                />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="Email (Optional)"
-                  placeholder="customer@email.com"
-                  value={formData.customerEmail}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customerEmail: e.target.value })
-                  }
-                />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="Address (Optional)"
-                  placeholder="Enter address"
-                  value={formData.customerAddress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customerAddress: e.target.value })
                   }
                 />
               </Grid.Col>

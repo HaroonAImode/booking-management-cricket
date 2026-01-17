@@ -24,8 +24,6 @@ import { DatePickerInput } from '@mantine/dates';
 import {
   IconUser,
   IconPhone,
-  IconMail,
-  IconMapPin,
   IconCalendar,
   IconUpload,
   IconAlertCircle,
@@ -74,9 +72,6 @@ export default function BookingForm({
   // Form state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [alternatePhone, setAlternatePhone] = useState('');
   const [bookingDate, setBookingDate] = useState<Date | null>(preSelectedDate);
   const [selectedSlots, setSelectedSlots] = useState<number[]>(preSelectedSlots);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
@@ -201,12 +196,9 @@ export default function BookingForm({
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) newErrors.name = 'Name is required';
-    if (!phone.trim()) newErrors.phone = 'Phone number is required';
+    // Phone is now optional, only validate format if provided
     if (phone.trim() && !/^[0-9]{11}$/.test(phone.replace(/[-\s]/g, ''))) {
       newErrors.phone = 'Invalid phone number (11 digits required)';
-    }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Invalid email address';
     }
     if (!bookingDate) newErrors.booking_date = 'Please select a booking date';
     if (selectedSlots.length === 0) newErrors.slots = 'Please select at least one time slot';
@@ -274,10 +266,7 @@ export default function BookingForm({
     const summary: BookingSummary = {
       customer: {
         name,
-        phone,
-        email: email || undefined,
-        address: address || undefined,
-        alternate_phone: alternatePhone || undefined,
+        phone: phone || undefined,
       },
       booking_date: dateStr,
       selected_slots: selectedSlots,
@@ -395,9 +384,6 @@ export default function BookingForm({
   const resetForm = () => {
     setName('');
     setPhone('');
-    setEmail('');
-    setAddress('');
-    setAlternatePhone('');
     setBookingDate(null);
     setSelectedSlots([]);
     setPaymentMethod(null);
@@ -505,37 +491,11 @@ export default function BookingForm({
               />
 
               <TextInput
-                label="Phone Number"
-                placeholder="03XXXXXXXXX"
+                label="Phone Number (Optional)"
+                placeholder="03XXXXXXXXX (optional)"
                 value={phone}
                 onChange={(e) => setPhone(e.currentTarget.value)}
                 error={errors.phone}
-                required
-                leftSection={<IconPhone size={16} />}
-              />
-
-              <TextInput
-                label="Email Address"
-                placeholder="your@email.com (optional)"
-                value={email}
-                onChange={(e) => setEmail(e.currentTarget.value)}
-                error={errors.email}
-                leftSection={<IconMail size={16} />}
-              />
-
-              <TextInput
-                label="Address"
-                placeholder="Your address (optional)"
-                value={address}
-                onChange={(e) => setAddress(e.currentTarget.value)}
-                leftSection={<IconMapPin size={16} />}
-              />
-
-              <TextInput
-                label="Alternate Phone"
-                placeholder="Secondary contact number (optional)"
-                value={alternatePhone}
-                onChange={(e) => setAlternatePhone(e.currentTarget.value)}
                 leftSection={<IconPhone size={16} />}
               />
             </Stack>

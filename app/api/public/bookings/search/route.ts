@@ -37,8 +37,7 @@ export async function GET(request: NextRequest) {
         customers (
           id,
           name,
-          phone,
-          email
+          phone
         ),
         booking_slots (
           slot_hour,
@@ -79,7 +78,6 @@ export async function GET(request: NextRequest) {
       customer: {
         name: booking.customers?.name || '',
         phone: booking.customers?.phone || '',
-        email: booking.customers?.email || '',
       },
       slots: booking.booking_slots || [],
     }));
