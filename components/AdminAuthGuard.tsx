@@ -25,13 +25,6 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
   useEffect(() => {
     async function checkAuth() {
-      // Skip auth check if already on login page
-      if (pathname === '/admin/login') {
-        setIsAuthenticated(true);
-        setIsChecking(false);
-        return;
-      }
-
       try {
         const profile = await getAdminProfile();
         
