@@ -1,0 +1,679 @@
+/**
+ * Admin Bookings Management Page
+ * 
+ * Purpose: Complete booking management with table view, filters, and actions
+ * Features:
+ * - Table view with all booking details
+ * - Customer information display
+ * - Slots visualization
+ * - Payment status (green=paid, red=remaining)
+ * - Approve/reject actions
+ * - View payment proof modal
+ * - Manual booking creation
+ * - Export to PDF and Excel
+ * - Search and filters
+ */
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import {
+  Container,
+  Title,
+  Stack,
+  Group,
+  Button,
+  Table,
+  Badge,
+  Text,
+  Select,
+  TextInput,
+  LoadingOverlay,
+  Alert,
+  Menu,
+  ActionIcon,
+  Paper,
+  Tooltip,
+} from '@mantine/core';
+import {
+  IconPlus,
+  IconDownload,
+  IconSearch,
+  IconFilter,
+  IconRefresh,
+  IconDots,
+  IconCheck,
+  IconX,
+  IconEye,
+  IconFileTypePdf,
+  IconFileSpreadsheet,
+  IconAlertCircle,
+  IconCurrencyRupee,
+  IconCalendarEvent,
+} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { useDebouncedValue } from '@mantine/hooks';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import BookingDetailsModal from '@/components/BookingDetailsModal';
+import PaymentProofModal from '@/components/PaymentProofModal';
+import ManualBookingModal from '@/components/ManualBookingModal';
+import CompletePaymentModal from '@/components/CompletePaymentModal';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
+
+interface Booking {
+  id: string;
+  booking_number: string;
+  booking_date: string;
+  total_hours: number;
+  total_amount: number;
+  advance_payment: number;
+  remaining_payment: number;
+  advance_payment_method: string;
+  advance_payment_proof: string;
+  remaining_payment_proof: string;
+  status: string;
+  created_at: string;
+  customer: {
+    name: string;
+    phone: string;
+    email?: string;
+  };
+  slots: Array<{
+    slot_hour: number;
+    is_night_rate: boolean;
+  }>;
+}
+
+export default function AdminBookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
+  const [summary, setSummary] = useState<any>(null);
+  
+  // Modals
+  const [detailsModalOpened, setDetailsModalOpened] = useState(false);
+  const [paymentModalOpened, setPaymentModalOpened] = useState(false);
+  const [manualBookingOpened, setManualBookingOpened] = useState(false);
+  const [completePaymentOpened, setCompletePaymentOpened] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedPaymentProof, setSelectedPaymentProof] = useState<{ path: string; number: string } | null>(null);
+  const [selectedPaymentBooking, setSelectedPaymentBooking] = useState<{ id: string; number: string; remaining: number } | null>(null);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [statusFilter, paymentFilter, debouncedSearch]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+
+      const params = new URLSearchParams({
+        status: statusFilter,
+        paymentStatus: paymentFilter,
+      });
+
+      if (debouncedSearch) {
+        params.append('search', debouncedSearch);
+      }
+
+      const response = await fetch(`/api/admin/bookings?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setBookings(result.bookings || []);
+        setSummary(result.summary);
+      } else {
+        notifications.show({
+          title: '❌ Loading Error',
+          message: 'Could not load bookings. Please try again.',
+          color: 'red',
+          autoClose: 4000,
+          icon: <IconAlertCircle size={18} />,
+        });
+      }
+    } catch (error) {
+      console.error('Fetch bookings error:', error);
+      notifications.show({
+        title: '❌ Network Error',
+        message: 'Failed to connect. Please check your connection.',
+        color: 'red',
+        autoClose: 5000,
+        icon: <IconAlertCircle size={18} />,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (bookingId: string) => {
+    try {
+      const response = await fetch(`/api/admin/calendar/${bookingId}/approve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminNotes: null }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        notifications.show({
+          title: '✅ Booking Approved',
+          message: `Booking #${result.bookingNumber} has been confirmed`,
+          color: 'green',
+          autoClose: 4000,
+          icon: <IconCheck size={18} />,
+        });
+        fetchBookings();
+      } else {
+        notifications.show({
+          title: '❌ Approval Failed',
+          message: result.error || 'Could not approve booking',
+          color: 'red',
+          autoClose: 4000,
+          icon: <IconAlertCircle size={18} />,
+        });
+      }
+    } catch (error) {
+      notifications.show({
+        title: '❌ Error',
+        message: 'Failed to approve booking',
+        color: 'red',
+        autoClose: 4000,
+        icon: <IconAlertCircle size={18} />,
+      });
+    }
+  };
+
+  const handleReject = async (bookingId: string, reason: string) => {
+    try {
+      const response = await fetch(`/api/admin/calendar/${bookingId}/reject`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        notifications.show({
+          title: '⚠️ Booking Rejected',
+          message: `Booking #${result.bookingNumber} has been cancelled`,
+          color: 'orange',
+          autoClose: 4000,
+          icon: <IconX size={18} />,
+        });
+        fetchBookings();
+      } else {
+        notifications.show({
+          title: '❌ Rejection Failed',
+          message: result.error || 'Could not reject booking',
+          color: 'red',
+          autoClose: 4000,
+          icon: <IconAlertCircle size={18} />,
+        });
+      }
+    } catch (error) {
+      notifications.show({
+        title: '❌ Error',
+        message: 'Failed to reject booking',
+        color: 'red',
+        autoClose: 4000,
+        icon: <IconAlertCircle size={18} />,
+      });
+    }
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text('Cricket Booking Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+
+    const tableData = bookings.map(b => [
+      b.booking_number,
+      b.customer.name,
+      b.customer.phone,
+      new Date(b.booking_date).toLocaleDateString(),
+      `${b.total_hours}h`,
+      `Rs ${b.total_amount.toLocaleString()}`,
+      `Rs ${b.remaining_payment.toLocaleString()}`,
+      b.status,
+    ]);
+
+    autoTable(doc, {
+      head: [['Booking #', 'Customer', 'Phone', 'Date', 'Hours', 'Total', 'Remaining', 'Status']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [34, 139, 230] },
+    });
+
+    doc.save(`bookings-${new Date().toISOString().split('T')[0]}.pdf`);
+    notifications.show({
+      title: '✅ Export Successful',
+      message: 'PDF report has been downloaded',
+      color: 'green',
+      autoClose: 3000,
+      icon: <IconFileTypePdf size={18} />,
+    });
+  };
+
+  const exportToExcel = () => {
+    const data = bookings.map(b => ({
+      'Booking Number': b.booking_number,
+      'Customer Name': b.customer.name,
+      'Phone': b.customer.phone,
+      'Email': b.customer.email || '',
+      'Booking Date': new Date(b.booking_date).toLocaleDateString(),
+      'Total Hours': b.total_hours,
+      'Total Amount': b.total_amount,
+      'Advance Payment': b.advance_payment,
+      'Remaining Payment': b.remaining_payment,
+      'Payment Method': b.advance_payment_method,
+      'Status': b.status,
+      'Created At': new Date(b.created_at).toLocaleString(),
+      'Slots': b.slots.map(s => `${s.slot_hour}:00`).join(', '),
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+    
+    XLSX.writeFile(wb, `bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
+    notifications.show({
+      title: '✅ Export Successful',
+      message: 'Excel spreadsheet has been downloaded',
+      color: 'green',
+      autoClose: 3000,
+      icon: <IconFileSpreadsheet size={18} />,
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'orange';
+      case 'approved': return 'cyan';
+      case 'completed': return 'green';
+      case 'cancelled': return 'red';
+      default: return 'gray';
+    }
+  };
+
+  const getPaymentStatusColor = (remaining: number) => {
+    return remaining === 0 ? 'green' : 'red';
+  };
+
+  return (
+    <Container size="xl" py="xl" className="animate-fade-in">
+      <Stack gap="xl">
+        {/* Header */}
+        <Group justify="space-between">
+          <div>
+            <Title order={1}>Bookings Management</Title>
+            {summary && (
+              <Group gap="xs" mt="xs">
+                <Badge variant="light">Total: {summary.total}</Badge>
+                <Badge color="orange" variant="light">Pending: {summary.pending}</Badge>
+                <Badge color="green" variant="light">Approved: {summary.approved}</Badge>
+              </Group>
+            )}
+          </div>
+
+          <Group>
+            <Button
+              leftSection={<IconPlus size={18} />}
+              onClick={() => setManualBookingOpened(true)}
+            >
+              Manual Booking
+            </Button>
+            <Menu shadow="md">
+              <Menu.Target>
+                <Button
+                  variant="light"
+                  leftSection={<IconDownload size={18} />}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={18} />}
+                  onClick={exportToPDF}
+                >
+                  Export as PDF
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileSpreadsheet size={18} />}
+                  onClick={exportToExcel}
+                >
+                  Export as Excel
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Group>
+
+        {/* Filters */}
+        <Paper withBorder p="md">
+          <Group>
+            <TextInput
+              placeholder="Search by booking #, customer name, phone..."
+              leftSection={<IconSearch size={18} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <Select
+              placeholder="Status"
+              leftSection={<IconFilter size={18} />}
+              data={[
+                { value: 'all', label: 'All Statuses' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ]}
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value || 'all')}
+              w={150}
+            />
+            <Select
+              placeholder="Payment"
+              leftSection={<IconFilter size={18} />}
+              data={[
+                { value: 'all', label: 'All Payments' },
+                { value: 'paid', label: 'Fully Paid' },
+                { value: 'pending', label: 'Has Remaining' },
+              ]}
+              value={paymentFilter}
+              onChange={(value) => setPaymentFilter(value || 'all')}
+              w={150}
+            />
+            <Button
+              variant="light"
+              leftSection={<IconRefresh size={18} />}
+              onClick={fetchBookings}
+              loading={loading}
+            >
+              Refresh
+            </Button>
+          </Group>
+        </Paper>
+
+        {/* Table */}
+        {loading ? (
+          <TableSkeleton rows={8} />
+        ) : (
+          <Paper withBorder radius="md" className="hover-lift">
+          
+          <Table.ScrollContainer minWidth={1200}>
+            <Table highlightOnHover striped>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Booking #</Table.Th>
+                  <Table.Th>Customer</Table.Th>
+                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Slots</Table.Th>
+                  <Table.Th>Amount</Table.Th>
+                  <Table.Th>Payment</Table.Th>
+                  <Table.Th>Payment Proofs</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {bookings.map((booking) => (
+                  <Table.Tr key={booking.id}>
+                    <Table.Td>
+                      <Text size="sm" fw={500}>
+                        {booking.booking_number}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {new Date(booking.created_at).toLocaleDateString()}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{booking.customer.name}</Text>
+                      <Text size="xs" c="dimmed">
+                        {booking.customer.phone}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">
+                        {new Date(booking.booking_date).toLocaleDateString()}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        {booking.slots.slice(0, 3).map((slot, idx) => (
+                          <Badge
+                            key={idx}
+                            size="sm"
+                            variant="dot"
+                            color={slot.is_night_rate ? 'indigo' : 'yellow'}
+                          >
+                            {slot.slot_hour}h
+                          </Badge>
+                        ))}
+                        {booking.slots.length > 3 && (
+                          <Badge size="sm" variant="light">
+                            +{booking.slots.length - 3}
+                          </Badge>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={600}>
+                        Rs {booking.total_amount.toLocaleString()}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {booking.total_hours} hours
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        <Badge
+                          size="sm"
+                          color={getPaymentStatusColor(booking.remaining_payment)}
+                        >
+                          {booking.remaining_payment === 0 ? 'Paid' : 'Remaining'}
+                        </Badge>
+                        {booking.remaining_payment > 0 && (
+                          <Text size="xs" c="red" fw={500}>
+                            Rs {booking.remaining_payment.toLocaleString()}
+                          </Text>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        {booking.advance_payment_proof && booking.advance_payment_proof !== 'manual-booking-no-proof' ? (
+                          <Button
+                            size="xs"
+                            variant="light"
+                            color="green"
+                            leftSection={<IconEye size={14} />}
+                            onClick={() => {
+                              setSelectedPaymentProof({
+                                path: booking.advance_payment_proof,
+                                number: booking.booking_number,
+                              });
+                              setPaymentModalOpened(true);
+                            }}
+                          >
+                            Advance
+                          </Button>
+                        ) : (
+                          <Text size="xs" c="dimmed">-</Text>
+                        )}
+                        {booking.remaining_payment_proof ? (
+                          <Button
+                            size="xs"
+                            variant="light"
+                            color="blue"
+                            leftSection={<IconEye size={14} />}
+                            onClick={() => {
+                              setSelectedPaymentProof({
+                                path: booking.remaining_payment_proof,
+                                number: booking.booking_number,
+                              });
+                              setPaymentModalOpened(true);
+                            }}
+                          >
+                            Remaining
+                          </Button>
+                        ) : (
+                          <Text size="xs" c="dimmed">-</Text>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color={getStatusColor(booking.status)} variant="light">
+                        {booking.status}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        {booking.status === 'pending' && (
+                          <>
+                            <Button
+                              size="xs"
+                              color="green"
+                              variant="light"
+                              leftSection={<IconCheck size={16} />}
+                              onClick={() => handleApprove(booking.id)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="xs"
+                              color="red"
+                              variant="light"
+                              leftSection={<IconX size={16} />}
+                              onClick={() => {
+                                const reason = prompt('Reason for rejection:');
+                                if (reason) handleReject(booking.id, reason);
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                        {booking.status === 'approved' && booking.remaining_payment > 0 && (
+                          <Button
+                            size="xs"
+                            color="blue"
+                            variant="filled"
+                            leftSection={<IconCurrencyRupee size={16} />}
+                            onClick={() => {
+                              setSelectedPaymentBooking({
+                                id: booking.id,
+                                number: booking.booking_number,
+                                remaining: booking.remaining_payment,
+                              });
+                              setCompletePaymentOpened(true);
+                            }}
+                          >
+                            Complete Payment
+                          </Button>
+                        )}
+                        <Menu shadow="md">
+                          <Menu.Target>
+                            <ActionIcon variant="subtle">
+                              <IconDots size={16} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item
+                              leftSection={<IconEye size={16} />}
+                              onClick={() => {
+                                setSelectedBookingId(booking.id);
+                                setDetailsModalOpened(true);
+                              }}
+                            >
+                              View Details
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+
+          {bookings.length === 0 && !loading && (
+            <EmptyState
+              icon={<IconCalendarEvent size={64} />}
+              title="No Bookings Found"
+              description="Try adjusting your filters or search query to find bookings."
+              action={{
+                label: 'Clear Filters',
+                onClick: () => {
+                  setStatusFilter('all');
+                  setPaymentFilter('all');
+                  setSearchQuery('');
+                },
+              }}
+            />
+          )}
+        </Paper>
+        )}
+      </Stack>
+
+      {/* Modals */}
+      {selectedBookingId && (
+        <BookingDetailsModal
+          bookingId={selectedBookingId}
+          opened={detailsModalOpened}
+          onClose={() => {
+            setDetailsModalOpened(false);
+            setSelectedBookingId(null);
+          }}
+          onSuccess={fetchBookings}
+        />
+      )}
+
+      {selectedPaymentProof && (
+        <PaymentProofModal
+          opened={paymentModalOpened}
+          onClose={() => {
+            setPaymentModalOpened(false);
+            setSelectedPaymentProof(null);
+          }}
+          imagePath={selectedPaymentProof.path}
+          bookingNumber={selectedPaymentProof.number}
+        />
+      )}
+
+      <ManualBookingModal
+        opened={manualBookingOpened}
+        onClose={() => setManualBookingOpened(false)}
+        onSuccess={fetchBookings}
+      />
+
+      {selectedPaymentBooking && (
+        <CompletePaymentModal
+          opened={completePaymentOpened}
+          onClose={() => {
+            setCompletePaymentOpened(false);
+            setSelectedPaymentBooking(null);
+          }}
+          bookingId={selectedPaymentBooking.id}
+          bookingNumber={selectedPaymentBooking.number}
+          remainingAmount={selectedPaymentBooking.remaining}
+          onSuccess={fetchBookings}
+        />
+      )}
+    </Container>
+  );
+}

@@ -1,0 +1,271 @@
+i want to create management system for cricket ground business
+like where the people book there time slot and pay the payment and then come at that time to the footsaal and play at there alloted time 
+so currently they are doing all this mannually like and even many times 2 peoples get same time and it create clash and problem for us 
+
+and even they are saving all data in excel sheet and writing in notebook and also have to use calendar to see dates and assign teams etc and very difficult for now
+
+
+
+so want to take this to online and that will create ease for them
+
+Like what we want now:
+- will be building this web software that would be perfect and user friendly on laptop and 
+too much good and perfect on mobile like mostly all users will book from mobile
+
+- the web will have two main users admin , customer( those who come to book from that page)
+- admin will have all access and all details and everything and proper dashboard and a 
+proper visual chart and also a proper and professional calendar where admin can see all
+ detaisl clear and proper and also proper filters and proper monthly , weekly , current day 
+ filters then will show proper bookings for those days with proper timing booked and everythign
+  other
+
+
+- proper new page where can add any new customer/person and that page will have proper fields 
+you can suggest what we should add there like what main things we want are like name , contact
+ number, email, then liek can select date( and date shoudl automatically get loaded of the same 
+ date they are bookign and alos can change that to on which want to book then can select slots 
+ and will have proper view like suppose for whatever date they have chosed they can see all
+  slots booked on that day, and available slots and those slots will be of per hour like 1 user
+   can select multiple slots like can mark 2 o clock, 3 o clock, 8 o clock then rates will be
+    automatically get calculated and will appear on the total amount field like as per hour 
+    rates are (day time 1500/hr & night time 2000/hr ) and night time will start 
+    from 5 o clock currently is 5 o clock and will end at morning 7 o clock and we will change 
+    that later according to magrib and fajar namaz but admin can chnage that mannually
+     and booking will be 24/7 available like anyone can select booking for anytime
+
+
+- and these is about date and time( slots selection ) then next field will be of amount that 
+will get automatially created and will appear there accorsding to customer selection and and 
+that customer should will add payment screenshot or online paid amount script amount of advance
+ 500 payment even if choosed any slots etc but for any booking should can pay 500 advance 
+ amount not total amount liek if customer choosed 3 slots then total bill for day time will be
+  6000 so the customer can pay 500 advance and rest remaining amount at the end of there time 
+  and then admin can add the remaining payment image and can verify the payment and once that 
+  customer get verified then the system should automatically change status of that customer to
+   fully paid and can change that customer row to green soemthign liek as that is fully paid
+    and done and while customer booking they should be able to upload image of advance payment
+     amount script as i already told and and can also select hwo they paid 
+     like online, bank , cash etc  and these all things should be compulsory liek without 
+     adding then when customer click book appiontment then they should see a notification 
+     warning saying please fill all fields etc
+
+
+
+- also proper remainder texts should appear while customer filling form or admin adding the 
+customer from there id like 500 advance would be charged and also while selecting slots like 
+please select slots carefully and other remainders if needed then please also mention those 
+aswell properly 
+
+
+- so when after filling the form when cusotmer click book appointment then can see the all 
+detailes in proper form view basically that is for the customer to verify bookign etc and can 
+check that they have uplaoded correct image and proper button whcih says confirm bookign and a 
+button which says edit details and when that customer click that then the same form shoudl 
+appear what they are filling with proper same detaisl that they have added previsoly before 
+final submiting appionment and same process after that liek verifying and submit booking 
+request for approval then  proper messgae should appear liek which will say liek your request 
+is sended to admin for approval upon approving you will get alloted with this time and if any 
+other query then you can also contact us again thankyou and when the request is sended to admin 
+then suppose at the same time new customer start for booking slots then on those slots which 
+previously a previos customer booked should for those slots show status like under approval 
+and they cant select those slots they should be able to select available slots like other 
+slots
+
+
+
+- and dahsbaord page in admin user id will have proper dasbaord with proper total amount , 
+remainging etc and remainging approval requests etc everything properly and perfectly and 
+professiaonly and proepr graphs and proper daily , weekly, monthly statistics like proper and 
+also proper last 7 days bookings count and amount etc proper , and proper charts and graphs 
+
+
+
+- and calendar page where admin can see all details etc clearly like proper filters and etc 
+and other features that should be in calendar page which would help the admin visualize things 
+clearly and easily and proper dashboard and a proper visual chart and also a proper and 
+professional calendar where admin can see all detaisl clear and proper and also proper filters 
+and proper monthly , weekly , current day filters then will show proper bookings for those days 
+with proper timing booked and everythign other
+
+
+- and proper notifications page where admin can see all notifications like when new cutomer 
+booked the slots then admin can see then and a button that will open drop down then admin can 
+see proper buttons which says like approve the booking and when click on that then should take 
+to proepr form which that customer filled and booked the slots etc and here admin can see 
+advance payment amount script image and when click on that image then can see the iamge clearly 
+and properly in large view and a button there to close the image and then can click approve 
+booking so the bookign officially get approved and on calender should update to booked and in 
+main booking page like in table for that customer the admin should see proper 2 amounts boxex 
+like 1 for advance and 1 for remaing and these two boxex colors will be like red for reaming 
+and green for paid and also show proper payments in small sizez in those boxex and properly 
+
+
+- and in booking page properly admin can see all these properly liek in proper way with each customer details and a download data button on top and upon clicking that admin will get 2 options to like download in pdf format or n excel and if excel then proper excell sheet with all this data and proper data will get downlaoded and also in this page admin can add any new customer mannually
+- and these are main thigns that i want to add in this management system so if there are any more perfect and recommended featurs then also give them in prompts
+- and we are making database on supabase so tell me proper process of setup on that and also like properly what you needed any API from that and proper sql queries to create database and everyhitn using sql queries 
+-also everythign should be perfect and in proper way no wrong working and things that would affect us and make our data leakage or any other threat or security issue
+and on the booking page that we will share to customers no login required on that 
+
+
+as am going to make this whole project in vs code using vs code copilot ai agent that will build the whole website i will just give him the prompts 
+so you can give me proper detailed and perfect prompts that i will give to that copilot agent and that will build everything and in each prompt add proper message which says like "give proper sql queriues if required after this changing "
+and also keep creating isntructions and working done files
+
+and for css i want to use other best and professional and best option than tailwind css 
+
+so please give me all prompts for each section so i can keep giving prompts to vs code agent 1 by 1 and lets start this i dont want liek 1 prompt then i will ask you to give em 2nd one not liek i want everything and all prompts at once and also add proper messages liek i want professiaonl and perfect UI & UX for mobile screen and
+
+
+
+
+
+
+for usign later on:
+You are now acting as a combined team of:
+- 10,000 senior frontend engineers
+- 10,000 senior backend engineers
+- 10,000 UI/UX designers
+Each with 40–50 years of real-world production experience building booking, fintech, and SaaS systems.
+
+Your task:
+Transform the entire existing web application into an ultra-premium, enterprise-grade product with flawless UI/UX on both desktop and mobile.
+
+========================
+GLOBAL UI / UX STANDARDS
+========================
+- Use Mantine UI as base
+- Mobile-first approach (customers primarily on mobile)
+- Desktop dashboards optimized for large screens
+- Consistent spacing, typography, colors, and interactions
+- Every interaction must feel fast, smooth, and intentional
+- No Tailwind CSS
+- Use CSS Modules only where Mantine customization is insufficient
+
+========================
+DESIGN LANGUAGE
+========================
+Theme:
+- Professional sports-tech SaaS
+- Clean, modern, premium
+- Calm but powerful
+
+Color System:
+- Primary: Deep green / emerald (sports trust)
+- Secondary: Dark charcoal / graphite
+- Accent: Soft gold for highlights
+- Success: Clean green
+- Warning: Amber
+- Error: Red
+- Backgrounds:
+  - Admin: light neutral with contrast cards
+  - Public booking: clean, simple, focused
+
+Typography:
+- Headings: modern sans-serif (strong but readable)
+- Body: high readability, mobile optimized
+- Numbers and prices clearly emphasized
+- No decorative fonts
+
+========================
+MOBILE UX REQUIREMENTS
+========================
+- Thumb-friendly buttons
+- Sticky action buttons (Book / Confirm)
+- Bottom sheets for modals
+- Slot selector optimized for touch
+- Forms broken into logical steps
+- Clear visual feedback on every tap
+- No clutter
+- One action per screen where possible
+
+========================
+DESKTOP UX REQUIREMENTS
+========================
+- Dense but readable dashboards
+- Table row hover states
+- Keyboard navigation support
+- Right-click and power-user patterns where useful
+- Charts readable at a glance
+- Calendar optimized for quick scanning
+
+========================
+INTERACTION DETAILS
+========================
+- Loading skeletons instead of spinners
+- Micro-animations using Framer Motion
+- Smooth page transitions
+- Toast notifications for actions
+- Inline validation with helpful messages
+- Disabled states clearly visible
+- Success states visually satisfying
+
+========================
+ADMIN EXPERIENCE
+========================
+- Dashboard feels like a command center
+- Important data visible immediately
+- Pending approvals clearly highlighted
+- Calendar is the core navigation tool
+- Payments visually separated (advance vs remaining)
+- Green rows for completed bookings
+- Red indicators for pending payments
+- Filters feel instant and intuitive
+
+========================
+PUBLIC BOOKING EXPERIENCE
+========================
+- Extremely simple and confidence-building
+- Clear instructions at each step
+- Visible warnings for advance payment
+- Slot conflicts clearly explained
+- Review screen feels like a receipt
+- Confirmation screen reassures the user
+- No confusion at any stage
+
+========================
+ACCESSIBILITY & QUALITY
+========================
+- High contrast where needed
+- Touch targets minimum 44px
+- Proper aria labels
+- Keyboard accessibility
+- Error prevention over error handling
+
+========================
+TECHNICAL REQUIREMENTS
+========================
+- Refactor components if needed
+- Extract reusable UI patterns
+- Remove duplicated styles
+- Optimize rendering performance
+- Ensure responsiveness across:
+  - Small mobile
+  - Large mobile
+  - Tablet
+  - Laptop
+  - Large desktop
+
+========================
+DELIVERABLES
+========================
+- Update all UI components
+- Improve layouts and spacing
+- Improve color usage and consistency
+- Improve mobile UX everywhere
+- Improve admin dashboards and tables
+- Improve booking forms and flow
+- Add missing UX polish wherever needed
+
+Add clear comments explaining:
+- Why changes were made
+- UX reasoning where relevant
+
+Do NOT change business logic unless necessary.
+Do NOT break existing functionality.
+
+At the end:
+- Ensure the UI feels like it was crafted by a world-class product team
+- Ensure the application is production-ready
+- Ensure the UI looks expensive, trustworthy, and professional
+
+If any SQL or backend structure must be adjusted to support better UX, provide proper SQL queries after the changes.
