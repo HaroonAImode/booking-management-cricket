@@ -6,7 +6,7 @@
  * This page is outside the admin layout to prevent sidebar showing before login
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Paper,
@@ -20,11 +20,13 @@ import {
   Stack,
   Box,
   ThemeIcon,
+  Loader,
+  Center,
 } from '@mantine/core';
 import { IconAlertCircle, IconTrophy, IconShield } from '@tabler/icons-react';
 import { signInAdmin } from '@/lib/supabase/auth';
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -215,5 +217,32 @@ export default function AdminLoginPage() {
         </Stack>
       </Container>
     </Box>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box
+          style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Center>
+            <Stack align="center" gap="md">
+              <Loader size="lg" color="white" />
+              <Text c="white" size="lg">Loading...</Text>
+            </Stack>
+          </Center>
+        </Box>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
