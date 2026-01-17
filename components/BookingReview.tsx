@@ -27,7 +27,7 @@ import {
   IconCheck,
 } from '@tabler/icons-react';
 import { BookingSummary } from '@/types';
-import { formatTimeDisplay } from '@/lib/supabase/bookings';
+import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 interface BookingReviewProps {
   opened: boolean;
@@ -144,13 +144,9 @@ export default function BookingReview({
                   <Text size="xs" c="dimmed" mb={4}>
                     Day Slots (PKR 1,500/hr):
                   </Text>
-                  <Group gap="xs">
-                    {daySlots.map((hour) => (
-                      <Badge key={hour} size="md" color="blue" variant="light">
-                        {formatTimeDisplay(hour)}
-                      </Badge>
-                    ))}
-                  </Group>
+                  <Text size="md" fw={500} c="blue">
+                    {formatSlotRanges(daySlots)}
+                  </Text>
                 </Box>
               )}
 
@@ -159,13 +155,9 @@ export default function BookingReview({
                   <Text size="xs" c="dimmed" mb={4}>
                     Night Slots (PKR 2,000/hr):
                   </Text>
-                  <Group gap="xs">
-                    {nightSlots.map((hour) => (
-                      <Badge key={hour} size="md" color="violet" variant="light">
-                        {formatTimeDisplay(hour)} 🌙
-                      </Badge>
-                    ))}
-                  </Group>
+                  <Text size="md" fw={500} c="violet">
+                    {formatSlotRanges(nightSlots)} 🌙
+                  </Text>
                 </Box>
               )}
             </Stack>

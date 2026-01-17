@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 // GET /api/admin/calendar - Fetch calendar bookings
 export const GET = withAdminAuth(async (request, { adminProfile }) => {
@@ -37,32 +38,55 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     }
 
     // Transform to FullCalendar event format
-    const events = bookings?.map((booking: any) => ({
-      id: `${booking.booking_id}-${booking.slot_hour}`,
-      bookingId: booking.booking_id,
-      title: `${booking.customer_name} - ${booking.slot_hour}:00`,
-      start: `${booking.booking_date}T${String(booking.slot_hour).padStart(2, '0')}:00:00`,
-      end: `${booking.booking_date}T${String(booking.slot_hour + 1).padStart(2, '0')}:00:00`,
-      backgroundColor: getStatusColor(booking.status),
-      borderColor: getStatusColor(booking.status),
-      extendedProps: {
-        bookingNumber: booking.booking_number,
-        customerName: booking.customer_name,
-        customerPhone: booking.customer_phone,
-        customerEmail: booking.customer_email,
-        status: booking.status,
-        totalHours: booking.total_hours,
-        totalAmount: booking.total_amount,
-        advancePayment: booking.advance_payment,
-        remainingPayment: booking.remaining_payment,
-        isNightRate: booking.is_night_rate,
-        hourlyRate: booking.hourly_rate,
-        createdAt: booking.created_at,
-        pendingExpiresAt: booking.pending_expires_at,
-        customerNotes: booking.customer_notes,
-        adminNotes: booking.admin_notes,
-      },
-    })) || [];
+    // Group slots by booking_id to create merged time ranges
+    const bookingsMap = new Map();
+    bookings?.forEach((booking: any) => {
+      if (!bookingsMap.has(booking.booking_id)) {
+        bookingsMap.set(booking.booking_id, {
+          ...booking,
+          slots: [booking.slot_hour]
+        });
+      } else {
+        bookingsMap.get(booking.booking_id).slots.push(booking.slot_hour);
+      }
+    });
+
+    const events = Array.from(bookingsMap.values()).flatMap((booking: any) => {
+      // Get first and last slot for the event time range
+      const sortedSlots = [...booking.slots].sort((a, b) => a - b);
+      const firstSlot = sortedSlots[0];
+      const lastSlot = sortedSlots[sortedSlots.length - 1];
+      
+      // Format slot ranges for title
+      const slotRanges = formatSlotRanges(booking.slots);
+      
+      return {
+        id: booking.booking_id,
+        bookingId: booking.booking_id,
+        title: `${booking.customer_name} - ${slotRanges}`,
+        start: `${booking.booking_date}T${String(firstSlot).padStart(2, '0')}:00:00`,
+        end: `${booking.booking_date}T${String(lastSlot + 1).padStart(2, '0')}:00:00`,
+        backgroundColor: getStatusColor(booking.status),
+        borderColor: getStatusColor(booking.status),
+        extendedProps: {
+          bookingNumber: booking.booking_number,
+          customerName: booking.customer_name,
+          customerPhone: booking.customer_phone,
+          customerEmail: booking.customer_email,
+          status: booking.status,
+          totalHours: booking.total_hours,
+          totalAmount: booking.total_amount,
+          advancePayment: booking.advance_payment,
+          remainingPayment: booking.remaining_payment,
+          isNightRate: booking.is_night_rate,
+          hourlyRate: booking.hourly_rate,
+          createdAt: booking.created_at,
+          pendingExpiresAt: booking.pending_expires_at,
+          customerNotes: booking.customer_notes,
+          adminNotes: booking.admin_notes,
+        },
+      };
+    }) || [];
 
     return NextResponse.json({
       success: true,

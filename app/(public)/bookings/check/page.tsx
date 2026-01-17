@@ -37,6 +37,7 @@ import {
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import jsPDF from 'jspdf';
+import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 interface Booking {
   id: string;
@@ -183,7 +184,7 @@ export default function CheckBookingPage() {
     })}`, 25, y);
     
     y += 7;
-    const slots = booking.slots.map(s => `${s.slot_hour}:00-${s.slot_hour + 1}:00${s.is_night_rate ? ' 🌙' : ''}`).join(', ');
+    const slots = formatSlotRanges(booking.slots.map(s => s.slot_hour));
     doc.text(`Time Slots: ${slots}`, 25, y);
     
     y += 7;
@@ -448,18 +449,10 @@ export default function CheckBookingPage() {
                         </Group>
                         <Group gap="xs">
                           <IconClock size={16} />
-                          <Group gap={4}>
-                            {booking.slots.map((slot, idx) => (
-                              <Badge
-                                key={idx}
-                                size="sm"
-                                color={slot.is_night_rate ? 'indigo' : 'yellow'}
-                              >
-                                {slot.slot_hour}:00-{slot.slot_hour + 1}:00
-                                {slot.is_night_rate && ' 🌙'}
-                              </Badge>
-                            ))}
-                          </Group>
+                          <Text size="md" fw={500}>
+                            {formatSlotRanges(booking.slots.map(s => s.slot_hour))}
+                            {booking.slots.some(s => s.is_night_rate) && ' 🌙'}
+                          </Text>
                         </Group>
                       </Stack>
                     </div>

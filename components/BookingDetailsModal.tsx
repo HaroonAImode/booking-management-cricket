@@ -33,6 +33,7 @@ import {
   IconPhoto,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 interface BookingDetailsModalProps {
   bookingId: string;
@@ -454,19 +455,12 @@ export default function BookingDetailsModal({
             <Text fw={600} mb="sm">
               Booked Slots
             </Text>
-            <Group gap="xs">
-              {slots.map((slot: any, index: number) => (
-                <Badge
-                  key={index}
-                  size="lg"
-                  variant="light"
-                  color={slot.is_night_rate ? 'indigo' : 'yellow'}
-                >
-                  {slot.slot_hour}:00 - {slot.slot_hour + 1}:00
-                  {slot.is_night_rate && ' 🌙'}
-                </Badge>
-              ))}
-            </Group>
+            <Text size="md" fw={500} c="blue">
+              {formatSlotRanges(slots.map((slot: any) => slot.slot_hour))}
+            </Text>
+            <Text size="xs" c="dimmed" mt="xs">
+              {slots.some((slot: any) => slot.is_night_rate) && '🌙 Includes night rate slots'}
+            </Text>
           </Paper>
 
           {/* Notes */}

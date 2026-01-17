@@ -62,6 +62,7 @@ import ManualBookingModal from '@/components/ManualBookingModal';
 import CompletePaymentModal from '@/components/CompletePaymentModal';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import { formatTimeDisplay, formatSlotRanges } from '@/lib/supabase/bookings';
 
 interface Booking {
   id: string;
@@ -280,7 +281,7 @@ export default function AdminBookingsPage() {
       'Payment Method': b.advance_payment_method,
       'Status': b.status,
       'Created At': new Date(b.created_at).toLocaleString(),
-      'Slots': b.slots.map(s => formatTimeDisplay(s.slot_hour)).join(', '),
+      'Slots': formatSlotRanges(b.slots.map(s => s.slot_hour)),
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -452,23 +453,12 @@ export default function AdminBookingsPage() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Group gap={4}>
-                        {booking.slots.slice(0, 3).map((slot, idx) => (
-                          <Badge
-                            key={idx}
-                            size="sm"
-                            variant="dot"
-                            color={slot.is_night_rate ? 'indigo' : 'yellow'}
-                          >
-                            {formatTimeDisplay(slot.slot_hour)}
-                          </Badge>
-                        ))}
-                        {booking.slots.length > 3 && (
-                          <Badge size="sm" variant="light">
-                            +{booking.slots.length - 3}
-                          </Badge>
-                        )}
-                      </Group>
+                      <Text size="sm" fw={500}>
+                        {formatSlotRanges(booking.slots.map(s => s.slot_hour))}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {booking.slots.some(s => s.is_night_rate) && '🌙 Night rates'}
+                      </Text>
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" fw={600}>

@@ -441,6 +441,88 @@ export function formatDateTime12Hour(date: string | Date): string {
 }
 
 /**
+ * Merge continuous slot hours into ranges
+ * @param slotHours - Array of slot hours (e.g., [14, 15, 16, 19, 20])
+ * @returns Array of ranges (e.g., [[14, 17], [19, 21]])
+ */
+export function mergeSlotRanges(slotHours: number[]): number[][] {
+  if (slotHours.length === 0) return [];
+  
+  // Sort the hours
+  const sorted = [...slotHours].sort((a, b) => a - b);
+  const ranges: number[][] = [];
+  let rangeStart = sorted[0];
+  let rangeEnd = sorted[0] + 1; // End is exclusive (slot 14 means 14:00-15:00)
+  
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === sorted[i - 1] + 1) {
+      // Continuous slot, extend the range
+      rangeEnd = sorted[i] + 1;
+    } else {
+      // Gap found, save current range and start new one
+      ranges.push([rangeStart, rangeEnd]);
+      rangeStart = sorted[i];
+      rangeEnd = sorted[i] + 1;
+    }
+  }
+  
+  // Add the last range
+  ranges.push([rangeStart, rangeEnd]);
+  
+  return ranges;
+}
+
+/**
+ * Format slot hours as human-readable ranges
+ * @param slotHours - Array of slot hours (e.g., [14, 15, 16, 19, 20])
+ * @returns Formatted string (e.g., "2:00 PM - 5:00 PM, 7:00 PM - 9:00 PM")
+ */
+export function formatSlotRanges(slotHours: number[]): string {
+  if (slotHours.length === 0) return '';
+  
+  const ranges = mergeSlotRanges(slotHours);
+  
+  return ranges.map(([start, end]) => {
+    if (end === start + 1) {
+      // Single slot (e.g., just 14:00-15:00)
+      return formatTimeRange(start);
+    }
+    // Multiple continuous slots
+    return `${formatTimeDisplay(start)} - ${formatTimeDisplay(end)}`;
+  }).join(', ');
+}
+
+/**
+ * Format slot hours with night indicators
+ * @param slotHours - Array of slot hours
+ * @param nightStartHour - Night rate start hour (default 17)
+ * @param nightEndHour - Night rate end hour (default 7)
+ * @returns Formatted string with 🌙 for night slots
+ */
+export function formatSlotRangesWithNightIndicator(
+  slotHours: number[],
+  nightStartHour: number = 17,
+  nightEndHour: number = 7
+): string {
+  if (slotHours.length === 0) return '';
+  
+  const ranges = mergeSlotRanges(slotHours);
+  
+  return ranges.map(([start, end]) => {
+    // Check if any slot in this range is a night slot
+    const hasNightSlot = slotHours.some(hour => 
+      hour >= start && hour < end && isNightRate(hour, nightStartHour, nightEndHour)
+    );
+    
+    const rangeText = end === start + 1
+      ? formatTimeRange(start)
+      : `${formatTimeDisplay(start)} - ${formatTimeDisplay(end)}`;
+    
+    return hasNightSlot ? `${rangeText} 🌙` : rangeText;
+  }).join(', ');
+}
+
+/**
  * Format date for SQL (YYYY-MM-DD)
  */
 export function formatDateForSQL(date: Date): string {
