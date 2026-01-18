@@ -109,9 +109,12 @@ export interface SystemSettings {
 export interface SlotInfo {
   slot_hour: number;
   slot_time: string;
+  time_display?: string; // Added for display formatting
   is_available: boolean;
   current_status: 'available' | 'pending' | 'booked' | 'cancelled';
   hourly_rate: number;
+  is_night_rate?: boolean; // Added for night rate indicator
+  is_past?: boolean; // Added for past time indicator
 }
 
 // ========================================

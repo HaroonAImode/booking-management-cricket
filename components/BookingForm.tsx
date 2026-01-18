@@ -427,11 +427,11 @@ export default function BookingForm({
           overflowX: 'hidden',
         }}
       >
-        <Stack gap={{ base: "md", sm: "xl" }} style={{ maxWidth: '100%' }}>
+        <Stack gap="xl" style={{ maxWidth: '100%' }}>
           {/* Header */}
           <Stack gap="xs">
-            <Title order={1} size={{ base: "h2", sm: "h1" }}>Book Cricket Ground</Title>
-            <Text c="dimmed" size={{ base: "sm", sm: "md" }}>Fill in the details below to book your time slot</Text>
+            <Title order={1} size="h1">Book Cricket Ground</Title>
+            <Text c="dimmed" size="md">Fill in the details below to book your time slot</Text>
           </Stack>
 
           {/* Customer Information */}
@@ -445,7 +445,7 @@ export default function BookingForm({
             }}
           >
             <Stack gap="md" style={{ maxWidth: '100%' }}>
-              <Title order={3} size={{ base: "h4", sm: "h3" }}>Customer Information</Title>
+              <Title order={3} size="h3">Customer Information</Title>
               <Divider />
 
               <TextInput
@@ -473,7 +473,7 @@ export default function BookingForm({
           {!hideCalendar && (
             <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
               <Stack gap="md">
-                <Title order={3} size={{ base: "h4", sm: "h3" }}>Booking Details</Title>
+                <Title order={3} size="h3">Booking Details</Title>
                 <Divider />
 
                 <DatePickerInput
@@ -524,7 +524,7 @@ export default function BookingForm({
           {hideCalendar && (
             <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
               <Stack gap="md">
-                <Title order={3} size={{ base: "h4", sm: "h3" }}>Additional Information</Title>
+                <Title order={3} size="h3">Additional Information</Title>
                 <Divider />
 
                 <Textarea
@@ -549,7 +549,7 @@ export default function BookingForm({
             }}
           >
             <Stack gap="md" style={{ maxWidth: '100%' }}>
-              <Title order={3} size={{ base: "h4", sm: "h3" }}>Payment Information</Title>
+              <Title order={3} size="h3">Payment Information</Title>
               <Divider />
 
               {/* Amount Summary */}
@@ -687,7 +687,7 @@ export default function BookingForm({
           >
             <Stack gap="md" align="center">
               <Box ta="center">
-                <Text size={{ base: "md", sm: "lg" }} fw={600} c="white" mb={4}>
+                <Text size="lg" fw={600} c="white" mb={4}>
                   Already Booked? Check Your Status
                 </Text>
                 <Text size="sm" c="rgba(255,255,255,0.95)">

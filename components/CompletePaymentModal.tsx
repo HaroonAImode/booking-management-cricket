@@ -72,7 +72,9 @@ export default function CompletePaymentModal({
       // Create form data
       const formData = new FormData();
       formData.append('paymentMethod', paymentMethod);
-      formData.append('paymentProof', paymentProof);
+      if (paymentProof) {
+        formData.append('paymentProof', paymentProof);
+      }
       if (adminNotes) {
         formData.append('adminNotes', adminNotes);
       }

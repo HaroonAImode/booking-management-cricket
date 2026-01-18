@@ -217,7 +217,7 @@ export default function CalendarFirstBooking() {
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
       <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
-        <Stack gap={{ base: 'md', sm: 'xl' }}>
+        <Stack gap="xl">
           {/* Header */}
           <Paper
             p={{ base: 'lg', sm: 'xl' }}
@@ -244,12 +244,12 @@ export default function CalendarFirstBooking() {
                 order={1}
                 c="white"
                 ta="center"
-                size={{ base: 'h2', sm: 'h1' }}
+                size='md'
                 fw={900}
               >
                 Book Your Slot
               </Title>
-              <Text c="#D1D1D1" ta="center" size={{ base: 'sm', sm: 'md' }}>
+              <Text c="#D1D1D1" ta="center" size='md'>
                 {activeStep === 0
                   ? 'View availability & select your preferred time slots'
                   : 'Complete your booking details'}
@@ -262,7 +262,7 @@ export default function CalendarFirstBooking() {
             <Stepper
               active={activeStep}
               onStepClick={setActiveStep}
-              size={{ base: 'xs', sm: 'sm' }}
+              size='md'
               color="yellow"
             >
               <Stepper.Step
@@ -303,7 +303,7 @@ export default function CalendarFirstBooking() {
                           ⚡ TODAY'S AVAILABILITY
                         </Title>
                       </Group>
-                      <Group gap="xs" wrap="wrap" justify={{ base: 'center', sm: 'flex-end' }} style={{ width: '100%', sm: { width: 'auto' } }}>
+                      <Group gap="xs" wrap="wrap" justify="flex-end" style={{ width: '100%' }}>
                         {/* Show Previous Day button only if viewing a future date */}
                         {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toDateString() !== new Date().toDateString() && (
                           <Button
@@ -319,7 +319,7 @@ export default function CalendarFirstBooking() {
                                 setQuickViewDate(prevDay);
                               }
                             }}
-                            fullWidth={{ base: true, xs: false }}
+                            fullWidth
                           >
                             ← Previous Day
                           </Button>
@@ -334,7 +334,6 @@ export default function CalendarFirstBooking() {
                             nextDay.setDate(nextDay.getDate() + 1);
                             setQuickViewDate(nextDay);
                           }}
-                          fullWidth={{ base: true, xs: false }}
                         >
                           Next Day →
                         </Button>
@@ -344,7 +343,6 @@ export default function CalendarFirstBooking() {
                           leftSection={<IconCalendar size={16} />}
                           style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                           onClick={() => setShowDatePicker(true)}
-                          fullWidth={{ base: true, xs: false }}
                         >
                           Select Any Date
                         </Button>
@@ -506,78 +504,17 @@ export default function CalendarFirstBooking() {
                                 value={quickViewDate}
                                 onChange={(date) => {
                                   if (date) {
-                                    const dateObj = date instanceof Date ? date : new Date(date);
-                                    setQuickViewDate(dateObj);
+                                    setQuickViewDate(new Date(date));
                                     setShowDatePicker(false);
                                   }
                                 }}
                                 minDate={new Date()}
                                 size="lg"
                                 styles={{
-                                  calendar: {
-                                    width: '100%',
-                                  },
                                   calendarHeader: {
                                     borderBottom: '2px solid #F5B800',
                                     paddingBottom: '12px',
                                     marginBottom: '12px',
-                                  },
-                                  calendarHeaderControl: {
-                                    color: '#1A1A1A',
-                                    border: '2px solid #F5B800',
-                                    '&:hover': {
-                                      background: '#FFF9E6',
-                                    },
-                                  },
-                                  calendarHeaderLevel: {
-                                    color: '#1A1A1A',
-                                    fontWeight: 900,
-                                    fontSize: '18px',
-                                    '&:hover': {
-                                      background: '#FFF9E6',
-                                    },
-                                  },
-                                  monthCell: {
-                                    color: '#1A1A1A',
-                                    fontWeight: 700,
-                                    '&:hover': {
-                                      background: '#FFF9E6',
-                                    },
-                                  },
-                                  yearCell: {
-                                    color: '#1A1A1A',
-                                    fontWeight: 700,
-                                    '&:hover': {
-                                      background: '#FFF9E6',
-                                    },
-                                  },
-                                  day: {
-                                    color: '#1A1A1A',
-                                    fontWeight: 700,
-                                    fontSize: '14px',
-                                    '&:hover': {
-                                      background: '#FFF9E6',
-                                    },
-                                    '&[data-selected]': {
-                                      background: '#F5B800',
-                                      color: '#1A1A1A',
-                                      fontWeight: 900,
-                                      border: '2px solid #1A1A1A',
-                                    },
-                                    '&[data-disabled]': {
-                                      color: '#D1D1D1',
-                                      textDecoration: 'line-through',
-                                    },
-                                    '&[data-weekend]': {
-                                      color: '#F5B800',
-                                      fontWeight: 900,
-                                    },
-                                  },
-                                  weekday: {
-                                    color: '#6B7280',
-                                    fontWeight: 900,
-                                    fontSize: '12px',
-                                    textTransform: 'uppercase',
                                   },
                                 }}
                               />
@@ -655,7 +592,7 @@ export default function CalendarFirstBooking() {
                 <Stack gap="md">
                   <Group gap="xs">
                     <IconCalendar size={24} color="#F5B800" />
-                    <Title order={3} size={{ base: 'h5', sm: 'h4' }} c="white" fw={900}>
+                    <Title order={3} size='md' c="white" fw={900}>
                       1. Select Date
                     </Title>
                   </Group>
@@ -807,7 +744,7 @@ export default function CalendarFirstBooking() {
                     <Group justify="space-between" wrap="wrap">
                       <Group gap="xs">
                         <IconClock size={20} color="#F5B800" />
-                        <Title order={3} size={{ base: 'h5', sm: 'h4' }}>
+                        <Title order={3} size='md'>
                           2. Select Time Slots
                         </Title>
                       </Group>

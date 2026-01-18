@@ -25,15 +25,34 @@ export default function PublicLayout({
     <AppShell
       header={{ height: 60 }}
       padding={{ base: 'sm', sm: 'md' }}
+      styles={{
+        main: {
+          position: 'relative',
+          zIndex: 1,
+        },
+      }}
     >
       {/* Public navigation header */}
-      <AppShell.Header>
+      <AppShell.Header
+        styles={{
+          header: {
+            position: 'fixed',
+            zIndex: 100,
+          },
+        }}
+      >
         <PublicHeader />
       </AppShell.Header>
 
       {/* Main content area */}
       <AppShell.Main pt={{ base: 'md', sm: 'md' }}>
-        <Container size="xl">
+        <Container 
+          size="xl"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
           {children}
         </Container>
       </AppShell.Main>

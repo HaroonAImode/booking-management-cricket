@@ -65,13 +65,14 @@ export default function SlotSelector({
         allSlots.push({
           ...existingSlot,
           is_available: isPast ? false : existingSlot.is_available,
-          is_past: isPast,
+          is_past: isPast || undefined,
         });
       } else {
         // Create a slot entry for hours not returned by the API
         const nightRate = isNightRate(hour, nightStart, nightEnd);
         allSlots.push({
           slot_hour: hour,
+          slot_time: `${hour}:00`, // Add required slot_time field
           time_display: formatTimeDisplay(hour),
           is_available: !isPast, // Available unless it's in the past
           is_night_rate: nightRate,
@@ -280,7 +281,7 @@ export default function SlotSelector({
                   )}
                 </Group>
                 <Text
-                  size={{ base: 'xs', sm: 'sm' }}
+                  size="sm"
                   fw={selectedSlots.includes(slot.slot_hour) ? 900 : 600}
                   ta="center"
                   c={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
