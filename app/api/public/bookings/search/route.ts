@@ -21,8 +21,41 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Build query
-    let query = supabase
+    // First, get customer IDs that match the search criteria
+    let customerQuery = supabase
+      .from('customers')
+      .select('id');
+
+    if (name) {
+      customerQuery = customerQuery.ilike('name', `%${name}%`);
+    }
+    if (phone) {
+      customerQuery = customerQuery.ilike('phone', `%${phone}%`);
+    }
+
+    const { data: customersData, error: customersError } = await customerQuery;
+
+    if (customersError) {
+      console.error('Customer search error:', customersError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to search customers' },
+        { status: 500 }
+      );
+    }
+
+    // If no customers found, return empty results
+    if (!customersData || customersData.length === 0) {
+      return NextResponse.json({
+        success: true,
+        bookings: [],
+      });
+    }
+
+    // Get customer IDs
+    const customerIds = customersData.map(c => c.id);
+
+    // Now query bookings for those customers
+    const { data: bookingsData, error } = await supabase
       .from('bookings')
       .select(`
         id,
@@ -34,6 +67,7 @@ export async function GET(request: NextRequest) {
         remaining_payment,
         status,
         created_at,
+        customer_id,
         customers (
           id,
           name,
@@ -44,17 +78,8 @@ export async function GET(request: NextRequest) {
           is_night_rate
         )
       `)
+      .in('customer_id', customerIds)
       .order('created_at', { ascending: false });
-
-    // Add filters
-    if (name) {
-      query = query.ilike('customers.name', `%${name}%`);
-    }
-    if (phone) {
-      query = query.ilike('customers.phone', `%${phone}%`);
-    }
-
-    const { data: bookingsData, error } = await query;
 
     if (error) {
       console.error('Database error:', error);
