@@ -24,7 +24,7 @@ import {
   SimpleGrid,
   Stepper,
 } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
+import { DatePickerInput, DatePicker } from '@mantine/dates';
 import {
   IconCalendar,
   IconClock,
@@ -286,23 +286,24 @@ export default function CalendarFirstBooking() {
                   }}
                 >
                   <Stack gap="md">
-                    <Group justify="space-between" align="center" wrap="wrap">
-                      <Group gap="xs">
+                    <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+                      <Group gap="xs" style={{ flexGrow: 1 }}>
                         <IconCheck size={24} color="#1A1A1A" />
-                        <Title order={2} size={{ base: 'h4', sm: 'h3' }} c="#1A1A1A" fw={900}>
+                        <Title order={2} style={{ fontSize: 'clamp(1.2rem, 4vw, 1.75rem)' }} c="#1A1A1A" fw={900}>
                           ⚡ TODAY'S AVAILABILITY
                         </Title>
                       </Group>
-                      <Group gap="xs">
+                      <Group gap="xs" wrap="wrap" justify={{ base: 'center', sm: 'flex-end' }} style={{ width: '100%', sm: { width: 'auto' } }}>
                         <Button
                           size="sm"
                           variant="filled"
-                          style={{ background: '#1A1A1A', color: '#F5B800' }}
+                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                           onClick={() => {
                             const nextDay = new Date(quickViewDate);
                             nextDay.setDate(nextDay.getDate() + 1);
                             setQuickViewDate(nextDay);
                           }}
+                          fullWidth={{ base: true, xs: false }}
                         >
                           Next Day →
                         </Button>
@@ -310,8 +311,9 @@ export default function CalendarFirstBooking() {
                           size="sm"
                           variant="filled"
                           leftSection={<IconCalendar size={16} />}
-                          style={{ background: '#1A1A1A', color: '#F5B800' }}
+                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                           onClick={() => setShowDatePicker(true)}
+                          fullWidth={{ base: true, xs: false }}
                         >
                           Select Any Date
                         </Button>
@@ -407,51 +409,123 @@ export default function CalendarFirstBooking() {
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          background: 'rgba(0, 0, 0, 0.7)',
+                          background: 'rgba(0, 0, 0, 0.8)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           zIndex: 1000,
+                          padding: '16px',
                         }}
                         onClick={() => setShowDatePicker(false)}
                       >
                         <Paper
-                          p="xl"
+                          p={{ base: 'md', sm: 'xl' }}
                           radius="lg"
                           style={{
                             background: '#FFFFFF',
                             border: '3px solid #F5B800',
-                            maxWidth: '400px',
-                            width: '90%',
+                            maxWidth: '450px',
+                            width: '100%',
+                            maxHeight: '90vh',
+                            overflow: 'auto',
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Stack gap="md">
-                            <Title order={3} c="#1A1A1A">Select Date to View</Title>
-                            <DatePickerInput
-                              value={quickViewDate}
-                              onChange={(date) => {
-                                if (date) {
-                                  const dateObj = date instanceof Date ? date : new Date(date);
-                                  setQuickViewDate(dateObj);
-                                  setShowDatePicker(false);
-                                }
-                              }}
-                              placeholder="Select date"
-                              minDate={new Date()}
-                              size="lg"
-                              styles={{
-                                input: {
-                                  borderWidth: '2px',
-                                  borderColor: '#F5B800',
-                                },
-                              }}
-                            />
+                          <Stack gap="lg">
+                            <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
+                            
+                            <Box style={{ display: 'flex', justifyContent: 'center' }}>
+                              <DatePicker
+                                value={quickViewDate}
+                                onChange={(date) => {
+                                  if (date) {
+                                    setQuickViewDate(date);
+                                    setShowDatePicker(false);
+                                  }
+                                }}
+                                minDate={new Date()}
+                                size="lg"
+                                styles={{
+                                  calendar: {
+                                    width: '100%',
+                                  },
+                                  calendarHeader: {
+                                    borderBottom: '2px solid #F5B800',
+                                    paddingBottom: '12px',
+                                    marginBottom: '12px',
+                                  },
+                                  calendarHeaderControl: {
+                                    color: '#1A1A1A',
+                                    border: '2px solid #F5B800',
+                                    '&:hover': {
+                                      background: '#FFF9E6',
+                                    },
+                                  },
+                                  calendarHeaderLevel: {
+                                    color: '#1A1A1A',
+                                    fontWeight: 900,
+                                    fontSize: '18px',
+                                    '&:hover': {
+                                      background: '#FFF9E6',
+                                    },
+                                  },
+                                  monthCell: {
+                                    color: '#1A1A1A',
+                                    fontWeight: 700,
+                                    '&:hover': {
+                                      background: '#FFF9E6',
+                                    },
+                                  },
+                                  yearCell: {
+                                    color: '#1A1A1A',
+                                    fontWeight: 700,
+                                    '&:hover': {
+                                      background: '#FFF9E6',
+                                    },
+                                  },
+                                  day: {
+                                    color: '#1A1A1A',
+                                    fontWeight: 700,
+                                    fontSize: '14px',
+                                    '&:hover': {
+                                      background: '#FFF9E6',
+                                    },
+                                    '&[data-selected]': {
+                                      background: '#F5B800',
+                                      color: '#1A1A1A',
+                                      fontWeight: 900,
+                                      border: '2px solid #1A1A1A',
+                                    },
+                                    '&[data-disabled]': {
+                                      color: '#D1D1D1',
+                                      textDecoration: 'line-through',
+                                    },
+                                    '&[data-weekend]': {
+                                      color: '#F5B800',
+                                      fontWeight: 900,
+                                    },
+                                  },
+                                  weekday: {
+                                    color: '#6B7280',
+                                    fontWeight: 900,
+                                    fontSize: '12px',
+                                    textTransform: 'uppercase',
+                                  },
+                                }}
+                              />
+                            </Box>
+
                             <Button
                               fullWidth
+                              size="lg"
                               variant="outline"
                               onClick={() => setShowDatePicker(false)}
-                              style={{ borderColor: '#1A1A1A', color: '#1A1A1A' }}
+                              style={{ 
+                                borderColor: '#1A1A1A', 
+                                color: '#1A1A1A',
+                                borderWidth: '2px',
+                                fontWeight: 700,
+                              }}
                             >
                               Cancel
                             </Button>
