@@ -33,6 +33,7 @@ import {
   IconArrowLeft,
   IconInfoCircle,
   IconCheck,
+  IconAlertCircle,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import BookingForm from '@/components/BookingForm';
@@ -131,18 +132,67 @@ export default function CalendarFirstBooking() {
   };
 
   const handleSlotToggle = (hour: number) => {
-    setSelectedSlots((prev) =>
-      prev.includes(hour) ? prev.filter((h) => h !== hour) : [...prev, hour].sort((a, b) => a - b)
-    );
+    setSelectedSlots((prev) => {
+      // If deselecting, just remove it
+      if (prev.includes(hour)) {
+        return prev.filter((h) => h !== hour);
+      }
+
+      // If selecting, check if it's consecutive with existing selections
+      const newSelection = [...prev, hour].sort((a, b) => a - b);
+      
+      // Check if all slots are consecutive
+      if (newSelection.length > 1) {
+        for (let i = 1; i < newSelection.length; i++) {
+          if (newSelection[i] - newSelection[i - 1] !== 1) {
+            // Not consecutive!
+            notifications.show({
+              title: '⚠️ Non-Consecutive Time Slots',
+              message: 'Please select consecutive time slots only. For different time periods, create separate bookings.',
+              color: 'orange',
+              autoClose: 5000,
+              icon: <IconInfoCircle size={18} />,
+            });
+            return prev; // Don't add the slot
+          }
+        }
+      }
+
+      return newSelection;
+    });
   };
 
   const canProceedToForm = selectedDate && selectedSlots.length > 0;
 
-  const proceedToForm = () => {
-    if (canProceedToForm) {
-      setActiveStep(1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const validateConsecutiveSlots = (): boolean => {
+    if (selectedSlots.length <= 1) return true;
+    
+    const sorted = [...selectedSlots].sort((a, b) => a - b);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] !== 1) {
+        return false;
+      }
     }
+    return true;
+  };
+
+  const proceedToForm = () => {
+    if (!canProceedToForm) return;
+
+    // Final validation check
+    if (!validateConsecutiveSlots()) {
+      notifications.show({
+        title: '⚠️ Invalid Time Selection',
+        message: 'Your selected time slots are not consecutive. Please select continuous hours only (e.g., 4 PM, 5 PM, 6 PM).',
+        color: 'red',
+        autoClose: 6000,
+        icon: <IconAlertCircle size={18} />,
+      });
+      return;
+    }
+
+    setActiveStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goBackToCalendar = () => {
@@ -402,6 +452,19 @@ export default function CalendarFirstBooking() {
                         </Badge>
                       )}
                     </Group>
+
+                    {/* Important Notice */}
+                    <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
+                      <Text size="sm" fw={600}>
+                        📌 Important: Select consecutive time slots only
+                      </Text>
+                      <Text size="xs" mt={4}>
+                        Example: 4 PM, 5 PM, 6 PM ✓ | 4 AM and 7 PM ✗
+                      </Text>
+                      <Text size="xs" c="dimmed" mt={4}>
+                        For different time periods, please create separate bookings.
+                      </Text>
+                    </Alert>
 
                     <SlotSelector
                       selectedDate={selectedDate}
