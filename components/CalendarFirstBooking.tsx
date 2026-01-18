@@ -408,7 +408,7 @@ export default function CalendarFirstBooking() {
                             }}
                           >
                             <Stack gap={2} align="center">
-                              <Text size="xs" fw={700}>{slot.slot_time}</Text>
+                              <Text size="xs" fw={700}>{`${slot.slot_hour === 0 ? 12 : slot.slot_hour > 12 ? slot.slot_hour - 12 : slot.slot_hour}:00 ${slot.slot_hour < 12 ? 'AM' : 'PM'}`}</Text>
                               <Text size="9px">
                                 {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
                               </Text>
