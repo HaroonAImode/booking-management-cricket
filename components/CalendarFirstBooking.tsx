@@ -747,9 +747,6 @@ export default function CalendarFirstBooking() {
                         padding: '8px',
                       },
                     }}
-                        textTransform: 'uppercase',
-                      },
-                    }}
                   />
                 </Stack>
               </Paper>
