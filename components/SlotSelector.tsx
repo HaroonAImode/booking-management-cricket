@@ -39,6 +39,50 @@ export default function SlotSelector({
   const [nightStart, setNightStart] = useState(17);
   const [nightEnd, setNightEnd] = useState(7);
 
+  // Generate all 24 slots (0-23)
+  const generateAllSlots = (): SlotInfo[] => {
+    const allSlots: SlotInfo[] = [];
+    const now = new Date();
+    const isToday = selectedDate && 
+      selectedDate.getDate() === now.getDate() &&
+      selectedDate.getMonth() === now.getMonth() &&
+      selectedDate.getFullYear() === now.getFullYear();
+    const currentHour = now.getHours();
+
+    for (let hour = 0; hour < 24; hour++) {
+      // Find if this slot exists in available slots data
+      const existingSlot = availableSlots?.find(s => s.slot_hour === hour);
+      
+      // For today, check if this hour has passed
+      const isPast = isToday && hour <= currentHour;
+      
+      if (existingSlot) {
+        // Use existing slot data but override availability if it's in the past
+        allSlots.push({
+          ...existingSlot,
+          is_available: isPast ? false : existingSlot.is_available,
+          is_past: isPast,
+        });
+      } else {
+        // Create a slot entry for hours not returned by the API
+        const nightRate = isNightRate(hour, nightStart, nightEnd);
+        allSlots.push({
+          slot_hour: hour,
+          time_display: formatTimeDisplay(hour),
+          is_available: !isPast, // Available unless it's in the past
+          is_night_rate: nightRate,
+          hourly_rate: nightRate ? 2000 : 1500,
+          current_status: 'available',
+          is_past: isPast,
+        } as SlotInfo);
+      }
+    }
+    
+    return allSlots;
+  };
+
+  const allSlots = generateAllSlots();
+
   // Update night times if available from slots data
   useEffect(() => {
     if (availableSlots && availableSlots.length > 0) {
@@ -97,12 +141,16 @@ export default function SlotSelector({
   };
 
   const getSlotLabel = (slot: SlotInfo) => {
+    if ((slot as any).is_past) return 'Past';
     if (slot.current_status === 'booked') return 'Booked';
     if (slot.current_status === 'pending') return 'Under Approval';
     return 'Available';
   };
 
   const isDisabled = (slot: SlotInfo) => {
+    // Disable if it's in the past (for today)
+    if ((slot as any).is_past) return true;
+    // Disable if not available and not selected
     return !slot.is_available && !selectedSlots.includes(slot.slot_hour);
   };
 
@@ -146,6 +194,9 @@ export default function SlotSelector({
         <Badge size="sm" variant="light" color="gray">
           Booked
         </Badge>
+        <Badge size="sm" variant="light" color="red" style={{ opacity: 0.6 }}>
+          Past Time
+        </Badge>
       </Group>
 
       {/* Warning Message */}
@@ -160,7 +211,10 @@ export default function SlotSelector({
         spacing="xs"
         verticalSpacing="xs"
       >
-        {availableSlots.map((slot) => (
+        {allSlots.map((slot) => {
+          const isPastSlot = (slot as any).is_past;
+          
+          return (
           <Tooltip
             key={slot.slot_hour}
             label={
@@ -183,10 +237,12 @@ export default function SlotSelector({
               className="hover-lift"
               style={{
                 cursor: isDisabled(slot) ? 'not-allowed' : 'pointer',
-                opacity: isDisabled(slot) ? 0.5 : 1,
+                opacity: isPastSlot ? 0.3 : isDisabled(slot) ? 0.6 : 1,
                 borderWidth: selectedSlots.includes(slot.slot_hour) ? 3 : 2,
                 borderColor: selectedSlots.includes(slot.slot_hour)
                   ? '#1A1A1A'
+                  : isPastSlot
+                  ? '#EF4444'
                   : slot.current_status === 'pending'
                   ? '#f59e0b'
                   : slot.is_available
@@ -195,7 +251,7 @@ export default function SlotSelector({
                 borderStyle: slot.current_status === 'pending' ? 'dashed' : 'solid',
                 backgroundColor: selectedSlots.includes(slot.slot_hour)
                   ? '#F5B800'
-                  : slot.is_available
+                  : slot.is_available && !isPastSlot
                   ? 'white'
                   : '#F5F5F5',
                 transition: 'all 200ms ease',
@@ -233,12 +289,22 @@ export default function SlotSelector({
                   variant={getSlotVariant(slot)}
                   fullWidth
                   style={{
-                    background: selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : undefined,
-                    color: selectedSlots.includes(slot.slot_hour) ? 'white' : undefined,
+                    background: selectedSlots.includes(slot.slot_hour) 
+                      ? '#1A1A1A' 
+                      : isPastSlot 
+                      ? '#FEE2E2' 
+                      : undefined,
+                    color: selectedSlots.includes(slot.slot_hour) 
+                      ? 'white' 
+                      : isPastSlot 
+                      ? '#7F1D1D' 
+                      : undefined,
                   }}
                 >
                   {selectedSlots.includes(slot.slot_hour)
                     ? '✓'
+                    : isPastSlot
+                    ? 'Past'
                     : slot.is_available
                     ? 'Free'
                     : slot.current_status === 'pending'
@@ -248,7 +314,7 @@ export default function SlotSelector({
               </Stack>
             </Paper>
           </Tooltip>
-        ))}
+        );})}
       </SimpleGrid>
 
       {/* Selection Summary */}
@@ -262,7 +328,7 @@ export default function SlotSelector({
               {selectedSlots
                 .sort((a, b) => a - b)
                 .map((hour) => {
-                  const slot = availableSlots.find((s) => s.slot_hour === hour);
+                  const slot = allSlots.find((s) => s.slot_hour === hour);
                   return (
                     <Badge
                       key={hour}

@@ -61,8 +61,35 @@ export default function CalendarFirstBooking() {
     const dateStr = formatDateForSQL(today);
     const { data, error } = await getAvailableSlots(dateStr);
 
-    if (!error && data) {
-      setTodaySlots(data);
+    if (!error) {
+      // Generate all 24 slots with proper status
+      const allSlots: SlotInfo[] = [];
+      const currentHour = today.getHours();
+
+      for (let hour = 0; hour < 24; hour++) {
+        const existingSlot = data?.find(s => s.slot_hour === hour);
+        const isPast = hour <= currentHour;
+        
+        if (existingSlot) {
+          allSlots.push({
+            ...existingSlot,
+            is_available: isPast ? false : existingSlot.is_available,
+          });
+        } else {
+          // Create entry for missing hours
+          const isNight = hour >= 17 || hour < 7;
+          allSlots.push({
+            slot_hour: hour,
+            time_display: `${hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`,
+            is_available: !isPast,
+            is_night_rate: isNight,
+            hourly_rate: isNight ? 2000 : 1500,
+            current_status: isPast ? 'past' : 'available',
+          } as SlotInfo);
+        }
+      }
+      
+      setTodaySlots(allSlots);
     }
     setTodayLoading(false);
   };
@@ -221,37 +248,67 @@ export default function CalendarFirstBooking() {
                       })}
                     </Text>
 
-                    <SimpleGrid cols={{ base: 2, xs: 3, sm: 4 }} spacing="xs">
-                      {todaySlots.map((slot) => (
-                        <Badge
-                          key={slot.hour}
-                          size="lg"
-                          variant={slot.is_available ? 'filled' : 'outline'}
-                          color={slot.is_available ? 'dark' : 'gray'}
-                          style={{
-                            padding: '10px 12px',
-                            cursor: slot.is_available ? 'pointer' : 'not-allowed',
-                            opacity: slot.is_available ? 1 : 0.5,
-                          }}
-                          onClick={() => {
-                            if (slot.is_available) {
-                              setSelectedDate(new Date());
-                              setActiveStep(0);
-                              setTimeout(() => {
-                                const slotsSection = document.getElementById('slots-section');
-                                slotsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 100);
-                            }
-                          }}
-                        >
-                          {slot.time_display}
-                        </Badge>
-                      ))}
+                    {/* All 24 Slots Grid */}
+                    <SimpleGrid cols={{ base: 4, xs: 6, sm: 8 }} spacing="xs">
+                      {todaySlots.map((slot) => {
+                        const isPast = slot.current_status === 'past' || !slot.is_available && slot.slot_hour <= new Date().getHours();
+                        const isBooked = slot.current_status === 'booked';
+                        const isPending = slot.current_status === 'pending';
+                        const isAvailable = slot.is_available && !isPast;
+
+                        return (
+                          <Badge
+                            key={slot.hour}
+                            size="lg"
+                            variant="filled"
+                            style={{
+                              padding: '10px 8px',
+                              cursor: isAvailable ? 'pointer' : 'not-allowed',
+                              opacity: isPast ? 0.3 : isBooked || isPending ? 0.6 : 1,
+                              background: isAvailable 
+                                ? '#1A1A1A' 
+                                : isPast 
+                                ? '#DC2626' 
+                                : isBooked 
+                                ? '#6B7280' 
+                                : '#F59E0B',
+                              color: 'white',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                            }}
+                            onClick={() => {
+                              if (isAvailable) {
+                                setSelectedDate(new Date());
+                                setActiveStep(0);
+                                setTimeout(() => {
+                                  const slotsSection = document.getElementById('slots-section');
+                                  slotsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 100);
+                              }
+                            }}
+                          >
+                            <Stack gap={2} align="center">
+                              <Text size="xs" fw={700}>{slot.time_display}</Text>
+                              <Text size="9px">
+                                {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
+                              </Text>
+                            </Stack>
+                          </Badge>
+                        );
+                      })}
                     </SimpleGrid>
+
+                    {/* Status Legend */}
+                    <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
+                      <Badge size="sm" style={{ background: '#1A1A1A', color: 'white' }}>✓ Available</Badge>
+                      <Badge size="sm" style={{ background: '#6B7280', color: 'white' }}>✕ Booked</Badge>
+                      <Badge size="sm" style={{ background: '#F59E0B', color: 'white' }}>⏳ Pending</Badge>
+                      <Badge size="sm" style={{ background: '#DC2626', color: 'white' }}>⏱️ Past</Badge>
+                    </Group>
 
                     <Alert color="dark" variant="filled">
                       <Text size="sm" fw={600}>
-                        💡 {todaySlots.filter(s => s.is_available).length} slots available today! Click any time above to quick-book.
+                        💡 {todaySlots.filter(s => s.is_available && s.current_status !== 'past').length} slots available today! Click any green time above to quick-book.
                       </Text>
                     </Alert>
                   </Stack>
