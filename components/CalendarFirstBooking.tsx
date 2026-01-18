@@ -623,11 +623,16 @@ export default function CalendarFirstBooking() {
                     size="xl"
                     radius="md"
                     popoverProps={{
+                      position: 'bottom',
+                      withinPortal: true,
                       styles: {
                         dropdown: {
                           background: '#FFFFFF',
                           border: '3px solid #F5B800',
                           boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
+                          maxWidth: 'min(400px, 95vw)',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
                         },
                       },
                     }}
