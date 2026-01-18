@@ -802,13 +802,19 @@ export default function CalendarFirstBooking() {
                         color: '#1A1A1A',
                         fontWeight: 700,
                         height: '60px',
-                        fontSize: '18px',
+                        fontSize: 'clamp(14px, 4vw, 18px)',
+                        padding: '0 20px',
                       }}
                       styles={{
                         root: {
                           '&:hover': {
                             background: '#FFDD80',
                           },
+                        },
+                        label: {
+                          overflow: 'visible',
+                          whiteSpace: 'normal',
+                          textAlign: 'center',
                         },
                       }}
                       fullWidth
@@ -867,7 +873,7 @@ export default function CalendarFirstBooking() {
                       Selected Date
                     </Text>
                     <Text fw={700} size="lg" c="#1A1A1A">
-                      {selectedDate?.toLocaleDateString('en-US', {
+                      {selectedDate ? (selectedDate instanceof Date ? selectedDate : new Date(selectedDate)).toLocaleDateString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
