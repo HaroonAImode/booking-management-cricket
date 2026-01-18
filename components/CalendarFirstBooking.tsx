@@ -873,12 +873,15 @@ export default function CalendarFirstBooking() {
                       Selected Date
                     </Text>
                     <Text fw={700} size="lg" c="#1A1A1A">
-                      {selectedDate ? (selectedDate instanceof Date ? selectedDate : new Date(selectedDate)).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
+                      {selectedDate 
+                        ? (selectedDate instanceof Date ? selectedDate : new Date(selectedDate)).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                        : 'No date selected'
+                      }
                     </Text>
                   </Box>
                   <Box>
