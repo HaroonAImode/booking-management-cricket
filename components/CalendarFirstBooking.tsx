@@ -198,7 +198,15 @@ export default function CalendarFirstBooking() {
     }
 
     setActiveStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to the booking form section after a brief delay to let it render
+    setTimeout(() => {
+      const formSection = document.getElementById('booking-form-section');
+      if (formSection) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const goBackToCalendar = () => {
@@ -873,7 +881,7 @@ export default function CalendarFirstBooking() {
 
           {/* Step 2: Booking Form */}
           {activeStep === 1 && canProceedToForm && (
-            <Stack gap="lg">
+            <Stack gap="lg" id="booking-form-section">
               {/* Back Button */}
               <Button
                 variant="outline"
