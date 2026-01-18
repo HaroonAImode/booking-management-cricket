@@ -425,63 +425,6 @@ export default function BookingForm({
             <Text c="dimmed" size={{ base: "sm", sm: "md" }}>Fill in the details below to book your time slot</Text>
           </Stack>
 
-          {/* Check Booking Status Button - Prominent */}
-          <Paper 
-            withBorder 
-            p={{ base: "md", sm: "lg" }} 
-            radius="md" 
-            style={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none'
-            }}
-          >
-            <Stack gap="md" align="center">
-              <Box ta="center">
-                <Text size={{ base: "md", sm: "lg" }} fw={600} c="white" mb={4}>
-                  Already Booked? Check Your Status
-                </Text>
-                <Text size="sm" c="rgba(255,255,255,0.95)">
-                  Search by name to view approval status & download booking slip
-                </Text>
-              </Box>
-              <Button
-                size="lg"
-                variant="white"
-                leftSection={<IconSearch size={20} />}
-                onClick={() => router.push('/bookings/check')}
-                fullWidth
-                styles={{
-                  root: {
-                    height: '50px',
-                  },
-                }}
-              >
-                Check Your Booking
-              </Button>
-            </Stack>
-          </Paper>
-
-          {/* Important Info */}
-          <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
-            <Stack gap={4}>
-              <Text size="sm" fw={600}>
-                📌 Important Information:
-              </Text>
-              <Text size="xs">
-                • Advance payment of PKR {advancePayment.toLocaleString()} is required for all
-                bookings
-              </Text>
-              <Text size="xs">• Day rate: PKR 1,500/hr | Night rate: PKR 2,000/hr (5 PM - 7 AM)</Text>
-              <Text size="xs">• Please upload payment proof screenshot (required)</Text>
-              <Text size="xs">
-                • Your booking will be confirmed after admin approval
-              </Text>
-              <Text size="xs" fw={600} c="blue.7">
-                • After submitting, click "Check Your Booking" to see approval status
-              </Text>
-            </Stack>
-          </Alert>
-
           {/* Customer Information */}
           <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
             <Stack gap="md">
@@ -692,6 +635,63 @@ export default function BookingForm({
           >
             Review Booking Details
           </Button>
+
+          {/* Check Booking Status Button - Prominent */}
+          <Paper 
+            withBorder 
+            p={{ base: "md", sm: "lg" }} 
+            radius="md" 
+            style={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none'
+            }}
+          >
+            <Stack gap="md" align="center">
+              <Box ta="center">
+                <Text size={{ base: "md", sm: "lg" }} fw={600} c="white" mb={4}>
+                  Already Booked? Check Your Status
+                </Text>
+                <Text size="sm" c="rgba(255,255,255,0.95)">
+                  Search by name to view approval status & download booking slip
+                </Text>
+              </Box>
+              <Button
+                size="lg"
+                variant="white"
+                leftSection={<IconSearch size={20} />}
+                onClick={() => router.push('/bookings/check')}
+                fullWidth
+                styles={{
+                  root: {
+                    height: '50px',
+                  },
+                }}
+              >
+                Check Your Booking
+              </Button>
+            </Stack>
+          </Paper>
+
+          {/* Important Info */}
+          <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
+            <Stack gap={4}>
+              <Text size="sm" fw={600}>
+                📌 Important Information:
+              </Text>
+              <Text size="xs">
+                • Advance payment of PKR {advancePayment.toLocaleString()} is required for all
+                bookings
+              </Text>
+              <Text size="xs">• Day rate: PKR 1,500/hr | Night rate: PKR 2,000/hr (5 PM - 7 AM)</Text>
+              <Text size="xs">• Please upload payment proof screenshot (required)</Text>
+              <Text size="xs">
+                • Your booking will be confirmed after admin approval
+              </Text>
+              <Text size="xs" fw={600} c="blue.7">
+                • After submitting, click "Check Your Booking" to see approval status
+              </Text>
+            </Stack>
+          </Alert>
         </Stack>
       </Container>
 
