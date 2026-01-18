@@ -61,15 +61,17 @@ export default function CalendarFirstBooking() {
   const loadTodaySlots = async (viewDate?: Date) => {
     setTodayLoading(true);
     const dateToView = viewDate || quickViewDate;
+    // Ensure dateToView is a Date object
+    const dateObj = dateToView instanceof Date ? dateToView : new Date(dateToView);
     const today = new Date();
-    const dateStr = formatDateForSQL(dateToView);
+    const dateStr = formatDateForSQL(dateObj);
     const { data, error } = await getAvailableSlots(dateStr);
 
     if (!error) {
       // Generate all 24 slots with proper status
       const allSlots: SlotInfo[] = [];
       const currentHour = today.getHours();
-      const isToday = dateToView.toDateString() === today.toDateString();
+      const isToday = dateObj.toDateString() === today.toDateString();
 
       for (let hour = 0; hour < 24; hour++) {
         const existingSlot = data?.find(s => s.slot_hour === hour);
@@ -295,13 +297,14 @@ export default function CalendarFirstBooking() {
                       </Group>
                       <Group gap="xs" wrap="wrap" justify={{ base: 'center', sm: 'flex-end' }} style={{ width: '100%', sm: { width: 'auto' } }}>
                         {/* Show Previous Day button only if viewing a future date */}
-                        {quickViewDate.toDateString() !== new Date().toDateString() && (
+                        {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toDateString() !== new Date().toDateString() && (
                           <Button
                             size="sm"
                             variant="filled"
                             style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                             onClick={() => {
-                              const prevDay = new Date(quickViewDate);
+                              const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                              const prevDay = new Date(currentDate);
                               prevDay.setDate(prevDay.getDate() - 1);
                               // Don't go before today
                               if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
@@ -318,7 +321,8 @@ export default function CalendarFirstBooking() {
                           variant="filled"
                           style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                           onClick={() => {
-                            const nextDay = new Date(quickViewDate);
+                            const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                            const nextDay = new Date(currentDate);
                             nextDay.setDate(nextDay.getDate() + 1);
                             setQuickViewDate(nextDay);
                           }}
