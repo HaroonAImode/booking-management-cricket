@@ -45,8 +45,24 @@ export default function RootLayout({
       <body>
         {/* Mantine Provider wraps the entire app with theme configuration */}
         <MantineProvider theme={theme}>
-          {/* Notifications for toast messages */}
-          <Notifications position="top-right" zIndex={1000} />
+          {/* Notifications for toast messages - responsive positioning */}
+          <Notifications 
+            position="top-center"
+            zIndex={9999}
+            limit={3}
+            styles={{
+              root: {
+                maxWidth: '95vw',
+                width: '100%',
+              },
+              notification: {
+                maxWidth: '500px',
+                width: '95vw',
+                margin: '0 auto',
+                boxSizing: 'border-box',
+              },
+            }}
+          />
           {children}
         </MantineProvider>
       </body>
