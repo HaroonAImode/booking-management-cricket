@@ -369,7 +369,7 @@ export default function CalendarFirstBooking() {
                     </Group>
 
                     {/* All 24 Slots Grid */}
-                    <SimpleGrid cols={{ base: 4, xs: 6, sm: 8 }} spacing="xs">
+                    <SimpleGrid cols={{ base: 3, xs: 4, sm: 6, md: 8 }} spacing={{ base: 'xs', sm: 'sm' }}>
                       {todaySlots.map((slot) => {
                         const isPast = !slot.is_available && slot.slot_hour <= new Date().getHours();
                         const isBooked = slot.current_status === 'booked';
@@ -377,14 +377,13 @@ export default function CalendarFirstBooking() {
                         const isAvailable = slot.is_available && !isPast;
 
                         return (
-                          <Badge
+                          <Paper
                             key={slot.slot_hour}
-                            size="lg"
-                            variant="filled"
+                            p="md"
+                            radius="md"
                             style={{
-                              padding: '12px 6px',
                               cursor: isAvailable ? 'pointer' : 'not-allowed',
-                              opacity: isPast ? 0.3 : isBooked || isPending ? 0.6 : 1,
+                              opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
                               background: isAvailable 
                                 ? '#1A1A1A' 
                                 : isPast 
@@ -393,10 +392,15 @@ export default function CalendarFirstBooking() {
                                 ? '#6B7280' 
                                 : '#F59E0B',
                               color: 'white',
-                              minHeight: '65px',
+                              minHeight: '75px',
                               display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '8px',
+                              border: isAvailable ? '2px solid #F5B800' : 'none',
+                              transition: 'all 0.2s ease',
+                              transform: isAvailable ? 'scale(1)' : 'scale(0.95)',
                             }}
                             onClick={() => {
                               if (isAvailable) {
@@ -408,16 +412,44 @@ export default function CalendarFirstBooking() {
                                 }, 100);
                               }
                             }}
+                            onMouseEnter={(e) => {
+                              if (isAvailable) {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (isAvailable) {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }
+                            }}
                           >
-                            <Stack gap={4} align="center">
-                              <Text size="sm" fw={700} style={{ lineHeight: 1.2, fontSize: '13px', whiteSpace: 'nowrap' }}>
-                                {`${slot.slot_hour === 0 ? 12 : slot.slot_hour > 12 ? slot.slot_hour - 12 : slot.slot_hour}:00 ${slot.slot_hour < 12 ? 'AM' : 'PM'}`}
-                              </Text>
-                              <Text size="xs" style={{ fontSize: '11px' }}>
-                                {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
-                              </Text>
-                            </Stack>
-                          </Badge>
+                            <Text 
+                              fw={700} 
+                              style={{ 
+                                fontSize: 'clamp(12px, 3vw, 15px)',
+                                lineHeight: 1.1,
+                                textAlign: 'center',
+                                letterSpacing: '-0.5px',
+                              }}
+                            >
+                              {slot.slot_hour === 0 ? '12:00' : slot.slot_hour > 12 ? `${slot.slot_hour - 12}:00` : `${slot.slot_hour}:00`}
+                            </Text>
+                            <Text 
+                              size="xs" 
+                              fw={600}
+                              style={{ 
+                                fontSize: '10px',
+                                opacity: 0.9,
+                              }}
+                            >
+                              {slot.slot_hour < 12 ? 'AM' : 'PM'}
+                            </Text>
+                            <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
+                              {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
+                            </Text>
+                          </Paper>
                         );
                       })}
                     </SimpleGrid>
