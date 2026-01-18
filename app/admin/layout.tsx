@@ -41,6 +41,10 @@ export default function AdminLayout({
           main: {
             background: '#FFF9E6',
             minHeight: '100vh',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          navbar: {
+            transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           },
         }}
       >
@@ -48,7 +52,9 @@ export default function AdminLayout({
         <AppShell.Header
           style={{
             background: '#1A1A1A',
-            borderBottom: '2px solid #F5B800',
+            borderBottom: '3px solid #F5B800',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <AdminHeader
@@ -64,10 +70,11 @@ export default function AdminLayout({
           p="md"
           style={{
             background: 'white',
-            borderRight: '2px solid #F5B800',
+            borderRight: '3px solid #F5B800',
+            boxShadow: '4px 0 12px rgba(0, 0, 0, 0.05)',
           }}
         >
-          <AdminNavbar />
+          <AdminNavbar toggleMobile={toggleMobile} mobileOpened={mobileOpened} />
         </AppShell.Navbar>
 
         {/* Main content area for admin pages */}

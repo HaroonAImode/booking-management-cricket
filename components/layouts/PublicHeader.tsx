@@ -6,7 +6,7 @@
  * - Logo and branding
  * - Main navigation links (Home, Bookings, About, Contact)
  * - Responsive mobile menu
- * - Login/Sign up buttons
+ * - Premium smooth animations
  */
 
 'use client';
@@ -27,25 +27,27 @@ export default function PublicHeader() {
           <Group gap="xs">
             <Box
               style={{
-                width: '40px',
-                height: '40px',
-                background: '#F5B800',
-                borderRadius: '8px',
+                width: '44px',
+                height: '44px',
+                background: 'linear-gradient(135deg, #F5B800 0%, #FFC933 100%)',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
-                fontSize: '20px',
+                fontSize: '22px',
                 color: '#1A1A1A',
+                boxShadow: '0 4px 12px rgba(245, 184, 0, 0.3)',
+                transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
               P
             </Box>
             <Box>
-              <Title order={3} size="1.3rem" c="#1A1A1A" style={{ lineHeight: 1, marginBottom: '2px' }}>
+              <Title order={3} size="1.4rem" c="#1A1A1A" style={{ lineHeight: 1, marginBottom: '3px', fontWeight: 800 }}>
                 POWERPLAY
               </Title>
-              <Text size="xs" c="#6B6B6B" style={{ lineHeight: 1, letterSpacing: '2px' }}>
+              <Text size="xs" c="#6B6B6B" style={{ lineHeight: 1, letterSpacing: '2.5px', fontWeight: 600 }}>
                 CRICKET ARENA
               </Text>
             </Box>
@@ -53,7 +55,7 @@ export default function PublicHeader() {
         </Link>
 
         {/* Desktop Navigation */}
-        <Group gap="lg" visibleFrom="sm">
+        <Group gap="sm" visibleFrom="sm">
           <Link href="/" className={styles.link}>Home</Link>
           <Link href="/bookings" className={styles.link}>Bookings</Link>
           <Link href="/about" className={styles.link}>About</Link>
@@ -61,8 +63,13 @@ export default function PublicHeader() {
         </Group>
 
         {/* Mobile Menu Toggle */}
-        <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="#1A1A1A" />
-      </Group>
-    </Container>
-  );
-}
+        <Burger 
+          opened={opened} 
+          onClick={toggle} 
+          hiddenFrom="sm" 
+          size="sm" 
+          color="#1A1A1A"
+          style={{
+            transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        />

@@ -106,15 +106,19 @@ export const theme = createTheme({
       styles: {
         root: {
           fontWeight: 600,
-          transition: 'all 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
           minHeight: '44px', // Touch-friendly
           fontSize: '15px',
           '@media (min-width: 768px)': {
             fontSize: '16px',
             minHeight: '42px',
           },
+          '&:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
           '&:active': {
-            transform: 'scale(0.97)',
+            transform: 'translateY(0) scale(0.98)',
           },
         },
       },
@@ -260,9 +264,10 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          transition: 'box-shadow 250ms ease, transform 250ms ease',
+          transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.08)',
+            transform: 'translateY(-2px)',
           },
         },
       },
@@ -276,7 +281,7 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          transition: 'box-shadow 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
     },
@@ -301,9 +306,13 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          transition: 'all 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          },
           '&:active': {
-            transform: 'scale(0.95)',
+            transform: 'translateY(0) scale(0.96)',
           },
         },
       },
@@ -316,7 +325,10 @@ export const theme = createTheme({
       },
       styles: {
         input: {
-          transition: 'border-color 250ms ease, box-shadow 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:focus': {
+            transform: 'scale(1.01)',
+          },
         },
       },
     },
@@ -328,7 +340,10 @@ export const theme = createTheme({
       },
       styles: {
         input: {
-          transition: 'border-color 250ms ease, box-shadow 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:focus': {
+            transform: 'scale(1.01)',
+          },
         },
       },
     },
@@ -340,7 +355,10 @@ export const theme = createTheme({
       },
       styles: {
         input: {
-          transition: 'border-color 250ms ease, box-shadow 250ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:focus': {
+            transform: 'scale(1.01)',
+          },
         },
       },
     },
@@ -350,13 +368,18 @@ export const theme = createTheme({
         radius: 'md',
         centered: true,
         overlayProps: {
-          backgroundOpacity: 0.55,
-          blur: 3,
+          backgroundOpacity: 0.6,
+          blur: 4,
+        },
+        transitionProps: {
+          transition: 'slide-up',
+          duration: 300,
+          timingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
       styles: {
         content: {
-          animation: 'slideUp 350ms ease',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         },
       },
     },
@@ -367,7 +390,7 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          animation: 'slideInRight 350ms ease',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         },
       },
     },

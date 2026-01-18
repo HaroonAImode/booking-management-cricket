@@ -15,9 +15,16 @@ import { Stack, NavLink, Text, Divider, Box, ThemeIcon, Group } from '@mantine/c
 import { IconDashboard, IconCalendar, IconClipboardList, IconUsers, IconSettings, IconChartBar } from '@tabler/icons-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useMediaQuery } from '@mantine/hooks';
 
-export default function AdminNavbar() {
+interface AdminNavbarProps {
+  toggleMobile?: () => void;
+  mobileOpened?: boolean;
+}
+
+export default function AdminNavbar({ toggleMobile, mobileOpened }: AdminNavbarProps) {
   const pathname = usePathname();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const links = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow' },
@@ -37,15 +44,24 @@ export default function AdminNavbar() {
       
       {links.map((link) => {
         const isActive = pathname === link.href;
+        
+        // Auto-close sidebar on mobile when navigation link is clicked
+        const handleNavClick = () => {
+          if (isMobile && toggleMobile && mobileOpened) {
+            toggleMobile();
+          }
+        };
+        
         return (
           <NavLink
             key={link.href}
             component={Link}
             href={link.href}
             label={link.label}
+            onClick={handleNavClick}
             leftSection={
               <ThemeIcon
-                size={32}
+                size={36}
                 radius="md"
                 variant={isActive ? 'gradient' : 'light'}
                 gradient={
@@ -55,21 +71,27 @@ export default function AdminNavbar() {
                 }
                 color={link.color}
               >
-                <link.icon size={18} />
+                <link.icon size={20} />
               </ThemeIcon>
             }
             active={isActive}
             styles={{
               root: {
                 borderRadius: '12px',
-                padding: '12px',
+                padding: '14px',
+                minHeight: '52px',
                 fontWeight: 500,
-                transition: 'all 150ms ease',
-                background: isActive ? 'rgba(245, 184, 0, 0.1)' : 'transparent',
+                transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+                background: isActive ? 'rgba(245, 184, 0, 0.12)' : 'transparent',
+                transform: 'translateX(0)',
                 '&:hover': {
                   background: isActive
-                    ? 'rgba(245, 184, 0, 0.15)'
-                    : 'rgba(245, 184, 0, 0.05)',
+                    ? 'rgba(245, 184, 0, 0.18)'
+                    : 'rgba(245, 184, 0, 0.06)',
+                  transform: 'translateX(4px)',
+                },
+                '&:active': {
+                  transform: 'translateX(2px) scale(0.98)',
                 },
               },
               label: {
