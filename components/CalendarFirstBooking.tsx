@@ -45,8 +45,27 @@ export default function CalendarFirstBooking() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
   const [availableSlots, setAvailableSlots] = useState<SlotInfo[] | null>(null);
+  const [todaySlots, setTodaySlots] = useState<SlotInfo[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [todayLoading, setTodayLoading] = useState(true);
+
+  // Load today's slots on component mount
+  useEffect(() => {
+    loadTodaySlots();
+  }, []);
+
+  const loadTodaySlots = async () => {
+    setTodayLoading(true);
+    const today = new Date();
+    const dateStr = formatDateForSQL(today);
+    const { data, error } = await getAvailableSlots(dateStr);
+
+    if (!error && data) {
+      setTodaySlots(data);
+    }
+    setTodayLoading(false);
+  };
 
   // Load slots when date changes
   useEffect(() => {
@@ -154,13 +173,6 @@ export default function CalendarFirstBooking() {
               onStepClick={setActiveStep}
               size={{ base: 'xs', sm: 'sm' }}
               color="yellow"
-              styles={{
-                step: {
-                  '&[data-progress]': {
-                    color: '#F5B800',
-                  },
-                },
-              }}
             >
               <Stepper.Step
                 label="Select Date & Time"
@@ -179,6 +191,73 @@ export default function CalendarFirstBooking() {
           {/* Step 1: Calendar and Slot Selection */}
           {activeStep === 0 && (
             <Stack gap="lg">
+              {/* Today's Availability - Prominent Display */}
+              {todaySlots && todaySlots.length > 0 && (
+                <Paper
+                  p={{ base: 'lg', sm: 'xl' }}
+                  withBorder
+                  radius="lg"
+                  style={{
+                    background: 'linear-gradient(135deg, #F5B800 0%, #FFC933 100%)',
+                    borderColor: '#1A1A1A',
+                    borderWidth: '3px',
+                    boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
+                  }}
+                >
+                  <Stack gap="md">
+                    <Group gap="xs">
+                      <IconCheck size={24} color="#1A1A1A" />
+                      <Title order={2} size={{ base: 'h4', sm: 'h3' }} c="#1A1A1A" fw={900}>
+                        ⚡ TODAY'S AVAILABILITY
+                      </Title>
+                    </Group>
+                    
+                    <Text size="sm" c="#1A1A1A" fw={600}>
+                      {new Date().toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </Text>
+
+                    <SimpleGrid cols={{ base: 2, xs: 3, sm: 4 }} spacing="xs">
+                      {todaySlots.map((slot) => (
+                        <Badge
+                          key={slot.hour}
+                          size="lg"
+                          variant={slot.is_available ? 'filled' : 'outline'}
+                          color={slot.is_available ? 'dark' : 'gray'}
+                          style={{
+                            padding: '10px 12px',
+                            cursor: slot.is_available ? 'pointer' : 'not-allowed',
+                            opacity: slot.is_available ? 1 : 0.5,
+                          }}
+                          onClick={() => {
+                            if (slot.is_available) {
+                              setSelectedDate(new Date());
+                              setActiveStep(0);
+                              setTimeout(() => {
+                                const slotsSection = document.getElementById('slots-section');
+                                slotsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 100);
+                            }
+                          }}
+                        >
+                          {slot.time_display}
+                        </Badge>
+                      ))}
+                    </SimpleGrid>
+
+                    <Alert color="dark" variant="filled">
+                      <Text size="sm" fw={600}>
+                        💡 {todaySlots.filter(s => s.is_available).length} slots available today! Click any time above to quick-book.
+                      </Text>
+                    </Alert>
+                  </Stack>
+                </Paper>
+              )}
+
               {/* Pricing Info */}
               <Paper
                 p={{ base: 'md', sm: 'lg' }}
@@ -245,7 +324,13 @@ export default function CalendarFirstBooking() {
 
               {/* Slot Selector */}
               {selectedDate && (
-                <Paper p={{ base: 'md', sm: 'lg' }} withBorder radius="lg" style={{ borderColor: '#F5B800', borderWidth: '2px' }}>
+                <Paper
+                  id="slots-section"
+                  p={{ base: 'md', sm: 'lg' }}
+                  withBorder
+                  radius="lg"
+                  style={{ borderColor: '#F5B800', borderWidth: '2px' }}
+                >
                   <Stack gap="md">
                     <Group justify="space-between" wrap="wrap">
                       <Group gap="xs">

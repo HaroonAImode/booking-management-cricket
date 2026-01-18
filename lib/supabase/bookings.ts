@@ -525,6 +525,23 @@ export function formatSlotRangesWithNightIndicator(
 /**
  * Format date for SQL (YYYY-MM-DD)
  */
-export function formatDateForSQL(date: Date): string {
-  return date.toISOString().split('T')[0];
+export function formatDateForSQL(date: Date | string | null): string {
+  if (!date) {
+    throw new Error('Date is required');
+  }
+  
+  // If already a string in YYYY-MM-DD format, return it
+  if (typeof date === 'string') {
+    return date;
+  }
+  
+  // Convert to Date if not already
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  // Validate it's a valid date
+  if (isNaN(dateObj.getTime())) {
+    throw new Error('Invalid date provided');
+  }
+  
+  return dateObj.toISOString().split('T')[0];
 }

@@ -187,6 +187,9 @@ export default function NotificationPanel() {
       position="bottom-end"
       opened={opened}
       onChange={setOpened}
+      closeOnClickOutside={true}
+      closeOnEscape={true}
+      withinPortal={true}
     >
       <Menu.Target>
         <ActionIcon

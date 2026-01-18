@@ -72,7 +72,6 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
           bookingNumber: booking.booking_number,
           customerName: booking.customer_name,
           customerPhone: booking.customer_phone,
-          customerEmail: booking.customer_email,
           status: booking.status,
           totalHours: booking.total_hours,
           totalAmount: booking.total_amount,

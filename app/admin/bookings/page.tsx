@@ -50,6 +50,7 @@ import {
   IconAlertCircle,
   IconCurrencyRupee,
   IconCalendarEvent,
+  IconFileInvoice,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -225,6 +226,62 @@ export default function AdminBookingsPage() {
         message: 'Failed to reject booking',
         color: 'red',
         autoClose: 4000,
+        icon: <IconAlertCircle size={18} />,
+      });
+    }
+  };
+
+  const downloadInvoice = async (bookingId: string, bookingNumber: string) => {
+    try {
+      notifications.show({
+        title: 'Generating Invoice',
+        message: 'Please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false,
+        id: `invoice-${bookingId}`,
+      });
+
+      const response = await fetch(`/api/invoices/${bookingId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `${bookingNumber}_Invoice.pdf`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: `invoice-${bookingId}`,
+        title: '✅ Invoice Downloaded',
+        message: `Invoice for ${bookingNumber} downloaded successfully`,
+        color: 'green',
+        loading: false,
+        autoClose: 3000,
+        icon: <IconFileInvoice size={18} />,
+      });
+    } catch (error) {
+      console.error('Invoice download error:', error);
+      notifications.update({
+        id: `invoice-${bookingId}`,
+        title: '❌ Download Failed',
+        message: 'Failed to download invoice',
+        color: 'red',
+        loading: false,
+        autoClose: 3000,
         icon: <IconAlertCircle size={18} />,
       });
     }
@@ -531,7 +588,18 @@ export default function AdminBookingsPage() {
                       </Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Group gap="xs">
+                      <Group gap="xs" wrap="nowrap">
+                        {/* Invoice Download Button - Always visible */}
+                        <Tooltip label="Download Invoice">
+                          <ActionIcon
+                            variant="light"
+                            color="yellow"
+                            onClick={() => downloadInvoice(booking.id, booking.booking_number)}
+                          >
+                            <IconFileInvoice size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        
                         {booking.status === 'pending' && (
                           <>
                             <Button
