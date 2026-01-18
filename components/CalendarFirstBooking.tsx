@@ -704,39 +704,20 @@ export default function CalendarFirstBooking() {
                       },
                       month: {
                         width: '100%',
-                        padding: '0',
-                      },
-                      monthRow: {
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        gap: '2px',
                       },
                       monthThead: {
                         borderBottom: '2px solid #F5B800',
-                        marginBottom: '8px',
                       },
                       monthCell: {
-                        padding: '2px',
                         textAlign: 'center',
-                        flex: '1 1 14.28%',
-                        maxWidth: '14.28%',
                       },
                       day: {
                         color: '#1A1A1A',
                         fontWeight: 700,
-                        fontSize: 'clamp(12px, 3.5vw, 16px)',
-                        width: '100%',
-                        height: 'clamp(32px, 8vw, 40px)',
-                        minWidth: '32px',
-                        minHeight: '32px',
-                        maxWidth: '46px',
-                        maxHeight: '46px',
-                        aspectRatio: '1/1',
+                        fontSize: '14px',
+                        width: '36px',
+                        height: '36px',
                         borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto',
                         '&:hover:not([data-disabled]):not([data-selected])': {
                           background: '#FFF9E6',
                         },
@@ -763,11 +744,8 @@ export default function CalendarFirstBooking() {
                       weekday: {
                         color: '#6B7280',
                         fontWeight: 900,
-                        fontSize: 'clamp(10px, 3vw, 12px)',
+                        fontSize: '11px',
                         textTransform: 'uppercase',
-                        padding: '4px 2px',
-                        width: '100%',
-                        textAlign: 'center',
                       },
                     }}
                   />
