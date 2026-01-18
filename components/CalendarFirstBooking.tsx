@@ -426,6 +426,15 @@ export default function CalendarFirstBooking() {
                     minDate={new Date()}
                     size="xl"
                     radius="md"
+                    popoverProps={{
+                      styles: {
+                        dropdown: {
+                          background: '#FFFFFF',
+                          border: '3px solid #F5B800',
+                          boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
+                        },
+                      },
+                    }}
                     styles={{
                       input: {
                         background: '#FFFFFF',
@@ -434,6 +443,7 @@ export default function CalendarFirstBooking() {
                         fontSize: '16px',
                         fontWeight: 600,
                         height: '56px',
+                        color: '#1A1A1A',
                         '&:focus': {
                           borderColor: '#F5B800',
                           boxShadow: '0 0 0 3px rgba(245, 184, 0, 0.2)',
@@ -444,58 +454,70 @@ export default function CalendarFirstBooking() {
                         },
                       },
                       calendar: {
-                        background: '#1A1A1A',
+                        background: '#FFFFFF',
                       },
                       calendarHeader: {
-                        background: '#1A1A1A',
+                        background: '#FFFFFF',
+                        borderBottom: '2px solid #F5B800',
+                        paddingBottom: '12px',
+                        marginBottom: '12px',
                       },
                       calendarHeaderControl: {
-                        color: '#F5B800',
+                        color: '#1A1A1A',
+                        border: '2px solid #F5B800',
                         '&:hover': {
-                          background: 'rgba(245, 184, 0, 0.1)',
+                          background: '#FFF9E6',
                         },
                       },
                       calendarHeaderLevel: {
-                        color: '#FFFFFF',
-                        fontWeight: 700,
+                        color: '#1A1A1A',
+                        fontWeight: 900,
+                        fontSize: '18px',
                         '&:hover': {
-                          background: 'rgba(245, 184, 0, 0.1)',
+                          background: '#FFF9E6',
                         },
                       },
                       monthCell: {
-                        color: '#FFFFFF',
+                        color: '#1A1A1A',
+                        fontWeight: 700,
                         '&:hover': {
-                          background: 'rgba(245, 184, 0, 0.1)',
+                          background: '#FFF9E6',
                         },
                       },
                       yearCell: {
-                        color: '#FFFFFF',
+                        color: '#1A1A1A',
+                        fontWeight: 700,
                         '&:hover': {
-                          background: 'rgba(245, 184, 0, 0.1)',
+                          background: '#FFF9E6',
                         },
                       },
                       day: {
-                        color: '#FFFFFF',
-                        fontWeight: 600,
+                        color: '#1A1A1A',
+                        fontWeight: 700,
+                        fontSize: '14px',
                         '&:hover': {
-                          background: 'rgba(245, 184, 0, 0.2)',
+                          background: '#FFF9E6',
                         },
                         '&[data-selected]': {
                           background: '#F5B800',
                           color: '#1A1A1A',
                           fontWeight: 900,
+                          border: '2px solid #1A1A1A',
                         },
                         '&[data-disabled]': {
-                          color: '#4A4A4A',
+                          color: '#D1D1D1',
+                          textDecoration: 'line-through',
                         },
                         '&[data-weekend]': {
                           color: '#F5B800',
+                          fontWeight: 900,
                         },
                       },
                       weekday: {
-                        color: '#9CA3AF',
-                        fontWeight: 700,
+                        color: '#6B7280',
+                        fontWeight: 900,
                         fontSize: '12px',
+                        textTransform: 'uppercase',
                       },
                     }}
                   />
