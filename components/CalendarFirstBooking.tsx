@@ -294,6 +294,25 @@ export default function CalendarFirstBooking() {
                         </Title>
                       </Group>
                       <Group gap="xs" wrap="wrap" justify={{ base: 'center', sm: 'flex-end' }} style={{ width: '100%', sm: { width: 'auto' } }}>
+                        {/* Show Previous Day button only if viewing a future date */}
+                        {quickViewDate.toDateString() !== new Date().toDateString() && (
+                          <Button
+                            size="sm"
+                            variant="filled"
+                            style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
+                            onClick={() => {
+                              const prevDay = new Date(quickViewDate);
+                              prevDay.setDate(prevDay.getDate() - 1);
+                              // Don't go before today
+                              if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
+                                setQuickViewDate(prevDay);
+                              }
+                            }}
+                            fullWidth={{ base: true, xs: false }}
+                          >
+                            ← Previous Day
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="filled"
