@@ -20,7 +20,7 @@ import {
   IconPhone,
   IconCalendar,
   IconClock,
-  IconCurrencyDollar,
+  IconCurrencyRupee,
   IconReceipt,
   IconAlertCircle,
   IconArrowLeft,
@@ -193,7 +193,7 @@ export default function BookingReview({
                   Total Amount
                 </Text>
                 <Group gap="xs">
-                  <IconCurrencyDollar size={18} />
+                  <IconCurrencyRupee size={18} />
                   <Text size="lg" fw={700}>
                     PKR {bookingData.total_amount.toLocaleString()}
                   </Text>
@@ -205,7 +205,7 @@ export default function BookingReview({
                   Advance Payment (Required)
                 </Text>
                 <Group gap="xs">
-                  <IconCurrencyDollar size={18} />
+                  <IconCurrencyRupee size={18} />
                   <Text size="lg" fw={700} c="green">
                     PKR {bookingData.advance_payment.toLocaleString()}
                   </Text>
@@ -217,7 +217,7 @@ export default function BookingReview({
                   Remaining Payment
                 </Text>
                 <Group gap="xs">
-                  <IconCurrencyDollar size={18} />
+                  <IconCurrencyRupee size={18} />
                   <Text size="lg" fw={700} c="orange">
                     PKR {bookingData.remaining_payment.toLocaleString()}
                   </Text>

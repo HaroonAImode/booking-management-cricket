@@ -27,7 +27,7 @@ import {
   IconCalendar,
   IconUpload,
   IconAlertCircle,
-  IconCurrencyDollar,
+  IconCurrencyRupee,
   IconCheck,
   IconInfoCircle,
   IconSearch,
@@ -556,7 +556,7 @@ export default function BookingForm({
                       Total Amount
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyDollar size={18} />
+                      <IconCurrencyRupee size={18} />
                       <Text size="xl" fw={700}>
                         PKR {totalAmount.toLocaleString()}
                       </Text>
@@ -568,7 +568,7 @@ export default function BookingForm({
                       Advance Payment (Required)
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyDollar size={18} />
+                      <IconCurrencyRupee size={18} />
                       <Text size="xl" fw={700} c="green">
                         PKR {advancePayment.toLocaleString()}
                       </Text>
@@ -580,7 +580,7 @@ export default function BookingForm({
                       Remaining Payment
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyDollar size={18} />
+                      <IconCurrencyRupee size={18} />
                       <Text size="xl" fw={700} c="orange">
                         PKR {(totalAmount - advancePayment).toLocaleString()}
                       </Text>

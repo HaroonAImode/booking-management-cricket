@@ -54,12 +54,27 @@ export default function RootLayout({
               root: {
                 maxWidth: '95vw',
                 width: '100%',
+                top: '70px',
               },
               notification: {
                 maxWidth: '500px',
                 width: '95vw',
                 margin: '0 auto',
                 boxSizing: 'border-box',
+                padding: '16px',
+                minHeight: '80px',
+              },
+              title: {
+                marginBottom: '8px',
+                fontSize: '15px',
+                fontWeight: 600,
+                lineHeight: 1.4,
+              },
+              description: {
+                fontSize: '14px',
+                lineHeight: 1.5,
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
               },
             }}
           />
