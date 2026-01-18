@@ -43,10 +43,14 @@ export default function SlotSelector({
   const generateAllSlots = (): SlotInfo[] => {
     const allSlots: SlotInfo[] = [];
     const now = new Date();
-    const isToday = selectedDate && 
-      selectedDate.getDate() === now.getDate() &&
-      selectedDate.getMonth() === now.getMonth() &&
-      selectedDate.getFullYear() === now.getFullYear();
+    
+    // Ensure selectedDate is a valid Date object
+    const dateObj = selectedDate instanceof Date ? selectedDate : selectedDate ? new Date(selectedDate) : null;
+    
+    const isToday = dateObj && 
+      dateObj.getDate() === now.getDate() &&
+      dateObj.getMonth() === now.getMonth() &&
+      dateObj.getFullYear() === now.getFullYear();
     const currentHour = now.getHours();
 
     for (let hour = 0; hour < 24; hour++) {
