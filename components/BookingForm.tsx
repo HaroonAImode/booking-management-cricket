@@ -521,11 +521,7 @@ export default function BookingForm({
                   placeholder="Pick a date"
                   value={bookingDate}
                   onChange={(value) => {
-                    if (typeof value === 'string') {
-                      setBookingDate(new Date(value));
-                    } else {
-                      setBookingDate(value);
-                    }
+                    setBookingDate(value);
                   }}
                   error={errors.booking_date}
                   required

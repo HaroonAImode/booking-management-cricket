@@ -401,11 +401,21 @@ export default function CalendarFirstBooking() {
               </Paper>
 
               {/* Date Picker */}
-              <Paper p={{ base: 'md', sm: 'lg' }} withBorder radius="lg" style={{ borderColor: '#F5B800', borderWidth: '2px' }}>
+              <Paper 
+                p={{ base: 'md', sm: 'lg' }} 
+                withBorder 
+                radius="lg" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
+                  borderColor: '#F5B800', 
+                  borderWidth: '3px',
+                  boxShadow: '0 4px 16px rgba(245, 184, 0, 0.2)',
+                }}
+              >
                 <Stack gap="md">
                   <Group gap="xs">
-                    <IconCalendar size={20} color="#F5B800" />
-                    <Title order={3} size={{ base: 'h5', sm: 'h4' }}>
+                    <IconCalendar size={24} color="#F5B800" />
+                    <Title order={3} size={{ base: 'h5', sm: 'h4' }} c="white" fw={900}>
                       1. Select Date
                     </Title>
                   </Group>
@@ -414,15 +424,78 @@ export default function CalendarFirstBooking() {
                     onChange={setSelectedDate}
                     placeholder="Click to select date"
                     minDate={new Date()}
-                    size="lg"
+                    size="xl"
                     radius="md"
                     styles={{
                       input: {
-                        borderWidth: '2px',
+                        background: '#FFFFFF',
+                        borderWidth: '3px',
                         borderColor: '#F5B800',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        height: '56px',
                         '&:focus': {
-                          borderColor: '#1A1A1A',
+                          borderColor: '#F5B800',
+                          boxShadow: '0 0 0 3px rgba(245, 184, 0, 0.2)',
                         },
+                        '&::placeholder': {
+                          color: '#9CA3AF',
+                          fontWeight: 500,
+                        },
+                      },
+                      calendar: {
+                        background: '#1A1A1A',
+                      },
+                      calendarHeader: {
+                        background: '#1A1A1A',
+                      },
+                      calendarHeaderControl: {
+                        color: '#F5B800',
+                        '&:hover': {
+                          background: 'rgba(245, 184, 0, 0.1)',
+                        },
+                      },
+                      calendarHeaderLevel: {
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        '&:hover': {
+                          background: 'rgba(245, 184, 0, 0.1)',
+                        },
+                      },
+                      monthCell: {
+                        color: '#FFFFFF',
+                        '&:hover': {
+                          background: 'rgba(245, 184, 0, 0.1)',
+                        },
+                      },
+                      yearCell: {
+                        color: '#FFFFFF',
+                        '&:hover': {
+                          background: 'rgba(245, 184, 0, 0.1)',
+                        },
+                      },
+                      day: {
+                        color: '#FFFFFF',
+                        fontWeight: 600,
+                        '&:hover': {
+                          background: 'rgba(245, 184, 0, 0.2)',
+                        },
+                        '&[data-selected]': {
+                          background: '#F5B800',
+                          color: '#1A1A1A',
+                          fontWeight: 900,
+                        },
+                        '&[data-disabled]': {
+                          color: '#4A4A4A',
+                        },
+                        '&[data-weekend]': {
+                          color: '#F5B800',
+                        },
+                      },
+                      weekday: {
+                        color: '#9CA3AF',
+                        fontWeight: 700,
+                        fontSize: '12px',
                       },
                     }}
                   />
