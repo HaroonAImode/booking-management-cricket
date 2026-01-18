@@ -30,16 +30,6 @@ export default function AdminLayout({
 
   return (
     <AdminAuthGuard>
-      {/* Mobile backdrop overlay */}
-      {isMobile && mobileOpened && (
-        <Overlay
-          color="#000"
-          opacity={0.55}
-          onClick={closeMobile}
-          style={{ zIndex: 199, position: 'fixed' }}
-        />
-      )}
-      
       <AppShell
         header={{ height: 70 }}
         navbar={{
@@ -88,18 +78,7 @@ export default function AdminLayout({
             background: 'white',
             borderRight: '3px solid #F5B800',
             boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
-          }}
-          styles={{
-            navbar: {
-              '@media (max-width: 768px)': {
-                position: 'fixed',
-                top: '70px',
-                left: 0,
-                height: 'calc(100vh - 70px)',
-                width: '280px',
-                zIndex: 200,
-              },
-            },
+            zIndex: 200,
           }}
         >
           <AdminNavbar toggleMobile={toggleMobile} mobileOpened={mobileOpened} />
