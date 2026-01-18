@@ -35,10 +35,11 @@ interface BookingData {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const supabase = await createClient();
+    const params = await Promise.resolve(context.params);
     const bookingId = params.id;
 
     // Fetch booking details
