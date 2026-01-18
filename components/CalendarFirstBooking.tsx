@@ -633,6 +633,7 @@ export default function CalendarFirstBooking() {
                           maxWidth: 'min(400px, 95vw)',
                           left: '50%',
                           transform: 'translateX(-50%)',
+                          padding: '16px',
                         },
                       },
                     }}
@@ -654,18 +655,28 @@ export default function CalendarFirstBooking() {
                           fontWeight: 500,
                         },
                       },
-                      calendar: {
-                        background: '#FFFFFF',
+                      monthsListControl: {
+                        color: '#1A1A1A',
+                        fontWeight: 700,
+                        fontSize: '16px',
+                        '&:hover': {
+                          background: '#FFF9E6',
+                        },
                       },
-                      calendarHeader: {
-                        background: '#FFFFFF',
-                        borderBottom: '2px solid #F5B800',
-                        paddingBottom: '12px',
-                        marginBottom: '12px',
+                      yearsListControl: {
+                        color: '#1A1A1A',
+                        fontWeight: 700,
+                        fontSize: '16px',
+                        '&:hover': {
+                          background: '#FFF9E6',
+                        },
                       },
                       calendarHeaderControl: {
                         color: '#1A1A1A',
+                        width: '40px',
+                        height: '40px',
                         border: '2px solid #F5B800',
+                        borderRadius: '8px',
                         '&:hover': {
                           background: '#FFF9E6',
                         },
@@ -674,50 +685,68 @@ export default function CalendarFirstBooking() {
                         color: '#1A1A1A',
                         fontWeight: 900,
                         fontSize: '18px',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
                         '&:hover': {
                           background: '#FFF9E6',
                         },
+                      },
+                      month: {
+                        width: '100%',
+                      },
+                      monthRow: {
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      },
+                      monthThead: {
+                        borderBottom: '2px solid #F5B800',
+                        marginBottom: '8px',
                       },
                       monthCell: {
-                        color: '#1A1A1A',
-                        fontWeight: 700,
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
-                      },
-                      yearCell: {
-                        color: '#1A1A1A',
-                        fontWeight: 700,
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
+                        padding: '8px',
+                        textAlign: 'center',
                       },
                       day: {
                         color: '#1A1A1A',
                         fontWeight: 700,
-                        fontSize: '14px',
-                        '&:hover': {
+                        fontSize: '16px',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        '&:hover:not([data-disabled]):not([data-selected])': {
                           background: '#FFF9E6',
                         },
                         '&[data-selected]': {
-                          background: '#F5B800',
-                          color: '#1A1A1A',
+                          background: '#F5B800 !important',
+                          color: '#1A1A1A !important',
                           fontWeight: 900,
                           border: '2px solid #1A1A1A',
                         },
                         '&[data-disabled]': {
-                          color: '#D1D1D1',
+                          color: '#D1D1D1 !important',
+                          opacity: 0.4,
                           textDecoration: 'line-through',
+                          cursor: 'not-allowed',
                         },
-                        '&[data-weekend]': {
+                        '&[data-weekend]:not([data-disabled]):not([data-selected])': {
                           color: '#F5B800',
                           fontWeight: 900,
+                        },
+                        '&[data-today]:not([data-selected])': {
+                          border: '2px solid #F5B800',
                         },
                       },
                       weekday: {
                         color: '#6B7280',
                         fontWeight: 900,
                         fontSize: '12px',
+                        textTransform: 'uppercase',
+                        padding: '8px',
+                      },
+                    }}
                         textTransform: 'uppercase',
                       },
                     }}
