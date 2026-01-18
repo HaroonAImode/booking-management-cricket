@@ -382,7 +382,7 @@ export default function CalendarFirstBooking() {
                             size="lg"
                             variant="filled"
                             style={{
-                              padding: '10px 8px',
+                              padding: '12px 6px',
                               cursor: isAvailable ? 'pointer' : 'not-allowed',
                               opacity: isPast ? 0.3 : isBooked || isPending ? 0.6 : 1,
                               background: isAvailable 
@@ -393,8 +393,10 @@ export default function CalendarFirstBooking() {
                                 ? '#6B7280' 
                                 : '#F59E0B',
                               color: 'white',
-                              fontSize: '11px',
-                              fontWeight: 600,
+                              minHeight: '65px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                             onClick={() => {
                               if (isAvailable) {
@@ -407,9 +409,11 @@ export default function CalendarFirstBooking() {
                               }
                             }}
                           >
-                            <Stack gap={2} align="center">
-                              <Text size="xs" fw={700}>{`${slot.slot_hour === 0 ? 12 : slot.slot_hour > 12 ? slot.slot_hour - 12 : slot.slot_hour}:00 ${slot.slot_hour < 12 ? 'AM' : 'PM'}`}</Text>
-                              <Text size="9px">
+                            <Stack gap={4} align="center">
+                              <Text size="sm" fw={700} style={{ lineHeight: 1.2, fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                {`${slot.slot_hour === 0 ? 12 : slot.slot_hour > 12 ? slot.slot_hour - 12 : slot.slot_hour}:00 ${slot.slot_hour < 12 ? 'AM' : 'PM'}`}
+                              </Text>
+                              <Text size="xs" style={{ fontSize: '11px' }}>
                                 {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
                               </Text>
                             </Stack>
