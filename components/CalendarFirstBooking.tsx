@@ -50,26 +50,30 @@ export default function CalendarFirstBooking() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [todayLoading, setTodayLoading] = useState(true);
+  const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Load today's slots on component mount
+  // Load today's slots on component mount and when quickViewDate changes
   useEffect(() => {
     loadTodaySlots();
-  }, []);
+  }, [quickViewDate]);
 
-  const loadTodaySlots = async () => {
+  const loadTodaySlots = async (viewDate?: Date) => {
     setTodayLoading(true);
+    const dateToView = viewDate || quickViewDate;
     const today = new Date();
-    const dateStr = formatDateForSQL(today);
+    const dateStr = formatDateForSQL(dateToView);
     const { data, error } = await getAvailableSlots(dateStr);
 
     if (!error) {
       // Generate all 24 slots with proper status
       const allSlots: SlotInfo[] = [];
       const currentHour = today.getHours();
+      const isToday = dateToView.toDateString() === today.toDateString();
 
       for (let hour = 0; hour < 24; hour++) {
         const existingSlot = data?.find(s => s.slot_hour === hour);
-        const isPast = hour <= currentHour;
+        const isPast = isToday && hour <= currentHour;
         
         if (existingSlot) {
           allSlots.push({
@@ -282,21 +286,54 @@ export default function CalendarFirstBooking() {
                   }}
                 >
                   <Stack gap="md">
-                    <Group gap="xs">
-                      <IconCheck size={24} color="#1A1A1A" />
-                      <Title order={2} size={{ base: 'h4', sm: 'h3' }} c="#1A1A1A" fw={900}>
-                        ⚡ TODAY'S AVAILABILITY
-                      </Title>
+                    <Group justify="space-between" align="center" wrap="wrap">
+                      <Group gap="xs">
+                        <IconCheck size={24} color="#1A1A1A" />
+                        <Title order={2} size={{ base: 'h4', sm: 'h3' }} c="#1A1A1A" fw={900}>
+                          ⚡ TODAY'S AVAILABILITY
+                        </Title>
+                      </Group>
+                      <Group gap="xs">
+                        <Button
+                          size="sm"
+                          variant="filled"
+                          style={{ background: '#1A1A1A', color: '#F5B800' }}
+                          onClick={() => {
+                            const nextDay = new Date(quickViewDate);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            setQuickViewDate(nextDay);
+                          }}
+                        >
+                          Next Day →
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="filled"
+                          leftSection={<IconCalendar size={16} />}
+                          style={{ background: '#1A1A1A', color: '#F5B800' }}
+                          onClick={() => setShowDatePicker(true)}
+                        >
+                          Select Any Date
+                        </Button>
+                      </Group>
                     </Group>
                     
                     <Text size="sm" c="#1A1A1A" fw={600}>
-                      {new Date().toLocaleDateString('en-US', {
+                      {quickViewDate.toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric'
                       })}
                     </Text>
+
+                    {/* Status Legend - Moved to Top */}
+                    <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
+                      <Badge size="md" style={{ background: '#1A1A1A', color: 'white', padding: '8px 12px' }}>✓ Available</Badge>
+                      <Badge size="md" style={{ background: '#6B7280', color: 'white', padding: '8px 12px' }}>✕ Booked</Badge>
+                      <Badge size="md" style={{ background: '#F59E0B', color: 'white', padding: '8px 12px' }}>⏳ Pending</Badge>
+                      <Badge size="md" style={{ background: '#DC2626', color: 'white', padding: '8px 12px' }}>⏱️ Past</Badge>
+                    </Group>
 
                     {/* All 24 Slots Grid */}
                     <SimpleGrid cols={{ base: 4, xs: 6, sm: 8 }} spacing="xs">
@@ -348,19 +385,79 @@ export default function CalendarFirstBooking() {
                       })}
                     </SimpleGrid>
 
-                    {/* Status Legend */}
-                    <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
-                      <Badge size="sm" style={{ background: '#1A1A1A', color: 'white' }}>✓ Available</Badge>
-                      <Badge size="sm" style={{ background: '#6B7280', color: 'white' }}>✕ Booked</Badge>
-                      <Badge size="sm" style={{ background: '#F59E0B', color: 'white' }}>⏳ Pending</Badge>
-                      <Badge size="sm" style={{ background: '#DC2626', color: 'white' }}>⏱️ Past</Badge>
-                    </Group>
-
-                    <Alert color="dark" variant="filled">
+                    <Alert 
+                      icon={<IconInfoCircle size={18} />}
+                      color="dark" 
+                      variant="filled"
+                      styles={{
+                        root: { background: '#2A2A2A' }
+                      }}
+                    >
                       <Text size="sm" fw={600}>
-                        💡 {todaySlots.filter(s => s.is_available && s.current_status !== 'past').length} slots available today! Click any green time above to quick-book.
+                        💡 {todaySlots.filter(s => s.is_available && s.current_status !== 'past').length} slots available! Click any available time to quick-book.
                       </Text>
                     </Alert>
+
+                    {/* Date Picker Modal */}
+                    {showDatePicker && (
+                      <Box
+                        style={{
+                          position: 'fixed',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'rgba(0, 0, 0, 0.7)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 1000,
+                        }}
+                        onClick={() => setShowDatePicker(false)}
+                      >
+                        <Paper
+                          p="xl"
+                          radius="lg"
+                          style={{
+                            background: '#FFFFFF',
+                            border: '3px solid #F5B800',
+                            maxWidth: '400px',
+                            width: '90%',
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Stack gap="md">
+                            <Title order={3} c="#1A1A1A">Select Date to View</Title>
+                            <DatePickerInput
+                              value={quickViewDate}
+                              onChange={(date) => {
+                                if (date) {
+                                  setQuickViewDate(date);
+                                  setShowDatePicker(false);
+                                }
+                              }}
+                              placeholder="Select date"
+                              minDate={new Date()}
+                              size="lg"
+                              styles={{
+                                input: {
+                                  borderWidth: '2px',
+                                  borderColor: '#F5B800',
+                                },
+                              }}
+                            />
+                            <Button
+                              fullWidth
+                              variant="outline"
+                              onClick={() => setShowDatePicker(false)}
+                              style={{ borderColor: '#1A1A1A', color: '#1A1A1A' }}
+                            >
+                              Cancel
+                            </Button>
+                          </Stack>
+                        </Paper>
+                      </Box>
+                    )}
                   </Stack>
                 </Paper>
               )}
