@@ -377,8 +377,19 @@ export default function BookingDetailsModal({
                         By Customer at Booking
                       </Text>
                       <Text size="xs">
-                        Method: <strong>{booking.advance_payment_method || 'N/A'}</strong>
+                        Method: <strong>
+                          {booking.advance_payment_method === 'easypaisa' && 'Easypaisa'}
+                          {booking.advance_payment_method === 'sadapay' && 'SadaPay'}
+                          {booking.advance_payment_method === 'cash' && 'Cash'}
+                          {!['easypaisa', 'sadapay', 'cash'].includes(booking.advance_payment_method || '') && (booking.advance_payment_method || 'N/A')}
+                        </strong>
                       </Text>
+                      {booking.advance_payment_method === 'easypaisa' && (
+                        <Text size="xs" c="dimmed">Acc: 03001234567</Text>
+                      )}
+                      {booking.advance_payment_method === 'sadapay' && (
+                        <Text size="xs" c="dimmed">Acc: 03007654321</Text>
+                      )}
                       {booking.advance_payment_date && (
                         <Text size="xs" c="dimmed">
                           {formatDate(booking.advance_payment_date)}

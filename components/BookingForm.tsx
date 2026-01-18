@@ -49,12 +49,16 @@ import { uploadPaymentProof, validatePaymentProofFile } from '@/lib/supabase/sto
 import { SlotInfo, BookingSummary } from '@/types';
 
 const PAYMENT_METHODS = [
-  { value: 'online', label: 'Online Transfer' },
-  { value: 'bank', label: 'Bank Deposit' },
-  { value: 'jazzcash', label: 'JazzCash' },
-  { value: 'easypaisa', label: 'EasyPaisa' },
-  { value: 'cash', label: 'Cash (Advance)' },
+  { value: 'easypaisa', label: 'Easypaisa - 03XX XXXXXXX' },
+  { value: 'sadapay', label: 'SadaPay - 03XX XXXXXXX' },
+  { value: 'cash', label: 'Cash' },
 ];
+
+// Payment account details
+const PAYMENT_ACCOUNTS = {
+  easypaisa: { number: '03001234567', name: 'Cricket Ground Bookings' },
+  sadapay: { number: '03007654321', name: 'Cricket Ground Bookings' },
+};
 
 interface BookingFormProps {
   preSelectedDate?: Date | null;
@@ -203,7 +207,11 @@ export default function BookingForm({
     if (!bookingDate) newErrors.booking_date = 'Please select a booking date';
     if (selectedSlots.length === 0) newErrors.slots = 'Please select at least one time slot';
     if (!paymentMethod) newErrors.payment_method = 'Please select a payment method';
-    if (!paymentProofFile) newErrors.payment_proof = 'Payment proof screenshot is required';
+    
+    // Payment proof required for online payments, optional for cash
+    if (paymentMethod !== 'cash' && !paymentProofFile) {
+      newErrors.payment_proof = 'Payment proof required for online payments';
+    }
 
     // Validate file if provided
     if (paymentProofFile) {
@@ -627,22 +635,47 @@ export default function BookingForm({
                 required
               />
 
+              {/* Payment Account Details */}
+              {paymentMethod && paymentMethod !== 'cash' && (
+                <Alert icon={<IconAlertCircle size="1rem" />} color="blue" variant="light">
+                  <Stack gap={4}>
+                    <Text size="sm" fw={600}>Transfer to this account:</Text>
+                    <Text size="sm">
+                      <strong>Account Name:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.name}
+                    </Text>
+                    <Text size="sm">
+                      <strong>Account Number:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.number}
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      💡 After transferring, please upload the payment screenshot below
+                    </Text>
+                  </Stack>
+                </Alert>
+              )}
+
               <FileInput
-                label="Payment Proof Screenshot"
+                label={paymentMethod === 'cash' ? 'Payment Proof Screenshot (Optional)' : 'Payment Proof Screenshot'}
                 placeholder="Upload payment screenshot"
                 accept="image/png,image/jpeg,image/jpg"
                 value={paymentProofFile}
                 onChange={setPaymentProofFile}
                 error={errors.payment_proof}
-                required
+                required={paymentMethod !== 'cash'}
                 leftSection={<IconUpload size={16} />}
                 clearable
               />
 
-              <Alert icon={<IconAlertCircle size="1rem" />} color="yellow" variant="light">
-                ⚠️ Please upload a clear screenshot of your payment receipt. Accepted formats: PNG,
-                JPG, JPEG (Max 5MB)
-              </Alert>
+              {paymentMethod !== 'cash' && (
+                <Alert icon={<IconAlertCircle size="1rem" />} color="yellow" variant="light">
+                  ⚠️ Please upload a clear screenshot of your payment receipt. Accepted formats: PNG,
+                  JPG, JPEG (Max 5MB)
+                </Alert>
+              )}
+              {paymentMethod === 'cash' && (
+                <Alert icon={<IconAlertCircle size="1rem" />} color="green" variant="light">
+                  ℹ️ Cash payment will be collected at the venue before play time.
+                </Alert>
+              )}
             </Stack>
           </Paper>
 

@@ -228,8 +228,17 @@ export default function BookingReview({
                   Payment Method
                 </Text>
                 <Badge size="lg" color="teal" variant="light">
-                  {bookingData.advance_payment_method}
+                  {bookingData.advance_payment_method === 'easypaisa' && 'Easypaisa'}
+                  {bookingData.advance_payment_method === 'sadapay' && 'SadaPay'}
+                  {bookingData.advance_payment_method === 'cash' && 'Cash'}
+                  {!['easypaisa', 'sadapay', 'cash'].includes(bookingData.advance_payment_method) && bookingData.advance_payment_method}
                 </Badge>
+                {bookingData.advance_payment_method === 'easypaisa' && (
+                  <Text size="xs" c="dimmed">Acc: 03001234567</Text>
+                )}
+                {bookingData.advance_payment_method === 'sadapay' && (
+                  <Text size="xs" c="dimmed">Acc: 03007654321</Text>
+                )}
               </Stack>
             </SimpleGrid>
 

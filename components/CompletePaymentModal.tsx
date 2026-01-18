@@ -161,11 +161,9 @@ export default function CompletePaymentModal({
           placeholder="Select payment method"
           required
           data={[
+            { value: 'easypaisa', label: 'Easypaisa' },
+            { value: 'sadapay', label: 'SadaPay' },
             { value: 'cash', label: 'Cash' },
-            { value: 'bank_transfer', label: 'Bank Transfer' },
-            { value: 'upi', label: 'UPI' },
-            { value: 'card', label: 'Card' },
-            { value: 'cheque', label: 'Cheque' },
           ]}
           value={paymentMethod}
           onChange={(value) => setPaymentMethod(value || '')}

@@ -304,11 +304,9 @@ export default function ManualBookingModal({
                 <Select
                   label="Payment Method"
                   data={[
-                    { value: 'cash', label: 'Cash' },
-                    { value: 'bank', label: 'Bank Transfer' },
-                    { value: 'jazzcash', label: 'JazzCash' },
                     { value: 'easypaisa', label: 'Easypaisa' },
-                    { value: 'online', label: 'Online' },
+                    { value: 'sadapay', label: 'SadaPay' },
+                    { value: 'cash', label: 'Cash' },
                   ]}
                   value={formData.advancePaymentMethod}
                   onChange={(value) =>
