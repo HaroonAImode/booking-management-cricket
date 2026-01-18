@@ -639,10 +639,11 @@ export default function CalendarFirstBooking() {
                           background: '#FFFFFF',
                           border: '3px solid #F5B800',
                           boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
-                          maxWidth: 'min(400px, 95vw)',
+                          maxWidth: 'min(380px, 90vw)',
                           left: '50%',
                           transform: 'translateX(-50%)',
-                          padding: '16px',
+                          padding: '12px',
+                          overflow: 'hidden',
                         },
                       },
                     }}
@@ -682,10 +683,11 @@ export default function CalendarFirstBooking() {
                       },
                       calendarHeaderControl: {
                         color: '#1A1A1A',
-                        width: '40px',
-                        height: '40px',
+                        width: 'clamp(32px, 8vw, 40px)',
+                        height: 'clamp(32px, 8vw, 40px)',
                         border: '2px solid #F5B800',
                         borderRadius: '8px',
+                        minWidth: '32px',
                         '&:hover': {
                           background: '#FFF9E6',
                         },
@@ -693,7 +695,7 @@ export default function CalendarFirstBooking() {
                       calendarHeaderLevel: {
                         color: '#1A1A1A',
                         fontWeight: 900,
-                        fontSize: '18px',
+                        fontSize: 'clamp(14px, 4vw, 18px)',
                         padding: '8px 16px',
                         borderRadius: '8px',
                         '&:hover': {
@@ -702,29 +704,39 @@ export default function CalendarFirstBooking() {
                       },
                       month: {
                         width: '100%',
+                        padding: '0',
                       },
                       monthRow: {
                         display: 'flex',
-                        justifyContent: 'space-between',
+                        justifyContent: 'space-around',
+                        gap: '2px',
                       },
                       monthThead: {
                         borderBottom: '2px solid #F5B800',
                         marginBottom: '8px',
                       },
                       monthCell: {
-                        padding: '8px',
+                        padding: '2px',
                         textAlign: 'center',
+                        flex: '1 1 14.28%',
+                        maxWidth: '14.28%',
                       },
                       day: {
                         color: '#1A1A1A',
                         fontWeight: 700,
-                        fontSize: '16px',
-                        width: '40px',
-                        height: '40px',
+                        fontSize: 'clamp(12px, 3.5vw, 16px)',
+                        width: '100%',
+                        height: 'clamp(32px, 8vw, 40px)',
+                        minWidth: '32px',
+                        minHeight: '32px',
+                        maxWidth: '46px',
+                        maxHeight: '46px',
+                        aspectRatio: '1/1',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        margin: '0 auto',
                         '&:hover:not([data-disabled]):not([data-selected])': {
                           background: '#FFF9E6',
                         },
@@ -751,9 +763,11 @@ export default function CalendarFirstBooking() {
                       weekday: {
                         color: '#6B7280',
                         fontWeight: 900,
-                        fontSize: '12px',
+                        fontSize: 'clamp(10px, 3vw, 12px)',
                         textTransform: 'uppercase',
-                        padding: '8px',
+                        padding: '4px 2px',
+                        width: '100%',
+                        textAlign: 'center',
                       },
                     }}
                   />
