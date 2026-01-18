@@ -342,10 +342,6 @@ export default function HomePage() {
                   },
                 }}
               >
-                    color: 'white',
-                  },
-                }}
-              >
                 Contact Us
               </Button>
             </Group>
