@@ -24,7 +24,7 @@ export default function PublicLayout({
   return (
     <AppShell
       header={{ height: 60 }}
-      padding="md"
+      padding={{ base: 'sm', sm: 'md' }}
     >
       {/* Public navigation header */}
       <AppShell.Header>
@@ -32,7 +32,7 @@ export default function PublicLayout({
       </AppShell.Header>
 
       {/* Main content area */}
-      <AppShell.Main>
+      <AppShell.Main pt={{ base: 'md', sm: 'md' }}>
         <Container size="xl">
           {children}
         </Container>

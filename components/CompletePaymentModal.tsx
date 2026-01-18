@@ -58,8 +58,10 @@ export default function CompletePaymentModal({
       return;
     }
 
-    if (!paymentProof) {
-      setError('Please upload payment proof');
+    // Payment proof is required for digital payments (easypaisa, sadapay)
+    // but optional for cash payments
+    if (!paymentProof && paymentMethod !== 'cash') {
+      setError('Please upload payment proof for digital payments');
       return;
     }
 
@@ -173,12 +175,16 @@ export default function CompletePaymentModal({
         <FileInput
           label="Payment Proof"
           placeholder="Upload payment proof image"
-          required
+          required={paymentMethod !== 'cash'}
           accept="image/*"
           leftSection={<IconUpload size={18} />}
           value={paymentProof}
           onChange={setPaymentProof}
-          description="Upload screenshot or photo of payment receipt"
+          description={
+            paymentMethod === 'cash'
+              ? 'Optional for cash payments'
+              : 'Upload screenshot or photo of payment receipt'
+          }
         />
 
         {/* Admin Notes */}

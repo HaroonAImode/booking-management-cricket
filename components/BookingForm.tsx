@@ -481,7 +481,11 @@ export default function BookingForm({
                   placeholder="Pick a date"
                   value={bookingDate}
                   onChange={(value) => {
-                    setBookingDate(value);
+                    if (value) {
+                      setBookingDate(new Date(value));
+                    } else {
+                      setBookingDate(null);
+                    }
                   }}
                   error={errors.booking_date}
                   required

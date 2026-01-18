@@ -274,7 +274,7 @@ export default function CalendarFirstBooking() {
                 label="Your Details"
                 description="Complete booking"
                 icon={<IconUser size={18} />}
-                allowStepSelect={canProceedToForm}
+                allowStepSelect={canProceedToForm ?? false}
               />
             </Stepper>
           </Paper>
@@ -661,7 +661,13 @@ export default function CalendarFirstBooking() {
                   </Group>
                   <DatePickerInput
                     value={selectedDate}
-                    onChange={setSelectedDate}
+                    onChange={(value) => {
+                      if (value) {
+                        setSelectedDate(new Date(value));
+                      } else {
+                        setSelectedDate(null);
+                      }
+                    }}
                     placeholder="Click to select date"
                     minDate={new Date()}
                     firstDayOfWeek={1}
