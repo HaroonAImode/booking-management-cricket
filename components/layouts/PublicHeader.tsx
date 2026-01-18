@@ -11,8 +11,9 @@
 
 'use client';
 
-import { Group, Burger, Container, Title, Box, Text } from '@mantine/core';
+import { Group, Burger, Container, Title, Box, Text, Button, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { IconCalendar, IconSearch } from '@tabler/icons-react';
 import Link from 'next/link';
 import styles from './PublicHeader.module.css';
 
@@ -58,21 +59,39 @@ export default function PublicHeader() {
         <Group gap="sm" visibleFrom="sm">
           <Link href="/" className={styles.link}>Home</Link>
           <Link href="/bookings" className={styles.link}>Bookings</Link>
-          <Link href="/about" className={styles.link}>About</Link>
-          <Link href="/contact" className={styles.link}>Contact</Link>
+          <Link href="/bookings/check" className={styles.link}>Check Booking</Link>
         </Group>
 
-        {/* Mobile Menu Toggle */}
-        <Burger 
-          opened={opened} 
-          onClick={toggle} 
-          hiddenFrom="sm" 
-          size="sm" 
-          color="#1A1A1A"
-          style={{
-            transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        />
+        {/* Mobile Navigation Buttons */}
+        <Group gap="xs" hiddenFrom="sm">
+          <Button
+            component={Link}
+            href="/bookings"
+            size="xs"
+            leftSection={<IconCalendar size={16} />}
+            style={{
+              background: '#F5B800',
+              color: '#1A1A1A',
+              fontWeight: 600,
+            }}
+          >
+            Book Now
+          </Button>
+          <Button
+            component={Link}
+            href="/bookings/check"
+            size="xs"
+            variant="outline"
+            leftSection={<IconSearch size={16} />}
+            style={{
+              borderColor: '#F5B800',
+              color: '#1A1A1A',
+              fontWeight: 600,
+            }}
+          >
+            Check Status
+          </Button>
+        </Group>
       </Group>
     </Container>
   );

@@ -13,6 +13,7 @@
 'use client';
 
 import { Container, Group, Text, Stack } from '@mantine/core';
+import Link from 'next/link';
 import styles from './PublicFooter.module.css';
 
 export default function PublicFooter() {
@@ -29,9 +30,51 @@ export default function PublicFooter() {
 
           <Stack gap="xs">
             <Text fw={600} c="#F5B800">Quick Links</Text>
-            <Text size="sm" c="white" style={{ cursor: 'pointer' }}>Home</Text>
-            <Text size="sm" c="white" style={{ cursor: 'pointer' }}>Bookings</Text>
-            <Text size="sm" c="white" style={{ cursor: 'pointer' }}>About</Text>
+            <Text
+              component={Link}
+              href="/"
+              size="sm"
+              c="white"
+              style={{
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'color 200ms ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
+            >
+              Home
+            </Text>
+            <Text
+              component={Link}
+              href="/bookings"
+              size="sm"
+              c="white"
+              style={{
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'color 200ms ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
+            >
+              New Booking
+            </Text>
+            <Text
+              component={Link}
+              href="/bookings/check"
+              size="sm"
+              c="white"
+              style={{
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'color 200ms ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
+            >
+              Check Booking Status
+            </Text>
           </Stack>
 
           <Stack gap="xs">
