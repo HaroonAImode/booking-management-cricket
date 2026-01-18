@@ -620,6 +620,7 @@ export default function CalendarFirstBooking() {
                     onChange={setSelectedDate}
                     placeholder="Click to select date"
                     minDate={new Date()}
+                    firstDayOfWeek={1}
                     size="xl"
                     radius="md"
                     popoverProps={{
