@@ -31,6 +31,8 @@ import {
   IconX,
   IconAlertCircle,
   IconPhoto,
+  IconFileInvoice,
+  IconDownload,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { formatSlotRanges } from '@/lib/supabase/bookings';
@@ -209,6 +211,60 @@ export default function BookingDetailsModal({
     }
   };
 
+  const downloadInvoice = async () => {
+    try {
+      notifications.show({
+        title: 'Generating Invoice',
+        message: 'Please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false,
+        id: 'invoice-download',
+      });
+
+      const response = await fetch(`/api/invoices/${bookingId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : 'Invoice.pdf';
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: 'invoice-download',
+        title: '✅ Invoice Downloaded',
+        message: 'Professional invoice has been downloaded',
+        color: 'green',
+        loading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Invoice download error:', error);
+      notifications.update({
+        id: 'invoice-download',
+        title: 'Error',
+        message: 'Failed to download invoice',
+        color: 'red',
+        loading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -257,15 +313,26 @@ export default function BookingDetailsModal({
       opened={opened}
       onClose={onClose}
       title={
-        <Group gap="sm">
-          <Text fw={600} size="lg">
-            Booking Details
-          </Text>
-          {booking && (
-            <Badge color={getStatusColor(booking.status)} size="lg">
-              {booking.status?.toUpperCase()}
-            </Badge>
-          )}
+        <Group gap="sm" justify="space-between" style={{ width: '100%', paddingRight: '20px' }}>
+          <Group gap="sm">
+            <Text fw={600} size="lg">
+              Booking Details
+            </Text>
+            {booking && (
+              <Badge color={getStatusColor(booking.status)} size="lg">
+                {booking.status?.toUpperCase()}
+              </Badge>
+            )}
+          </Group>
+          <Button
+            variant="light"
+            color="yellow"
+            leftSection={<IconFileInvoice size={16} />}
+            onClick={downloadInvoice}
+            size="sm"
+          >
+            Download Invoice
+          </Button>
         </Group>
       }
       size="xl"

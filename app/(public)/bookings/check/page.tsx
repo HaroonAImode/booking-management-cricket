@@ -34,6 +34,7 @@ import {
   IconClock as IconPending,
   IconX,
   IconAlertCircle,
+  IconFileInvoice,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import jsPDF from 'jspdf';
@@ -113,6 +114,61 @@ export default function CheckBookingPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const downloadInvoice = async (bookingId: string) => {
+    try {
+      notifications.show({
+        title: 'Generating Invoice',
+        message: 'Please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false,
+        id: 'invoice-download',
+      });
+
+      const response = await fetch(`/api/invoices/${bookingId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : 'Invoice.pdf';
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: 'invoice-download',
+        title: '✅ Invoice Downloaded',
+        message: 'Your invoice has been downloaded successfully',
+        color: 'green',
+        loading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Invoice download error:', error);
+      notifications.update({
+        id: 'invoice-download',
+        title: 'Error',
+        message: 'Failed to download invoice',
+        color: 'red',
+        loading: false,
+        autoClose: 3000,
+      });
     }
   };
 
@@ -481,17 +537,28 @@ export default function CheckBookingPage() {
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <>
                         <Divider />
-                        <Button
-                          size="lg"
-                          variant="gradient"
-                          gradient={{ from: 'green', to: 'teal' }}
-                          leftSection={<IconDownload size={20} />}
-                          onClick={() => downloadBookingSlip(booking)}
-                          fullWidth
-                          style={{ height: '50px' }}
-                        >
-                          Download Booking Slip (PDF)
-                        </Button>
+                        <Group grow>
+                          <Button
+                            size="lg"
+                            variant="gradient"
+                            gradient={{ from: 'green', to: 'teal' }}
+                            leftSection={<IconDownload size={20} />}
+                            onClick={() => downloadBookingSlip(booking)}
+                            style={{ height: '50px' }}
+                          >
+                            Download Booking Slip
+                          </Button>
+                          <Button
+                            size="lg"
+                            variant="gradient"
+                            gradient={{ from: 'yellow', to: 'orange' }}
+                            leftSection={<IconFileInvoice size={20} />}
+                            onClick={() => downloadInvoice(booking.id)}
+                            style={{ height: '50px' }}
+                          >
+                            Download Invoice
+                          </Button>
+                        </Group>
                       </>
                     )}
 

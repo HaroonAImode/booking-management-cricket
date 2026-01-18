@@ -25,6 +25,7 @@ import {
   IconAlertCircle,
   IconArrowLeft,
   IconCheck,
+  IconFileInvoice,
 } from '@tabler/icons-react';
 import { BookingSummary } from '@/types';
 import { formatSlotRanges } from '@/lib/supabase/bookings';
@@ -279,6 +280,18 @@ export default function BookingReview({
             </Text>
             <Text size="xs">
               • Please arrive 10 minutes before your scheduled time
+            </Text>
+          </Stack>
+        </Alert>
+
+        {/* Invoice Info */}
+        <Alert icon={<IconFileInvoice size="1rem" />} color="blue" variant="light">
+          <Stack gap={4}>
+            <Text size="sm" fw={600}>
+              📄 Invoice Available
+            </Text>
+            <Text size="xs">
+              After booking confirmation, you can check your booking status and download a professional invoice from the "Check Booking" page.
             </Text>
           </Stack>
         </Alert>
