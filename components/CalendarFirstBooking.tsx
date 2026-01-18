@@ -308,7 +308,7 @@ export default function CalendarFirstBooking() {
 
                         return (
                           <Badge
-                            key={slot.hour}
+                            key={slot.slot_hour}
                             size="lg"
                             variant="filled"
                             style={{

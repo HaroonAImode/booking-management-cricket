@@ -20,8 +20,13 @@ import { Notifications } from '@mantine/notifications';
 import { theme } from '@/styles/theme';
 
 export const metadata = {
-  title: 'Cricket Booking Software',
-  description: 'Professional cricket ground booking and management system',
+  title: 'Powerplay Cricket Arena - Book Your Slot',
+  description: 'Professional cricket ground booking and management system with real-time slot availability',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
