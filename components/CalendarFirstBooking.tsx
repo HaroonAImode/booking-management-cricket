@@ -85,11 +85,11 @@ export default function CalendarFirstBooking() {
           const isNight = hour >= 17 || hour < 7;
           allSlots.push({
             slot_hour: hour,
-            time_display: `${hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`,
+            slot_time: `${hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`,
             is_available: !isPast,
             is_night_rate: isNight,
             hourly_rate: isNight ? 2000 : 1500,
-            current_status: isPast ? 'past' : 'available',
+            current_status: isPast ? 'cancelled' : 'available',
           } as SlotInfo);
         }
       }
@@ -338,7 +338,7 @@ export default function CalendarFirstBooking() {
                     {/* All 24 Slots Grid */}
                     <SimpleGrid cols={{ base: 4, xs: 6, sm: 8 }} spacing="xs">
                       {todaySlots.map((slot) => {
-                        const isPast = slot.current_status === 'past' || !slot.is_available && slot.slot_hour <= new Date().getHours();
+                        const isPast = !slot.is_available && slot.slot_hour <= new Date().getHours();
                         const isBooked = slot.current_status === 'booked';
                         const isPending = slot.current_status === 'pending';
                         const isAvailable = slot.is_available && !isPast;
@@ -375,7 +375,7 @@ export default function CalendarFirstBooking() {
                             }}
                           >
                             <Stack gap={2} align="center">
-                              <Text size="xs" fw={700}>{slot.time_display}</Text>
+                              <Text size="xs" fw={700}>{slot.slot_time}</Text>
                               <Text size="9px">
                                 {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
                               </Text>
@@ -394,7 +394,7 @@ export default function CalendarFirstBooking() {
                       }}
                     >
                       <Text size="sm" fw={600}>
-                        💡 {todaySlots.filter(s => s.is_available && s.current_status !== 'past').length} slots available! Click any available time to quick-book.
+                        💡 {todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any available time to quick-book.
                       </Text>
                     </Alert>
 
@@ -432,7 +432,8 @@ export default function CalendarFirstBooking() {
                               value={quickViewDate}
                               onChange={(date) => {
                                 if (date) {
-                                  setQuickViewDate(date);
+                                  const dateObj = date instanceof Date ? date : new Date(date);
+                                  setQuickViewDate(dateObj);
                                   setShowDatePicker(false);
                                 }
                               }}
