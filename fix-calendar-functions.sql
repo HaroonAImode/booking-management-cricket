@@ -10,6 +10,9 @@
 -- 1. FIX GET_CALENDAR_BOOKINGS FUNCTION
 -- ========================================
 
+-- Drop the existing function first (required because return type changed)
+DROP FUNCTION IF EXISTS get_calendar_bookings(DATE, DATE, TEXT);
+
 CREATE OR REPLACE FUNCTION get_calendar_bookings(
   p_start_date DATE,
   p_end_date DATE,
@@ -76,6 +79,9 @@ COMMENT ON FUNCTION get_calendar_bookings(DATE, DATE, TEXT) IS 'Returns bookings
 -- ========================================
 -- 2. FIX GET_BOOKING_DETAILS FUNCTION
 -- ========================================
+
+-- Drop the existing function first (required because return type changed)
+DROP FUNCTION IF EXISTS get_booking_details(UUID);
 
 CREATE OR REPLACE FUNCTION get_booking_details(p_booking_id UUID)
 RETURNS JSON AS $$
