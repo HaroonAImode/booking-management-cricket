@@ -340,7 +340,7 @@ export default function CalendarFirstBooking() {
                     </Group>
                     
                     <Text size="sm" c="#1A1A1A" fw={600}>
-                      {quickViewDate.toLocaleDateString('en-US', {
+                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
                         day: 'numeric',
@@ -458,7 +458,8 @@ export default function CalendarFirstBooking() {
                                 value={quickViewDate}
                                 onChange={(date) => {
                                   if (date) {
-                                    setQuickViewDate(date);
+                                    const dateObj = date instanceof Date ? date : new Date(date);
+                                    setQuickViewDate(dateObj);
                                     setShowDatePicker(false);
                                   }
                                 }}
