@@ -417,8 +417,17 @@ export default function BookingForm({
 
   return (
     <>
-      <Container size="md" py={{ base: "md", sm: "xl" }} px={{ base: "xs", sm: "md" }} className="animate-fade-in">
-        <Stack gap={{ base: "md", sm: "xl" }}>
+      <Container 
+        size="md" 
+        py={{ base: "md", sm: "xl" }} 
+        px={{ base: "xs", sm: "md" }} 
+        className="animate-fade-in"
+        style={{ 
+          maxWidth: '100%',
+          overflowX: 'hidden',
+        }}
+      >
+        <Stack gap={{ base: "md", sm: "xl" }} style={{ maxWidth: '100%' }}>
           {/* Header */}
           <Stack gap="xs">
             <Title order={1} size={{ base: "h2", sm: "h1" }}>Book Cricket Ground</Title>
@@ -426,8 +435,16 @@ export default function BookingForm({
           </Stack>
 
           {/* Customer Information */}
-          <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
-            <Stack gap="md">
+          <Paper 
+            p={{ base: "md", sm: "lg" }} 
+            withBorder 
+            className="hover-lift"
+            style={{ 
+              maxWidth: '100%',
+              overflowX: 'hidden',
+            }}
+          >
+            <Stack gap="md" style={{ maxWidth: '100%' }}>
               <Title order={3} size={{ base: "h4", sm: "h3" }}>Customer Information</Title>
               <Divider />
 
@@ -518,8 +535,16 @@ export default function BookingForm({
           )}
 
           {/* Payment Information */}
-          <Paper p={{ base: "md", sm: "lg" }} withBorder bg="blue.0">
-            <Stack gap="md">
+          <Paper 
+            p={{ base: "md", sm: "lg" }} 
+            withBorder 
+            bg="blue.0"
+            style={{ 
+              maxWidth: '100%',
+              overflowX: 'hidden',
+            }}
+          >
+            <Stack gap="md" style={{ maxWidth: '100%' }}>
               <Title order={3} size={{ base: "h4", sm: "h3" }}>Payment Information</Title>
               <Divider />
 
@@ -602,6 +627,16 @@ export default function BookingForm({
                 required={paymentMethod !== 'cash'}
                 leftSection={<IconUpload size={16} />}
                 clearable
+                styles={{
+                  input: {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                  section: {
+                    flexShrink: 0,
+                  },
+                }}
               />
 
               {paymentMethod !== 'cash' && (
