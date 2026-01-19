@@ -709,3 +709,14 @@ body {
     height: 52px;
   }
 }
+
+/* Fix for hidden LoadingOverlay or blocking elements */
+.mantine-LoadingOverlay-root:not([data-visible="true"]) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.mantine-Overlay-root:not([data-visible="true"]) {
+  display: none !important;
+  pointer-events: none !important;
+}

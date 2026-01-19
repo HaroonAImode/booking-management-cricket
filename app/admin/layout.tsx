@@ -13,7 +13,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AppShell, Burger, Overlay } from '@mantine/core';
+import { AppShell, Burger } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import AdminHeader from '@/components/layouts/AdminHeader';
 import AdminNavbar from '@/components/layouts/AdminNavbar';
