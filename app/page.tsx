@@ -71,10 +71,8 @@ export default function HomePage() {
   ];
 
   return (
-    <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
-      <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
-        <Stack gap={{ base: 'lg', sm: 'xl' }}>
-        {/* Hero Section */}
+    <Stack gap={{ base: 'lg', sm: 'xl' }}>
+      {/* Hero Section */}
         <Paper
           p={{ base: 'xl', sm: '60px' }}
           radius="lg"
@@ -348,7 +346,5 @@ export default function HomePage() {
           </Stack>
         </Paper>
       </Stack>
-    </Container>
-    </Box>
   );
 }
