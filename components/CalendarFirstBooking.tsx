@@ -51,7 +51,6 @@ export default function CalendarFirstBooking() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [todayLoading, setTodayLoading] = useState(true);
   const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Load today's slots on component mount and when quickViewDate changes
   useEffect(() => {
@@ -257,27 +256,7 @@ export default function CalendarFirstBooking() {
             </Stack>
           </Paper>
 
-          {/* Progress Stepper */}
-          <Paper p="md" withBorder radius="lg" style={{ borderColor: '#F5B800', borderWidth: '2px' }}>
-            <Stepper
-              active={activeStep}
-              onStepClick={setActiveStep}
-              size='md'
-              color="yellow"
-            >
-              <Stepper.Step
-                label="Select Date & Time"
-                description="View availability"
-                icon={<IconCalendar size={18} />}
-              />
-              <Stepper.Step
-                label="Your Details"
-                description="Complete booking"
-                icon={<IconUser size={18} />}
-                allowStepSelect={canProceedToForm ?? false}
-              />
-            </Stepper>
-          </Paper>
+
 
           {/* Step 1: Calendar and Slot Selection */}
           {activeStep === 0 && (
@@ -337,15 +316,6 @@ export default function CalendarFirstBooking() {
                         >
                           Next Day →
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="filled"
-                          leftSection={<IconCalendar size={16} />}
-                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
-                          onClick={() => setShowDatePicker(true)}
-                        >
-                          Select Any Date
-                        </Button>
                       </Group>
                     </Group>
                     
@@ -402,12 +372,10 @@ export default function CalendarFirstBooking() {
                             }}
                             onClick={() => {
                               if (isAvailable) {
-                                setSelectedDate(new Date());
-                                setActiveStep(0);
-                                setTimeout(() => {
-                                  const slotsSection = document.getElementById('slots-section');
-                                  slotsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }, 100);
+                                // Set the date to the quickViewDate
+                                setSelectedDate(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate));
+                                // Toggle the slot selection
+                                handleSlotToggle(slot.slot_hour);
                               }
                             }}
                             onMouseEnter={(e) => {
@@ -464,80 +432,6 @@ export default function CalendarFirstBooking() {
                         💡 {todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any available time to quick-book.
                       </Text>
                     </Alert>
-
-                    {/* Date Picker Modal */}
-                    {showDatePicker && (
-                      <Box
-                        style={{
-                          position: 'fixed',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: 'rgba(0, 0, 0, 0.8)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          zIndex: 1000,
-                          padding: '16px',
-                        }}
-                        onClick={() => setShowDatePicker(false)}
-                      >
-                        <Paper
-                          p={{ base: 'md', sm: 'xl' }}
-                          radius="lg"
-                          style={{
-                            background: '#FFFFFF',
-                            border: '3px solid #F5B800',
-                            maxWidth: '450px',
-                            width: '100%',
-                            maxHeight: '90vh',
-                            overflow: 'auto',
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Stack gap="lg">
-                            <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
-                            
-                            <Box style={{ display: 'flex', justifyContent: 'center' }}>
-                              <DatePicker
-                                value={quickViewDate}
-                                onChange={(date) => {
-                                  if (date) {
-                                    setQuickViewDate(new Date(date));
-                                    setShowDatePicker(false);
-                                  }
-                                }}
-                                minDate={new Date()}
-                                size="lg"
-                                styles={{
-                                  calendarHeader: {
-                                    borderBottom: '2px solid #F5B800',
-                                    paddingBottom: '12px',
-                                    marginBottom: '12px',
-                                  },
-                                }}
-                              />
-                            </Box>
-
-                            <Button
-                              fullWidth
-                              size="lg"
-                              variant="outline"
-                              onClick={() => setShowDatePicker(false)}
-                              style={{ 
-                                borderColor: '#1A1A1A', 
-                                color: '#1A1A1A',
-                                borderWidth: '2px',
-                                fontWeight: 700,
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </Stack>
-                        </Paper>
-                      </Box>
-                    )}
                   </Stack>
                 </Paper>
               )}
@@ -835,7 +729,7 @@ export default function CalendarFirstBooking() {
               {!selectedDate && (
                 <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
                   <Text size="sm">
-                    👆 Start by selecting a date above to view available time slots
+                    ✨ Click any available slot above to start booking, or select a date below
                   </Text>
                 </Alert>
               )}

@@ -44,11 +44,11 @@ export default function PublicHeader() {
             >
               P
             </Box>
-            <Box visibleFrom="xs">
-              <Title order={3} size="1.2rem" c="#1A1A1A" style={{ lineHeight: 1, marginBottom: '2px', fontWeight: 800 }}>
+            <Box>
+              <Title order={3} size={{ base: '0.85rem', xs: '1.2rem' }} c="#1A1A1A" style={{ lineHeight: 1, marginBottom: '2px', fontWeight: 800 }}>
                 POWERPLAY
               </Title>
-              <Text size="9px" c="#6B6B6B" style={{ lineHeight: 1, letterSpacing: '1.5px', fontWeight: 600 }}>
+              <Text size={{ base: '7px', xs: '9px' }} c="#6B6B6B" style={{ lineHeight: 1, letterSpacing: '1.5px', fontWeight: 600 }}>
                 CRICKET ARENA
               </Text>
             </Box>
