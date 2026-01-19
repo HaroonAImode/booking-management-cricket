@@ -55,6 +55,7 @@ export default function RootLayout({
                 maxWidth: '95vw',
                 width: '100%',
                 top: '70px',
+                pointerEvents: 'none',
               },
               notification: {
                 maxWidth: '500px',
@@ -63,6 +64,7 @@ export default function RootLayout({
                 boxSizing: 'border-box',
                 padding: '16px',
                 minHeight: '80px',
+                pointerEvents: 'auto',
               },
               title: {
                 marginBottom: '8px',

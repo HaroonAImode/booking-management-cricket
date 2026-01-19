@@ -745,3 +745,12 @@ body {
   display: none !important;
   pointer-events: none !important;
 }
+
+/* FIX: Notifications container should not block clicks */
+.mantine-Notifications-root {
+  pointer-events: none !important;
+}
+
+.mantine-Notifications-notification {
+  pointer-events: auto !important;
+}
