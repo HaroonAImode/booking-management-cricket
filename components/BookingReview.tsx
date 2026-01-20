@@ -76,8 +76,8 @@ export default function BookingReview({
       centered
       padding="lg"
       overlayProps={{
-        backgroundOpacity: 0.55,
-        blur: 3,
+        backgroundOpacity: 0.65,
+        blur: 8,
       }}
     >
       <Stack gap="lg">
