@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
-    'mailto:admin@powerplaycricket.com',
+    'mailto:admin@powerplay.com',
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
