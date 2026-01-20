@@ -46,6 +46,8 @@ import RevenueChart from '@/components/dashboard/RevenueChart';
 import SlotUsageChart from '@/components/dashboard/SlotUsageChart';
 import { CardGridSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
+import { getAdminProfile } from '@/lib/supabase/auth';
 
 interface DashboardData {
   revenue: {
@@ -116,10 +118,23 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    fetchAdminUser();
     fetchDashboardData();
   }, []);
+
+  const fetchAdminUser = async () => {
+    try {
+      const profile = await getAdminProfile();
+      if (profile) {
+        setUserId(profile.id);
+      }
+    } catch (error) {
+      console.error('Error fetching admin profile:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -240,6 +255,11 @@ export default function AdminDashboardPage() {
             </Badge>
           </Group>
         </Paper>
+
+        {/* Push Notifications */}
+        {userId && (
+          <PushNotificationToggle userId={userId} />
+        )}
 
         {/* Key Metrics - Row 1 */}
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 'sm', sm: 'lg' }}>

@@ -348,6 +348,23 @@ export default function BookingForm({
         throw new Error(bookingError || 'Failed to create booking');
       }
 
+      // Step 3: Send push notification to all admins
+      try {
+        await fetch('/api/notifications/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '🏏 New Booking Request',
+            message: `${bookingSummary.customer.name} booked for ${formatDate(bookingSummary.booking_date)} - ${bookingSummary.total_hours} hour(s)`,
+            bookingId: bookingResult.booking_id,
+            customerName: bookingSummary.customer.name,
+          }),
+        });
+      } catch (notifError) {
+        // Don't fail the booking if notification fails
+        console.error('Failed to send push notification:', notifError);
+      }
+
       // Success!
       notifications.show({
         title: '✅ Booking Request Submitted Successfully!',
