@@ -138,6 +138,21 @@ export default function CalendarFirstBooking() {
   };
 
   const handleSlotToggle = (hour: number) => {
+    // Check if the slot is actually available
+    const slotsToCheck = selectedDate ? availableSlots : todaySlots;
+    const slotInfo = slotsToCheck?.find(s => s.slot_hour === hour);
+    
+    if (!slotInfo || !slotInfo.is_available) {
+      notifications.show({
+        title: '⚠️ Slot Not Available',
+        message: 'This time slot is not available for booking.',
+        color: 'orange',
+        autoClose: 3000,
+        icon: <IconInfoCircle size={18} />,
+      });
+      return;
+    }
+
     setSelectedSlots((prev) => {
       // If deselecting, just remove it
       if (prev.includes(hour)) {
@@ -153,8 +168,8 @@ export default function CalendarFirstBooking() {
           if (newSelection[i] - newSelection[i - 1] !== 1) {
             // Not consecutive!
             notifications.show({
-              title: '⚠️ Non-Consecutive Time Slots',
-              message: 'Please select consecutive time slots only. For different time periods, create separate bookings.',
+              title: '⚠️ Select Consecutive Slots Only',
+              message: 'You must select continuous time slots (e.g., 4 PM, 5 PM, 6 PM). For different times, create separate bookings.',
               color: 'orange',
               autoClose: 5000,
               icon: <IconInfoCircle size={18} />,
@@ -401,10 +416,14 @@ export default function CalendarFirstBooking() {
                             }}
                             onClick={() => {
                               if (isAvailable) {
-                                // Set the date to the quickViewDate
-                                setSelectedDate(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate));
-                                // Toggle the slot selection
-                                handleSlotToggle(slot.slot_hour);
+                                // Set the date first
+                                const dateToSet = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                                setSelectedDate(dateToSet);
+                                
+                                // Small delay to ensure state updates, then toggle slot
+                                setTimeout(() => {
+                                  handleSlotToggle(slot.slot_hour);
+                                }, 100);
                               }
                             }}
                             onMouseEnter={(e) => {
