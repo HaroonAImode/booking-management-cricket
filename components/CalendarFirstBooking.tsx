@@ -437,7 +437,16 @@ export default function CalendarFirstBooking() {
                               {slot.slot_hour < 12 ? 'AM' : 'PM'}
                             </Text>
                             <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
-                              {isPast ? '⏱️' : isBooked ? '✕' : isPending ? '⏳' : '✓'}
+                              {selectedSlots.includes(slot.slot_hour) && isAvailable 
+                                ? '✅' 
+                                : isPast 
+                                ? '⏱️' 
+                                : isBooked 
+                                ? '✕' 
+                                : isPending 
+                                ? '⏳' 
+                                : '✓'
+                              }
                             </Text>
                           </Paper>
                         );
