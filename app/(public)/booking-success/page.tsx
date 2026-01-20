@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -12,10 +12,11 @@ import {
   Box,
   ThemeIcon,
   Center,
+  Loader,
 } from '@mantine/core';
 import { IconCheck, IconSearch } from '@tabler/icons-react';
 
-export default function BookingSuccessPage() {
+function BookingSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingNumber = searchParams.get('booking');
@@ -174,5 +175,21 @@ export default function BookingSuccessPage() {
         </Center>
       </Container>
     </Box>
+  );
+}
+
+export default function BookingSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '80px' }}>
+          <Center style={{ height: '80vh' }}>
+            <Loader color="#F5B800" size="lg" />
+          </Center>
+        </Box>
+      }
+    >
+      <BookingSuccessContent />
+    </Suspense>
   );
 }
