@@ -386,33 +386,8 @@ export default function BookingForm({
         console.error('❌ Failed to send push notification:', notifError);
       }
 
-      // Success!
-      notifications.show({
-        title: '✅ Booking Request Submitted Successfully!',
-        message: (
-          <Box>
-            <Text size="sm" mb="xs">
-              Booking #{bookingResult.booking_number} sent to admin for approval.
-            </Text>
-            <Text size="sm" fw={600} c="blue.7" mb="xs">
-              📌 IMPORTANT NEXT STEPS:
-            </Text>
-            <Text size="xs" component="ul" style={{ paddingLeft: '1rem', margin: 0 }}>
-              <li>Click "Check Your Booking" button above</li>
-              <li>Search with your name within 10 minutes</li>
-              <li>View approval status</li>
-              <li>Download booking confirmation slip</li>
-            </Text>
-          </Box>
-        ),
-        color: 'green',
-        autoClose: 15000,
-        icon: <IconCheck size={18} />,
-      });
-
-      // Reset form
-      setReviewOpen(false);
-      resetForm();
+      // Redirect to success page
+      router.push(`/booking-success?booking=${bookingResult.booking_number}`);
     } catch (err: any) {
       console.error('Booking submission error:', err);
       notifications.show({
