@@ -63,7 +63,7 @@ export default function PublicHeader() {
         </Group>
 
         {/* Mobile Navigation Buttons */}
-        <Group gap={6} hiddenFrom="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group gap={6} hiddenFrom="sm" wrap="nowrap" style={{ flexShrink: 0, position: 'relative', zIndex: 10 }}>
           <Button
             component={Link}
             href="/bookings"
@@ -77,6 +77,9 @@ export default function PublicHeader() {
                 fontSize: '12px',
                 height: '32px',
                 padding: '0 12px',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                touchAction: 'manipulation',
               },
             }}
           >
@@ -96,6 +99,9 @@ export default function PublicHeader() {
                 fontSize: '12px',
                 height: '32px',
                 padding: '0 12px',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                touchAction: 'manipulation',
               },
             }}
           >

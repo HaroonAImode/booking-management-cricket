@@ -36,7 +36,10 @@ export default function PublicLayout({
         styles={{
           header: {
             position: 'fixed',
-            zIndex: 100,
+            zIndex: 200,
+            pointerEvents: 'auto',
+            background: 'white',
+            borderBottom: '1px solid #E8E8E8',
           },
         }}
       >

@@ -235,7 +235,12 @@ export default function CalendarFirstBooking() {
                   background: '#F5B800',
                   color: '#1A1A1A',
                   fontWeight: 900,
-                  letterSpacing: '1px',
+                  letterSpacing: '0.5px',
+                  padding: '8px 16px',
+                  fontSize: 'clamp(10px, 3vw, 16px)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'visible',
+                  textOverflow: 'clip',
                 }}
               >
                 ⚡ POWERPLAY CRICKET ARENA
@@ -254,11 +259,11 @@ export default function CalendarFirstBooking() {
                   ? 'View availability & select your preferred time slots'
                   : 'Complete your booking details'}
               </Text>
-              <Group gap="md" justify="center" style={{ flexWrap: 'wrap' }}>
-                <Text size="xs" c="#D1D1D1" ta="center">
+              <Group gap={{ base: 'xs', sm: 'md' }} justify="center" style={{ flexWrap: 'wrap' }}>
+                <Text size={{ base: 'xs', sm: 'sm' }} c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
                   💰 Day Rate (7 AM - 5 PM): <Text component="span" fw={700} c="#F5B800">Rs 1,500/hr</Text>
                 </Text>
-                <Text size="xs" c="#D1D1D1" ta="center">
+                <Text size={{ base: 'xs', sm: 'sm' }} c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
                   🌙 Night Rate (5 PM - 7 AM): <Text component="span" fw={700} c="#F5B800">Rs 2,000/hr</Text>
                 </Text>
               </Group>
