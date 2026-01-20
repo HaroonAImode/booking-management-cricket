@@ -51,6 +51,7 @@ export default function CalendarFirstBooking() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [todayLoading, setTodayLoading] = useState(true);
   const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Load today's slots on component mount and when quickViewDate changes
   useEffect(() => {
@@ -253,6 +254,14 @@ export default function CalendarFirstBooking() {
                   ? 'View availability & select your preferred time slots'
                   : 'Complete your booking details'}
               </Text>
+              <Group gap="md" justify="center" style={{ flexWrap: 'wrap' }}>
+                <Text size="xs" c="#D1D1D1" ta="center">
+                  💰 Day Rate (7 AM - 5 PM): <Text component="span" fw={700} c="#F5B800">Rs 1,500/hr</Text>
+                </Text>
+                <Text size="xs" c="#D1D1D1" ta="center">
+                  🌙 Night Rate (5 PM - 7 AM): <Text component="span" fw={700} c="#F5B800">Rs 2,000/hr</Text>
+                </Text>
+              </Group>
             </Stack>
           </Paper>
 
@@ -316,6 +325,15 @@ export default function CalendarFirstBooking() {
                         >
                           Next Day →
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="filled"
+                          leftSection={<IconCalendar size={16} />}
+                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
+                          onClick={() => setShowDatePicker(true)}
+                        >
+                          Select Any Date
+                        </Button>
                       </Group>
                     </Group>
                     
@@ -352,23 +370,29 @@ export default function CalendarFirstBooking() {
                             style={{
                               cursor: isAvailable ? 'pointer' : 'not-allowed',
                               opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
-                              background: isAvailable 
+                              background: selectedSlots.includes(slot.slot_hour) && isAvailable
+                                ? '#F5B800'
+                                : isAvailable 
                                 ? '#1A1A1A' 
                                 : isPast 
                                 ? '#DC2626' 
                                 : isBooked 
                                 ? '#6B7280' 
                                 : '#F59E0B',
-                              color: 'white',
+                              color: selectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
                               minHeight: '75px',
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '8px',
-                              border: isAvailable ? '2px solid #F5B800' : 'none',
+                              border: selectedSlots.includes(slot.slot_hour) && isAvailable 
+                                ? '3px solid #1A1A1A' 
+                                : isAvailable 
+                                ? '2px solid #F5B800' 
+                                : 'none',
                               transition: 'all 0.2s ease',
-                              transform: isAvailable ? 'scale(1)' : 'scale(0.95)',
+                              transform: selectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
                             }}
                             onClick={() => {
                               if (isAvailable) {
@@ -379,13 +403,13 @@ export default function CalendarFirstBooking() {
                               }
                             }}
                             onMouseEnter={(e) => {
-                              if (isAvailable) {
+                              if (isAvailable && !selectedSlots.includes(slot.slot_hour)) {
                                 e.currentTarget.style.transform = 'scale(1.05)';
                                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (isAvailable) {
+                              if (isAvailable && !selectedSlots.includes(slot.slot_hour)) {
                                 e.currentTarget.style.transform = 'scale(1)';
                                 e.currentTarget.style.boxShadow = 'none';
                               }
@@ -429,247 +453,86 @@ export default function CalendarFirstBooking() {
                       }}
                     >
                       <Text size="sm" fw={600}>
-                        💡 {todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any available time to quick-book.
-                      </Text>
-                    </Alert>
-                  </Stack>
-                </Paper>
-              )}
-
-              {/* Pricing Info */}
-              <Paper
-                p={{ base: 'md', sm: 'lg' }}
-                withBorder
-                radius="lg"
-                style={{ background: '#FFECB3', borderColor: '#F5B800', borderWidth: '2px' }}
-              >
-                <Stack gap="sm">
-                  <Group gap="xs">
-                    <IconInfoCircle size={20} color="#1A1A1A" />
-                    <Text fw={700} c="#1A1A1A" size="sm">
-                      Pricing Information
-                    </Text>
-                  </Group>
-                  <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
-                    <Box>
-                      <Text size="xs" c="#4A4A4A" mb={4}>
-                        Day Rate (7 AM - 5 PM)
-                      </Text>
-                      <Text size="xl" fw={900} c="#1A1A1A">
-                        Rs 1,500<Text component="span" size="sm" fw={600}>/hour</Text>
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Text size="xs" c="#4A4A4A" mb={4}>
-                        Night Rate (5 PM - 7 AM)
-                      </Text>
-                      <Text size="xl" fw={900} c="#1A1A1A">
-                        Rs 2,000<Text component="span" size="sm" fw={600}>/hour</Text>
-                      </Text>
-                    </Box>
-                  </SimpleGrid>
-                </Stack>
-              </Paper>
-
-              {/* Date Picker */}
-              <Paper 
-                p={{ base: 'md', sm: 'lg' }} 
-                withBorder 
-                radius="lg" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
-                  borderColor: '#F5B800', 
-                  borderWidth: '3px',
-                  boxShadow: '0 4px 16px rgba(245, 184, 0, 0.2)',
-                }}
-              >
-                <Stack gap="md">
-                  <Group gap="xs">
-                    <IconCalendar size={24} color="#F5B800" />
-                    <Title order={3} size='md' c="white" fw={900}>
-                      1. Select Date
-                    </Title>
-                  </Group>
-                  <DatePickerInput
-                    value={selectedDate}
-                    onChange={(value) => {
-                      if (value) {
-                        setSelectedDate(new Date(value));
-                      } else {
-                        setSelectedDate(null);
-                      }
-                    }}
-                    placeholder="Click to select date"
-                    minDate={new Date()}
-                    firstDayOfWeek={1}
-                    size="xl"
-                    radius="md"
-                    popoverProps={{
-                      position: 'bottom',
-                      withinPortal: true,
-                      styles: {
-                        dropdown: {
-                          background: '#FFFFFF',
-                          border: '3px solid #F5B800',
-                          boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
-                          maxWidth: 'min(380px, 90vw)',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          padding: '12px',
-                          overflow: 'hidden',
-                        },
-                      },
-                    }}
-                    styles={{
-                      input: {
-                        background: '#FFFFFF',
-                        borderWidth: '3px',
-                        borderColor: '#F5B800',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        height: '56px',
-                        color: '#1A1A1A',
-                        '&:focus': {
-                          borderColor: '#F5B800',
-                          boxShadow: '0 0 0 3px rgba(245, 184, 0, 0.2)',
-                        },
-                        '&::placeholder': {
-                          color: '#9CA3AF',
-                          fontWeight: 500,
-                        },
-                      },
-                      monthsListControl: {
-                        color: '#1A1A1A',
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
-                      },
-                      yearsListControl: {
-                        color: '#1A1A1A',
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
-                      },
-                      calendarHeaderControl: {
-                        color: '#1A1A1A',
-                        width: 'clamp(32px, 8vw, 40px)',
-                        height: 'clamp(32px, 8vw, 40px)',
-                        border: '2px solid #F5B800',
-                        borderRadius: '8px',
-                        minWidth: '32px',
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
-                      },
-                      calendarHeaderLevel: {
-                        color: '#1A1A1A',
-                        fontWeight: 900,
-                        fontSize: 'clamp(14px, 4vw, 18px)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        '&:hover': {
-                          background: '#FFF9E6',
-                        },
-                      },
-                      month: {
-                        width: '100%',
-                      },
-                      monthThead: {
-                        borderBottom: '2px solid #F5B800',
-                      },
-                      monthCell: {
-                        textAlign: 'center',
-                      },
-                      day: {
-                        color: '#1A1A1A',
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '8px',
-                        '&:hover:not([data-disabled]):not([data-selected])': {
-                          background: '#FFF9E6',
-                        },
-                        '&[data-selected]': {
-                          background: '#F5B800 !important',
-                          color: '#1A1A1A !important',
-                          fontWeight: 900,
-                          border: '2px solid #1A1A1A',
-                        },
-                        '&[data-disabled]': {
-                          color: '#D1D1D1 !important',
-                          opacity: 0.4,
-                          textDecoration: 'line-through',
-                          cursor: 'not-allowed',
-                        },
-                        '&[data-weekend]:not([data-disabled]):not([data-selected])': {
-                          color: '#F5B800',
-                          fontWeight: 900,
-                        },
-                        '&[data-today]:not([data-selected])': {
-                          border: '2px solid #F5B800',
-                        },
-                      },
-                      weekday: {
-                        color: '#6B7280',
-                        fontWeight: 900,
-                        fontSize: '11px',
-                        textTransform: 'uppercase',
-                      },
-                    }}
-                  />
-                </Stack>
-              </Paper>
-
-              {/* Slot Selector */}
-              {selectedDate && (
-                <Paper
-                  id="slots-section"
-                  p={{ base: 'md', sm: 'lg' }}
-                  withBorder
-                  radius="lg"
-                  style={{ borderColor: '#F5B800', borderWidth: '2px' }}
-                >
-                  <Stack gap="md">
-                    <Group justify="space-between" wrap="wrap">
-                      <Group gap="xs">
-                        <IconClock size={20} color="#F5B800" />
-                        <Title order={3} size='md'>
-                          2. Select Time Slots
-                        </Title>
-                      </Group>
-                      {selectedSlots.length > 0 && (
-                        <Badge size="lg" style={{ background: '#F5B800', color: '#1A1A1A' }}>
-                          {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''} selected
-                        </Badge>
-                      )}
-                    </Group>
-
-                    {/* Important Notice */}
-                    <Alert icon={<IconInfoCircle size={18} />} color="blue" variant="light">
-                      <Text size="sm" fw={600}>
-                        📌 Important: Select consecutive time slots only
-                      </Text>
-                      <Text size="xs" mt={4}>
-                        Example: 4 PM, 5 PM, 6 PM ✓ | 4 AM and 7 PM ✗
-                      </Text>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        For different time periods, please create separate bookings.
+                        {selectedSlots.length > 0 
+                          ? `✓ ${selectedSlots.length} slot${selectedSlots.length > 1 ? 's' : ''} selected! Click "Continue to Booking Form" below.`
+                          : `💡 ${todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any to select.`
+                        }
                       </Text>
                     </Alert>
 
-                    <SlotSelector
-                      selectedDate={selectedDate}
-                      selectedSlots={selectedSlots}
-                      onSlotToggle={handleSlotToggle}
-                      availableSlots={availableSlots}
-                      loading={slotsLoading}
-                      error={slotsError}
-                    />
+                    {/* Date Picker Modal */}
+                    {showDatePicker && (
+                      <Box
+                        style={{
+                          position: 'fixed',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'rgba(0, 0, 0, 0.8)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 1000,
+                          padding: '16px',
+                        }}
+                        onClick={() => setShowDatePicker(false)}
+                      >
+                        <Paper
+                          p={{ base: 'md', sm: 'xl' }}
+                          radius="lg"
+                          style={{
+                            background: '#FFFFFF',
+                            border: '3px solid #F5B800',
+                            maxWidth: '450px',
+                            width: '100%',
+                            maxHeight: '90vh',
+                            overflow: 'auto',
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Stack gap="lg">
+                            <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
+                            
+                            <Box style={{ display: 'flex', justifyContent: 'center' }}>
+                              <DatePicker
+                                value={quickViewDate}
+                                onChange={(date) => {
+                                  if (date) {
+                                    setQuickViewDate(new Date(date));
+                                    setShowDatePicker(false);
+                                  }
+                                }}
+                                minDate={new Date()}
+                                size="lg"
+                                styles={{
+                                  calendarHeader: {
+                                    borderBottom: '2px solid #F5B800',
+                                    paddingBottom: '12px',
+                                    marginBottom: '12px',
+                                  },
+                                }}
+                              />
+                            </Box>
+
+                            <Button
+                              fullWidth
+                              size="lg"
+                              variant="outline"
+                              onClick={() => setShowDatePicker(false)}
+                              style={{ 
+                                borderColor: '#1A1A1A', 
+                                color: '#1A1A1A',
+                                borderWidth: '2px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </Stack>
+                        </Paper>
+                      </Box>
+                    )}
                   </Stack>
                 </Paper>
               )}
@@ -725,22 +588,7 @@ export default function CalendarFirstBooking() {
                 </Paper>
               )}
 
-              {/* Help Text */}
-              {!selectedDate && (
-                <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
-                  <Text size="sm">
-                    ✨ Click any available slot above to start booking, or select a date below
-                  </Text>
-                </Alert>
-              )}
 
-              {selectedDate && selectedSlots.length === 0 && availableSlots && availableSlots.length > 0 && (
-                <Alert icon={<IconInfoCircle size="1rem" />} color="yellow" variant="light">
-                  <Text size="sm">
-                    🕐 Select one or more time slots above to proceed with booking
-                  </Text>
-                </Alert>
-              )}
             </Stack>
           )}
 
