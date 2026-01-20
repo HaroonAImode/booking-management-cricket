@@ -21,12 +21,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, message, bookingId, customerName } = body;
 
+    console.log('🔔 Push notification request received:', { title, message, bookingId });
+
     if (!title || !message) {
+      console.error('❌ Missing title or message');
       return NextResponse.json(
         { error: 'Title and message are required' },
         { status: 400 }
       );
     }
+
+    // Check VAPID keys
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.error('❌ VAPID keys not found in environment variables!');
+      return NextResponse.json(
+        { error: 'Server configuration error: VAPID keys missing' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ VAPID keys found');
 
     // Get all admin push subscriptions from database
     const supabase = await createClient();
@@ -36,14 +50,17 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error fetching push subscriptions:', error);
+      console.error('❌ Error fetching push subscriptions:', error);
       return NextResponse.json(
         { error: 'Failed to fetch subscriptions' },
         { status: 500 }
       );
     }
 
+    console.log(`📊 Found ${subscriptions?.length || 0} active subscription(s)`);
+
     if (!subscriptions || subscriptions.length === 0) {
+      console.warn('⚠️ No active subscriptions found');
       return NextResponse.json(
         { message: 'No active subscriptions found' },
         { status: 200 }
@@ -62,8 +79,13 @@ export async function POST(request: NextRequest) {
       customerName,
     });
 
-    const sendPromises = subscriptions.map(async (sub) => {
+    console.log('📤 Sending notifications to all subscriptions...');
+
+    const sendPromises = subscriptions.map(async (sub, index) => {
       try {
+        console.log(`📨 Sending to subscription ${index + 1}/${subscriptions.length}`);
+        console.log(`   Endpoint: ${sub.endpoint.substring(0, 50)}...`);
+        
         const pushSubscription = {
           endpoint: sub.endpoint,
           keys: {
@@ -73,13 +95,16 @@ export async function POST(request: NextRequest) {
         };
 
         await webpush.sendNotification(pushSubscription, notificationPayload);
-        console.log('Push notification sent successfully to:', sub.user_id);
+        console.log(`✅ Successfully sent to subscription ${index + 1}`);
         return { success: true, userId: sub.user_id };
       } catch (error: any) {
-        console.error('Error sending push notification:', error);
+        console.error(`❌ Error sending to subscription ${index + 1}:`, error.message);
+        console.error('   Status:', error.statusCode);
+        console.error('   Body:', error.body);
 
         // If subscription is invalid, mark it as inactive
         if (error.statusCode === 410 || error.statusCode === 404) {
+          console.log(`   Marking subscription ${index + 1} as inactive`);
           await supabase
             .from('admin_push_subscriptions')
             .update({ is_active: false })
@@ -93,12 +118,14 @@ export async function POST(request: NextRequest) {
     const results = await Promise.all(sendPromises);
     const successCount = results.filter((r) => r.success).length;
 
+    console.log(`📊 Results: ${successCount}/${subscriptions.length} notifications sent successfully`);
+
     return NextResponse.json({
       message: `Push notifications sent to ${successCount} of ${subscriptions.length} devices`,
       results,
     });
   } catch (error: any) {
-    console.error('Error in push notification API:', error);
+    console.error('💥 Error in push notification API:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
