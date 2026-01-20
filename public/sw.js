@@ -20,8 +20,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'New Booking',
     body: 'A new booking has been submitted',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icon.png',
+    badge: '/icon.png',
     tag: 'booking-notification',
     requireInteraction: true,
     data: {
@@ -33,6 +33,8 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
+      console.log('Parsed push data:', data);
+      
       notificationData = {
         title: data.title || notificationData.title,
         body: data.body || notificationData.body,
@@ -49,7 +51,6 @@ self.addEventListener('push', (event) => {
           {
             action: 'open',
             title: 'Review & Approve',
-            icon: '/icon-192.png',
           },
           {
             action: 'close',
@@ -62,18 +63,24 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      requireInteraction: notificationData.requireInteraction,
-      vibrate: notificationData.vibrate,
-      data: notificationData.data,
-      actions: notificationData.actions,
-    })
-  );
+  console.log('Showing notification with data:', notificationData);
+
+  const promiseChain = self.registration.showNotification(notificationData.title, {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
+    tag: notificationData.tag,
+    requireInteraction: notificationData.requireInteraction,
+    vibrate: notificationData.vibrate,
+    data: notificationData.data,
+    actions: notificationData.actions,
+  }).then(() => {
+    console.log('✅ Notification displayed successfully!');
+  }).catch((error) => {
+    console.error('❌ Error displaying notification:', error);
+  });
+
+  event.waitUntil(promiseChain);
 });
 
 // Handle notification clicks
