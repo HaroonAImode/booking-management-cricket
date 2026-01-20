@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -20,40 +20,31 @@ function BookingSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingNumber = searchParams.get('booking');
-  const [countdown, setCountdown] = useState(15);
-
-  useEffect(() => {
-    // Countdown timer
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
 
   const handleCheckBooking = () => {
     router.push('/bookings/check');
   };
 
   return (
-    <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '80px' }}>
-      <Container size="sm" py={{ base: 40, sm: 60 }}>
+    <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '70px' }}>
+      <Container size="sm" py={{ base: 'sm', sm: 'md' }}>
         <Center>
-          <Stack gap="xl" align="center" style={{ maxWidth: '500px', width: '100%' }}>
+          <Stack gap="md" align="center" style={{ maxWidth: '500px', width: '100%' }}>
             {/* Success Icon */}
             <ThemeIcon
-              size={100}
+              size={80}
               radius="50%"
               style={{
                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)',
               }}
             >
-              <IconCheck size={60} stroke={3} />
+              <IconCheck size={50} stroke={3} />
             </ThemeIcon>
 
             {/* Success Message */}
             <Paper
-              p={{ base: 'xl', sm: 40 }}
+              p={{ base: 'lg', sm: 'xl' }}
               radius="lg"
               shadow="xl"
               style={{
@@ -62,13 +53,13 @@ function BookingSuccessContent() {
                 width: '100%',
               }}
             >
-              <Stack gap="lg" align="center">
+              <Stack gap="md" align="center">
                 <Title
                   order={2}
                   ta="center"
                   style={{
                     color: '#1A1A1A',
-                    fontSize: 'clamp(20px, 5vw, 28px)',
+                    fontSize: 'clamp(18px, 5vw, 24px)',
                     fontWeight: 700,
                   }}
                 >
@@ -77,7 +68,7 @@ function BookingSuccessContent() {
 
                 {bookingNumber && (
                   <Paper
-                    p="md"
+                    p="sm"
                     radius="md"
                     style={{
                       background: '#F0FDF4',
@@ -85,27 +76,27 @@ function BookingSuccessContent() {
                       width: '100%',
                     }}
                   >
-                    <Text ta="center" fw={600} c="#059669">
+                    <Text ta="center" fw={600} c="#059669" size="sm">
                       Booking #{bookingNumber}
                     </Text>
                   </Paper>
                 )}
 
-                <Stack gap="sm" style={{ width: '100%' }}>
+                <Stack gap="xs" style={{ width: '100%' }}>
                   <Text
                     ta="center"
-                    size="md"
+                    size="sm"
                     style={{
                       color: '#4A4A4A',
-                      lineHeight: 1.6,
-                      fontSize: 'clamp(14px, 3.5vw, 16px)',
+                      lineHeight: 1.5,
+                      fontSize: 'clamp(13px, 3.5vw, 15px)',
                     }}
                   >
                     Your booking has been sent to the admin for review and approval.
                   </Text>
 
                   <Paper
-                    p="md"
+                    p="sm"
                     radius="md"
                     style={{
                       background: '#FEF3C7',
@@ -117,18 +108,17 @@ function BookingSuccessContent() {
                       size="sm"
                       fw={600}
                       c="#92400E"
-                      style={{ fontSize: 'clamp(13px, 3vw, 14px)' }}
+                      style={{ fontSize: 'clamp(12px, 3vw, 13px)' }}
                     >
-                      ⏱️ Check your booking status after{' '}
-                      {countdown > 0 ? `${countdown} seconds` : '10-15 minutes'}
+                      ⏱️ Check your booking status after 10-15 minutes
                     </Text>
                   </Paper>
 
                   <Text
                     ta="center"
-                    size="sm"
+                    size="xs"
                     c="dimmed"
-                    style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
+                    style={{ fontSize: 'clamp(11px, 2.8vw, 13px)' }}
                   >
                     You will be able to view the approval status and download your booking
                     confirmation slip.
@@ -139,33 +129,32 @@ function BookingSuccessContent() {
                 <Button
                   size="lg"
                   fullWidth
-                  leftSection={<IconSearch size={20} />}
+                  leftSection={<IconSearch size={18} />}
                   onClick={handleCheckBooking}
-                  disabled={countdown > 0}
                   style={{
-                    background: countdown > 0 ? '#D1D5DB' : '#F5B800',
-                    color: countdown > 0 ? '#6B7280' : '#1A1A1A',
+                    background: '#F5B800',
+                    color: '#1A1A1A',
                     fontWeight: 700,
-                    height: '56px',
-                    fontSize: 'clamp(14px, 3.5vw, 16px)',
-                    marginTop: '8px',
+                    height: '50px',
+                    fontSize: 'clamp(13px, 3.5vw, 15px)',
+                    marginTop: '4px',
                   }}
                   styles={{
                     root: {
                       '&:hover': {
-                        background: countdown > 0 ? '#D1D5DB' : '#FFDD80',
+                        background: '#FFDD80',
                       },
                     },
                   }}
                 >
-                  {countdown > 0 ? `Wait ${countdown}s` : 'Check Booking Status'}
+                  Check Booking Status
                 </Button>
 
                 <Text
                   ta="center"
                   size="xs"
                   c="dimmed"
-                  style={{ marginTop: '8px', fontSize: 'clamp(11px, 2.5vw, 12px)' }}
+                  style={{ marginTop: '4px', fontSize: 'clamp(10px, 2.5vw, 11px)' }}
                 >
                   💡 Tip: Search using your name or phone number
                 </Text>
@@ -182,8 +171,8 @@ export default function BookingSuccessPage() {
   return (
     <Suspense
       fallback={
-        <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '80px' }}>
-          <Center style={{ height: '80vh' }}>
+        <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '70px' }}>
+          <Center style={{ height: '70vh' }}>
             <Loader color="#F5B800" size="lg" />
           </Center>
         </Box>
