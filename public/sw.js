@@ -40,9 +40,11 @@ self.addEventListener('push', (event) => {
         body: data.body || notificationData.body,
         icon: data.icon || notificationData.icon,
         badge: data.badge || notificationData.badge,
-        tag: data.tag || notificationData.tag,
+        tag: `${data.tag || notificationData.tag}-${Date.now()}`, // Unique tag to bypass throttling
+        renotify: true, // Force new notification sound
         requireInteraction: true,
-        vibrate: [200, 100, 200],
+        silent: false, // Enable sound
+        vibrate: [200, 100, 200, 100, 200], // Stronger vibration pattern
         data: {
           url: data.url || notificationData.data.url,
           bookingId: data.bookingId || null,
