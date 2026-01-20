@@ -75,6 +75,10 @@ export default function BookingReview({
       size="lg"
       centered
       padding="lg"
+      overlayProps={{
+        backgroundOpacity: 0.55,
+        blur: 3,
+      }}
     >
       <Stack gap="lg">
         {/* Important Notice */}
@@ -192,36 +196,27 @@ export default function BookingReview({
                 <Text size="xs" c="dimmed">
                   Total Amount
                 </Text>
-                <Group gap="xs">
-                  <IconCurrencyRupee size={18} />
-                  <Text size="lg" fw={700}>
-                    PKR {bookingData.total_amount.toLocaleString()}
-                  </Text>
-                </Group>
+                <Text size="lg" fw={700}>
+                  PKR {bookingData.total_amount.toLocaleString()}
+                </Text>
               </Stack>
 
               <Stack gap={4}>
                 <Text size="xs" c="dimmed">
                   Advance Payment (Required)
                 </Text>
-                <Group gap="xs">
-                  <IconCurrencyRupee size={18} />
-                  <Text size="lg" fw={700} c="green">
-                    PKR {bookingData.advance_payment.toLocaleString()}
-                  </Text>
-                </Group>
+                <Text size="lg" fw={700} c="green">
+                  PKR {bookingData.advance_payment.toLocaleString()}
+                </Text>
               </Stack>
 
               <Stack gap={4}>
                 <Text size="xs" c="dimmed">
                   Remaining Payment
                 </Text>
-                <Group gap="xs">
-                  <IconCurrencyRupee size={18} />
-                  <Text size="lg" fw={700} c="orange">
-                    PKR {bookingData.remaining_payment.toLocaleString()}
-                  </Text>
-                </Group>
+                <Text size="lg" fw={700} c="orange">
+                  PKR {bookingData.remaining_payment.toLocaleString()}
+                </Text>
               </Stack>
 
               <Stack gap={4}>
@@ -297,12 +292,19 @@ export default function BookingReview({
         </Alert>
 
         {/* Action Buttons */}
-        <Group justify="space-between" grow>
+        <Group justify="space-between" gap="sm">
           <Button
             variant="default"
             leftSection={<IconArrowLeft size={16} />}
             onClick={onEdit}
             disabled={isSubmitting}
+            style={{ flex: 1, minWidth: 0 }}
+            styles={{
+              label: {
+                whiteSpace: 'nowrap',
+                overflow: 'visible',
+              },
+            }}
           >
             Edit Details
           </Button>
@@ -311,6 +313,13 @@ export default function BookingReview({
             leftSection={<IconCheck size={16} />}
             onClick={onConfirm}
             loading={isSubmitting}
+            style={{ flex: 1, minWidth: 0 }}
+            styles={{
+              label: {
+                whiteSpace: 'nowrap',
+                overflow: 'visible',
+              },
+            }}
           >
             Confirm Booking
           </Button>
