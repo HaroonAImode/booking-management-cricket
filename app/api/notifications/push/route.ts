@@ -71,19 +71,26 @@ export async function POST(request: NextRequest) {
     const notificationPayload = JSON.stringify({
       title,
       body: message,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icon.png',
+      badge: '/icon.png',
       tag: `booking-${bookingId || Date.now()}`,
       url: bookingId ? `/admin/bookings?id=${bookingId}` : '/admin/bookings',
       bookingId,
       customerName,
     });
 
-    console.log('📤 Sending notifications to all subscriptions...');
+    // High priority options for instant delivery
+    const pushOptions = {
+      TTL: 3600, // 1 hour expiry
+      urgency: 'high', // High priority for instant FCM delivery
+      topic: bookingId ? `booking-${bookingId}` : undefined, // Replace old notifications
+    };
+
+    console.log('📤 Sending HIGH PRIORITY notifications to all subscriptions...');
 
     const sendPromises = subscriptions.map(async (sub, index) => {
       try {
-        console.log(`📨 Sending to subscription ${index + 1}/${subscriptions.length}`);
+        console.log(`📨 [HIGH PRIORITY] Sending to subscription ${index + 1}/${subscriptions.length}`);
         console.log(`   Endpoint: ${sub.endpoint.substring(0, 50)}...`);
         
         const pushSubscription = {
@@ -94,7 +101,7 @@ export async function POST(request: NextRequest) {
           },
         };
 
-        await webpush.sendNotification(pushSubscription, notificationPayload);
+        await webpush.sendNotification(pushSubscription, notificationPayload, pushOptions);
         console.log(`✅ Successfully sent to subscription ${index + 1}`);
         return { success: true, userId: sub.user_id };
       } catch (error: any) {
