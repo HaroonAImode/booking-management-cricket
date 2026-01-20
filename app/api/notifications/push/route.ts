@@ -18,10 +18,19 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔔 Push notification request received');
+    
     const body = await request.json();
+    console.log('📦 Request body:', JSON.stringify(body, null, 2));
+    
     const { title, message, bookingId, customerName } = body;
 
-    console.log('🔔 Push notification request received:', { title, message, bookingId });
+    console.log('📋 Extracted values:', { 
+      title: title || 'MISSING', 
+      message: message || 'MISSING', 
+      bookingId: bookingId || 'MISSING', 
+      customerName: customerName || 'MISSING' 
+    });
 
     if (!title || !message) {
       console.error('❌ Missing title or message');
