@@ -229,41 +229,6 @@ export default function CalendarFirstBooking() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // TEST BUTTON - Send test notification
-  const sendTestNotification = async () => {
-    try {
-      const response = await fetch('/api/notifications/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: '🏏 TEST: New Booking Request',
-          message: 'Ahmed Khan booked for Mon, Jan 20 - 2 hour(s) [TEST]',
-          bookingId: 'test-123',
-          customerName: 'Ahmed Khan [TEST]',
-        }),
-      });
-
-      if (response.ok) {
-        notifications.show({
-          title: '✅ Test Notification Sent!',
-          message: 'Check your mobile phone for the push notification',
-          color: 'green',
-          autoClose: 5000,
-        });
-      } else {
-        throw new Error('Failed to send');
-      }
-    } catch (error) {
-      notifications.show({
-        title: '❌ Test Failed',
-        message: 'Could not send test notification. Check console for errors.',
-        color: 'red',
-        autoClose: 5000,
-      });
-      console.error('Test notification error:', error);
-    }
-  };
-
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
       <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
