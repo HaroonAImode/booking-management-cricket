@@ -350,12 +350,18 @@ export default function BookingForm({
 
       // Step 3: Send push notification to all admins
       try {
+        const formattedDate = new Date(bookingSummary.booking_date).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        });
+        
         await fetch('/api/notifications/push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: '🏏 New Booking Request',
-            message: `${bookingSummary.customer.name} booked for ${formatDate(bookingSummary.booking_date)} - ${bookingSummary.total_hours} hour(s)`,
+            message: `${bookingSummary.customer.name} booked for ${formattedDate} - ${bookingSummary.total_hours} hour(s)`,
             bookingId: bookingResult.booking_id,
             customerName: bookingSummary.customer.name,
           }),
