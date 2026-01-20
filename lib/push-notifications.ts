@@ -36,7 +36,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 /**
- * Register service worker
+ * Register service worker and wait for it to be ready
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
@@ -48,6 +48,33 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   });
 
   console.log('Service Worker registered:', registration);
+
+  // Wait for service worker to be active
+  if (registration.installing) {
+    await new Promise<void>((resolve) => {
+      const serviceWorker = registration.installing!;
+      serviceWorker.addEventListener('statechange', () => {
+        if (serviceWorker.state === 'activated') {
+          resolve();
+        }
+      });
+    });
+  } else if (registration.waiting) {
+    // If there's a waiting worker, skip waiting
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    await new Promise<void>((resolve) => {
+      const serviceWorker = registration.waiting!;
+      serviceWorker.addEventListener('statechange', () => {
+        if (serviceWorker.state === 'activated') {
+          resolve();
+        }
+      });
+    });
+  }
+
+  // Make sure we have an active service worker
+  await navigator.serviceWorker.ready;
+  
   return registration;
 }
 
