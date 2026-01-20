@@ -37,8 +37,8 @@ VALUES
    'Hourly rates for day and night bookings'
   ),
   ('night_rate_hours',
-   '{"start_hour": 17, "end_hour": 6}'::JSONB,
-   'Night rate time range (17:00 to 06:00)'
+   '{"start_hour": 17, "end_hour": 7}'::JSONB,
+   'Night rate time range (17:00 to 07:00)'
   ),
   ('booking_settings',
    '{"advance_payment_percentage": 50, "max_booking_hours": 12, "min_booking_hours": 1}'::JSONB,
