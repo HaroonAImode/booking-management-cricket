@@ -45,76 +45,62 @@ export default function RootLayout({
       <body>
         {/* Mantine Provider wraps the entire app with theme configuration */}
         <MantineProvider theme={theme}>
-          {/* Notifications for toast messages - fully responsive */}
+          {/* Notifications - Professional, centered, mobile-optimized */}
           <Notifications 
             position="top-center"
             zIndex={9999}
             limit={3}
             styles={{
               root: {
-                maxWidth: '100vw',
-                width: '100%',
-                top: '70px',
-                left: 0,
-                right: 0,
-                padding: '0 8px',
+                position: 'fixed',
+                top: '80px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'auto',
+                maxWidth: '90vw',
                 pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0',
               },
               notification: {
-                maxWidth: '500px',
-                width: 'calc(100vw - 32px)',
-                margin: '0 auto',
-                boxSizing: 'border-box',
+                width: 'auto',
+                minWidth: '280px',
+                maxWidth: 'min(450px, 90vw)',
+                margin: '0',
                 padding: '12px 16px',
-                minHeight: 'auto',
+                boxSizing: 'border-box',
                 pointerEvents: 'auto',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                '@media (max-width: 768px)': {
-                  width: 'calc(100vw - 24px)',
-                  maxWidth: '100%',
-                  padding: '12px 14px',
-                  margin: '0 auto 8px',
-                },
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+                borderRadius: '12px',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
               },
               title: {
-                marginBottom: '4px',
                 fontSize: '14px',
                 fontWeight: 600,
-                lineHeight: 1.3,
+                lineHeight: 1.4,
+                marginBottom: '2px',
                 wordBreak: 'break-word',
-                whiteSpace: 'normal',
                 overflow: 'visible',
-                textOverflow: 'clip',
-                '@media (max-width: 768px)': {
-                  fontSize: '13px',
-                  marginBottom: '4px',
-                },
               },
               description: {
                 fontSize: '13px',
                 lineHeight: 1.4,
-                whiteSpace: 'normal',
                 wordBreak: 'break-word',
                 overflow: 'visible',
-                textOverflow: 'clip',
-                '@media (max-width: 768px)': {
-                  fontSize: '12px',
-                  lineHeight: 1.3,
-                },
+                maxWidth: '100%',
               },
               icon: {
-                marginRight: '10px',
-                '@media (max-width: 768px)': {
-                  marginRight: '8px',
-                  width: '18px',
-                  height: '18px',
-                },
+                flexShrink: 0,
+                marginTop: '2px',
               },
               closeButton: {
-                '@media (max-width: 768px)': {
-                  width: '24px',
-                  height: '24px',
-                },
+                flexShrink: 0,
               },
             }}
           />
