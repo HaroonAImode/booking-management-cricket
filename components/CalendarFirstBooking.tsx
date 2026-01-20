@@ -268,27 +268,6 @@ export default function CalendarFirstBooking() {
     <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
       <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
         <Stack gap="xl">
-          {/* TEST BUTTON - Remove after testing */}
-          <Paper p="md" withBorder style={{ background: '#FEF3C7', borderColor: '#F59E0B' }}>
-            <Group justify="space-between" align="center">
-              <div>
-                <Text fw={600} size="sm" c="orange.9">
-                  🧪 Test Mode - Admin Push Notification
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Send test notification to admin without filling form
-                </Text>
-              </div>
-              <Button
-                color="orange"
-                onClick={sendTestNotification}
-                size="sm"
-              >
-                Send Test Notification
-              </Button>
-            </Group>
-          </Paper>
-
           {/* Header */}
           <Paper
             p={{ base: 'lg', sm: 'xl' }}

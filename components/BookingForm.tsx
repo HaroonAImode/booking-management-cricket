@@ -356,7 +356,13 @@ export default function BookingForm({
           day: 'numeric',
         });
         
-        await fetch('/api/notifications/push', {
+        console.log('📤 Sending push notification for booking:', {
+          bookingId: bookingResult.booking_id,
+          customerName: bookingSummary.customer.name,
+          date: formattedDate,
+        });
+
+        const notifResponse = await fetch('/api/notifications/push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -366,9 +372,18 @@ export default function BookingForm({
             customerName: bookingSummary.customer.name,
           }),
         });
+
+        const notifResult = await notifResponse.json();
+        console.log('📨 Push notification response:', notifResult);
+
+        if (notifResponse.ok) {
+          console.log('✅ Push notification sent successfully');
+        } else {
+          console.error('❌ Push notification failed:', notifResult);
+        }
       } catch (notifError) {
         // Don't fail the booking if notification fails
-        console.error('Failed to send push notification:', notifError);
+        console.error('❌ Failed to send push notification:', notifError);
       }
 
       // Success!
