@@ -7,15 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { createClient } from '@/lib/supabase/server';
 
-// Configure web-push with VAPID keys
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    'mailto:admin@cricket.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-}
-
 export async function POST(request: NextRequest) {
   try {
     console.log('🔔 Push notification request received');
@@ -50,6 +41,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ VAPID keys found');
+
+    // Configure web-push with VAPID keys (inside handler for serverless)
+    webpush.setVapidDetails(
+      'mailto:push@app.com',
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
 
     // Get all admin push subscriptions from database
     const supabase = await createClient();
