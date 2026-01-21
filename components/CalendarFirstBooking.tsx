@@ -427,12 +427,6 @@ export default function CalendarFirstBooking() {
                         🔄 Auto-updates every minute
                       </Text>
                     </Group>
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </Text>
 
                     {/* Status Legend - Moved to Top */}
                     <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
