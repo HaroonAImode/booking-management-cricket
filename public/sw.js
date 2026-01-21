@@ -44,21 +44,24 @@ self.addEventListener('push', (event) => {
         renotify: true, // Force new notification sound
         requireInteraction: true,
         silent: false, // Enable sound
-        vibrate: [200, 100, 200, 100, 200], // Stronger vibration pattern
+        vibrate: [300, 100, 300, 100, 300], // Strong vibration pattern
+        sound: '/notification.mp3', // Custom sound (if browser supports)
         data: {
           url: data.url || notificationData.data.url,
           bookingId: data.bookingId || null,
         },
         actions: [
           {
-            action: 'open',
-            title: 'Review & Approve',
+            action: 'approve',
+            title: '✅ Review & Approve',
           },
           {
-            action: 'close',
-            title: 'Dismiss',
+            action: 'view',
+            title: '👁️ View Details',
           },
         ],
+        // Show expanded notification on Android
+        image: data.icon || '/icon.png',
       };
     } catch (error) {
       console.error('Error parsing notification data:', error);
@@ -72,10 +75,14 @@ self.addEventListener('push', (event) => {
     icon: notificationData.icon,
     badge: notificationData.badge,
     tag: notificationData.tag,
+    renotify: notificationData.renotify,
     requireInteraction: notificationData.requireInteraction,
+    silent: notificationData.silent,
     vibrate: notificationData.vibrate,
+    sound: notificationData.sound,
     data: notificationData.data,
     actions: notificationData.actions,
+    image: notificationData.image,
   }).then(() => {
     console.log('✅ Notification displayed successfully!');
   }).catch((error) => {
@@ -88,23 +95,45 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('Notification clicked', event);
+  console.log('Action:', event.action);
 
   event.notification.close();
 
   const urlToOpen = event.notification.data?.url || '/admin/bookings';
 
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open with this URL
-      for (const client of clientList) {
-        if (client.url === new URL(urlToOpen, self.location.origin).href && 'focus' in client) {
-          return client.focus();
+  // Handle different actions
+  if (event.action === 'approve' || event.action === 'view') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // Check if there's already a window open
+        for (const client of clientList) {
+          const clientUrl = new URL(client.url);
+          const targetUrl = new URL(urlToOpen, self.location.origin);
+          
+          if (clientUrl.origin === targetUrl.origin && 'focus' in client) {
+            client.postMessage({ action: 'navigate', url: urlToOpen });
+            return client.focus();
+          }
         }
-      }
-      // If no window is open, open a new one
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
-  );
+        // If no window is open, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    );
+  } else {
+    // Default action - open bookings page
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === new URL(urlToOpen, self.location.origin).href && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    );
+  }
 });
