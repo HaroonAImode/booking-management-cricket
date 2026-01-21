@@ -101,6 +101,14 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
 // Create manual booking (Admin only)
 export const POST = withAdminAuth(async (request, { adminProfile }) => {
   try {
+    // Only admins can create manual bookings
+    if (adminProfile.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only administrators can create manual bookings' },
+        { status: 403 }
+      );
+    }
+
     const supabase = await createClient();
     const body = await request.json();
     

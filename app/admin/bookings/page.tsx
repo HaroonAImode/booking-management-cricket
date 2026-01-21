@@ -464,14 +464,16 @@ export default function AdminBookingsPage() {
             </div>
 
             <Group wrap="wrap">
-              <Button
-                leftSection={<IconPlus size={16} />}
-                size="sm"
-                onClick={() => setManualBookingOpened(true)}
-              >
-                <Text visibleFrom="sm">Add Manual Booking</Text>
-                <Text hiddenFrom="sm">Add</Text>
-              </Button>
+              {isAdmin && (
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  size="sm"
+                  onClick={() => setManualBookingOpened(true)}
+                >
+                  <Text visibleFrom="sm">Add Manual Booking</Text>
+                  <Text hiddenFrom="sm">Add</Text>
+                </Button>
+              )}
               
               <Menu shadow="md">
                 <Menu.Target>
