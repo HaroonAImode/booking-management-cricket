@@ -41,17 +41,17 @@ export default function AdminNavbar({ toggleMobile, mobileOpened }: AdminNavbarP
   }, []);
 
   const links = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow' as const, allowedRoles: ['admin'] },
-    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark' as const, allowedRoles: ['admin', 'ground_manager'] },
-    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow' as const, allowedRoles: ['admin', 'ground_manager'] },
-    { href: '/admin/users', label: 'Users', icon: IconUsers, color: 'blue' as const, allowedRoles: ['admin'] },
-    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark' as const, allowedRoles: ['admin'] },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow', allowedRoles: ['admin'] },
+    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark', allowedRoles: ['admin', 'ground_manager'] },
+    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow', allowedRoles: ['admin', 'ground_manager'] },
+    { href: '/admin/users', label: 'Users', icon: IconUsers, color: 'blue', allowedRoles: ['admin'] },
+    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark', allowedRoles: ['admin'] },
   ];
 
   // Filter links based on user role - show all links while loading
   const visibleLinks = userRole 
-    ? links.filter(link => link.allowedRoles.includes(userRole))
-    : links; // Show all links initially while role is being fetched
+    ? links.filter(link => Array.isArray(link.allowedRoles) && link.allowedRoles.includes(userRole))
+    : []; // Show empty initially to prevent errors
 
   return (
     <Stack gap="xs">
