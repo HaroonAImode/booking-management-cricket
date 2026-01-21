@@ -28,7 +28,7 @@ interface AdminNavbarProps {
 export default function AdminNavbar({ toggleMobile, mobileOpened }: AdminNavbarProps) {
   const pathname = usePathname();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const [userRole, setUserRole] = useState<string>('ground_manager');
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchUserRole() {
@@ -41,15 +41,17 @@ export default function AdminNavbar({ toggleMobile, mobileOpened }: AdminNavbarP
   }, []);
 
   const links = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow', roles: ['admin'] },
-    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark', roles: ['admin', 'ground_manager'] },
-    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow', roles: ['admin', 'ground_manager'] },
-    { href: '/admin/users', label: 'Users', icon: IconUsers, color: 'blue', roles: ['admin'] },
-    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark', roles: ['admin'] },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow' as const, allowedRoles: ['admin'] },
+    { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark' as const, allowedRoles: ['admin', 'ground_manager'] },
+    { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow' as const, allowedRoles: ['admin', 'ground_manager'] },
+    { href: '/admin/users', label: 'Users', icon: IconUsers, color: 'blue' as const, allowedRoles: ['admin'] },
+    { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark' as const, allowedRoles: ['admin'] },
   ];
 
-  // Filter links based on user role
-  const visibleLinks = links.filter(link => link.roles.includes(userRole));
+  // Filter links based on user role - show all links while loading
+  const visibleLinks = userRole 
+    ? links.filter(link => link.allowedRoles.includes(userRole))
+    : links; // Show all links initially while role is being fetched
 
   return (
     <Stack gap="xs">
