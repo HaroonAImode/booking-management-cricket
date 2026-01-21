@@ -63,24 +63,33 @@ export async function verifyAdminAuth(request: NextRequest) {
       };
     }
 
-    // Verify admin profile
-    const { data: adminProfile, error: profileError } = await supabase
-      .from('admin_profiles')
+    // Verify user role (admin or ground_manager)
+    const { data: userRole, error: profileError } = await supabase
+      .from('user_roles')
       .select('*')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .eq('is_active', true)
       .single();
 
-    if (profileError || !adminProfile) {
+    if (profileError || !userRole) {
       return {
         authorized: false,
         response: NextResponse.json(
-          { error: 'Forbidden - Admin access required' },
+          { error: 'Forbidden - Admin or Ground Manager access required' },
           { status: 403 }
         ),
         adminProfile: null,
       };
     }
+
+    // Map user_roles to adminProfile format for compatibility
+    const adminProfile = {
+      id: userRole.user_id,
+      email: userRole.email,
+      full_name: userRole.name,
+      role: userRole.role,
+      is_active: userRole.is_active,
+    };
 
     return {
       authorized: true,
