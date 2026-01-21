@@ -75,11 +75,13 @@ export function createAdminClient() {
     );
   }
 
-  return createServerClient(
+  // Use standard createClient from @supabase/supabase-js for admin operations
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  
+  return createSupabaseClient(
     supabaseUrl,
     supabaseServiceRoleKey,
     {
-      cookies: {},
       auth: {
         persistSession: false,
         autoRefreshToken: false,
