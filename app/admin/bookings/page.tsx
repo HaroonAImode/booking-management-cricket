@@ -520,10 +520,12 @@ export default function AdminBookingsPage() {
                 leftSection={<IconFilter size={16} />}
                 data={[
                   { value: 'all', label: 'All Statuses' },
-                  { value: 'pending', label: 'Pending' },
+                  ...(isAdmin ? [
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                  ] : []),
                   { value: 'approved', label: 'Approved' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'cancelled', label: 'Cancelled' },
                 ]}
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value || 'all')}

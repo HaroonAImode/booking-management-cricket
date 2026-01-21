@@ -46,9 +46,9 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       query = query.gt('remaining_payment', 0);
     }
     
-    // Ground managers only see bookings with remaining payment > 0
+    // Ground managers only see approved bookings with remaining payment > 0
     if (remainingOnly) {
-      query = query.gt('remaining_payment', 0);
+      query = query.gt('remaining_payment', 0).eq('status', 'approved');
     }
 
     // Search by booking number, customer name, or phone
