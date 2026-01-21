@@ -51,6 +51,8 @@ import {
   IconCurrencyRupee,
   IconCalendarEvent,
   IconFileInvoice,
+  IconEdit,
+  IconTrash,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -61,6 +63,7 @@ import BookingDetailsModal from '@/components/BookingDetailsModal';
 import PaymentProofModal from '@/components/PaymentProofModal';
 import ManualBookingModal from '@/components/ManualBookingModal';
 import CompletePaymentModal from '@/components/CompletePaymentModal';
+import EditBookingModal from '@/components/EditBookingModal';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTimeDisplay, formatSlotRanges } from '@/lib/supabase/bookings';
@@ -103,6 +106,7 @@ export default function AdminBookingsPage() {
   const [paymentModalOpened, setPaymentModalOpened] = useState(false);
   const [manualBookingOpened, setManualBookingOpened] = useState(false);
   const [completePaymentOpened, setCompletePaymentOpened] = useState(false);
+  const [editModalOpened, setEditModalOpened] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [selectedPaymentProof, setSelectedPaymentProof] = useState<{ path: string; number: string } | null>(null);
   const [selectedPaymentBooking, setSelectedPaymentBooking] = useState<{ id: string; number: string; remaining: number } | null>(null);
@@ -224,6 +228,53 @@ export default function AdminBookingsPage() {
       notifications.show({
         title: '❌ Error',
         message: 'Failed to reject booking',
+        color: 'red',
+        autoClose: 4000,
+        icon: <IconAlertCircle size={18} />,
+      });
+    }
+  };
+
+  const handleDelete = async (bookingId: string, bookingNumber: string) => {
+    const confirmed = confirm(
+      `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n- Customer information\n- Payment records\n- Slot reservations\n\nType 'DELETE' to confirm.`
+    );
+
+    if (!confirmed) return;
+
+    const confirmText = prompt('Type DELETE to confirm:');
+    if (confirmText !== 'DELETE') {
+      notifications.show({
+        title: '❌ Cancelled',
+        message: 'Deletion cancelled',
+        color: 'orange',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        notifications.show({
+          title: '✅ Booking Deleted',
+          message: `Booking #${bookingNumber} has been permanently deleted`,
+          color: 'green',
+          autoClose: 4000,
+          icon: <IconTrash size={18} />,
+        });
+        fetchBookings();
+      } else {
+        throw new Error(result.error || 'Failed to delete booking');
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: '❌ Delete Failed',
+        message: error.message || 'Failed to delete booking',
         color: 'red',
         autoClose: 4000,
         icon: <IconAlertCircle size={18} />,
@@ -659,6 +710,24 @@ export default function AdminBookingsPage() {
                             >
                               View Details
                             </Menu.Item>
+                            <Menu.Item
+                              leftSection={<IconEdit size={16} />}
+                              color="blue"
+                              onClick={() => {
+                                setSelectedBookingId(booking.id);
+                                setEditModalOpened(true);
+                              }}
+                            >
+                              Edit Booking
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item
+                              leftSection={<IconTrash size={16} />}
+                              color="red"
+                              onClick={() => handleDelete(booking.id, booking.booking_number)}
+                            >
+                              Delete Booking
+                            </Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
                       </Group>
@@ -690,15 +759,27 @@ export default function AdminBookingsPage() {
 
       {/* Modals */}
       {selectedBookingId && (
-        <BookingDetailsModal
-          bookingId={selectedBookingId}
-          opened={detailsModalOpened}
-          onClose={() => {
-            setDetailsModalOpened(false);
-            setSelectedBookingId(null);
-          }}
-          onSuccess={fetchBookings}
-        />
+        <>
+          <BookingDetailsModal
+            bookingId={selectedBookingId}
+            opened={detailsModalOpened}
+            onClose={() => {
+              setDetailsModalOpened(false);
+              setSelectedBookingId(null);
+            }}
+            onSuccess={fetchBookings}
+          />
+          
+          <EditBookingModal
+            bookingId={selectedBookingId}
+            opened={editModalOpened}
+            onClose={() => {
+              setEditModalOpened(false);
+              setSelectedBookingId(null);
+            }}
+            onSuccess={fetchBookings}
+          />
+        </>
       )}
 
       {selectedPaymentProof && (
