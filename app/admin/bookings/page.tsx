@@ -472,31 +472,33 @@ export default function AdminBookingsPage() {
                 <Text visibleFrom="sm">Add Manual Booking</Text>
                 <Text hiddenFrom="sm">Add</Text>
               </Button>
-            <Menu shadow="md">
-              <Menu.Target>
-                <Button
-                  variant="light"
-                  leftSection={<IconDownload size={16} />}
-                  size={{ base: 'xs', sm: 'sm', md: 'md' }}
-                >
-                  <Text visibleFrom="sm">Export</Text>
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={16} />}
-                  onClick={exportToPDF}
-                >
-                  Export as PDF
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileSpreadsheet size={16} />}
-                  onClick={exportToExcel}
-                >
-                  Export as Excel
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+              
+              <Menu shadow="md">
+                <Menu.Target>
+                  <Button
+                    variant="light"
+                    leftSection={<IconDownload size={16} />}
+                    size={{ base: 'xs', sm: 'sm', md: 'md' }}
+                  >
+                    <Text visibleFrom="sm">Export</Text>
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconFileTypePdf size={16} />}
+                    onClick={exportToPDF}
+                  >
+                    Export as PDF
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconFileSpreadsheet size={16} />}
+                    onClick={exportToExcel}
+                  >
+                    Export as Excel
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
         </Stack>
 

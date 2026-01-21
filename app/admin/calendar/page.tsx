@@ -50,7 +50,6 @@ import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { EventClickArg, DatesSetArg } from '@fullcalendar/core';
 import BookingDetailsModal from '@/components/BookingDetailsModal';
@@ -433,7 +432,7 @@ export default function AdminCalendarPage() {
             
             <FullCalendar
               ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               headerToolbar={{
                 left: 'prev,next today',
