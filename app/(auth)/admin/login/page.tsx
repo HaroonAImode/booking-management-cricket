@@ -52,9 +52,21 @@ function LoginForm() {
     try {
       const result = await signInAdmin(formData);
 
-      if (result.success) {
-        // Redirect to dashboard or original destination
-        const redirectTo = searchParams.get('redirect') || '/admin/dashboard';
+      if (result.success && result.profile) {
+        // Route based on user role
+        let redirectTo = searchParams.get('redirect');
+        
+        if (!redirectTo) {
+          // Default routing based on role
+          if (result.profile.role === 'admin') {
+            redirectTo = '/admin/dashboard';
+          } else if (result.profile.role === 'ground_manager') {
+            redirectTo = '/admin/bookings'; // Ground managers see bookings page
+          } else {
+            redirectTo = '/admin/dashboard';
+          }
+        }
+        
         router.push(redirectTo);
         router.refresh();
       } else {

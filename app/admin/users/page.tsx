@@ -49,7 +49,9 @@ export default function UsersManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpened, setModalOpened] = useState(false);
+  const [editModalOpened, setEditModalOpened] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   
   // Form state
   const [name, setName] = useState('');
@@ -207,6 +209,67 @@ export default function UsersManagementPage() {
     }
   };
 
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setName(user.name);
+    setEmail(user.email);
+    setPhone(user.phone || '');
+    setEditModalOpened(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser || !name || !email) {
+      notifications.show({
+        title: '⚠️ Missing Fields',
+        message: 'Name and email are required',
+        color: 'orange',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/admin/users/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: editingUser.id,
+          name,
+          email,
+          phone,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update user');
+      }
+
+      notifications.show({
+        title: '✅ User Updated',
+        message: `${name}'s details have been updated`,
+        color: 'green',
+        icon: <IconCheck size={18} />,
+      });
+
+      setEditModalOpened(false);
+      resetForm();
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      notifications.show({
+        title: '❌ Update Failed',
+        message: error.message,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const resetForm = () => {
     setName('');
     setEmail('');
@@ -300,13 +363,22 @@ export default function UsersManagementPage() {
                     <Table.Td>
                       <Group gap="xs">
                         {user.role !== 'admin' && (
-                          <ActionIcon
-                            color="red"
-                            variant="light"
-                            onClick={() => handleDeleteUser(user.id, user.name)}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
+                          <>
+                            <ActionIcon
+                              color="blue"
+                              variant="light"
+                              onClick={() => openEditModal(user)}
+                            >
+                              <IconEdit size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              color="red"
+                              variant="light"
+                              onClick={() => handleDeleteUser(user.id, user.name)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </>
                         )}
                       </Group>
                     </Table.Td>
@@ -404,6 +476,71 @@ export default function UsersManagementPage() {
               leftSection={<IconCheck size={18} />}
             >
               Create User
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        opened={editModalOpened}
+        onClose={() => {
+          setEditModalOpened(false);
+          resetForm();
+          setEditingUser(null);
+        }}
+        title="Edit User Details"
+        size="md"
+        centered
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Full Name"
+            placeholder="Enter full name"
+            leftSection={<IconUser size={16} />}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+
+          <TextInput
+            label="Email"
+            placeholder="user@example.com"
+            leftSection={<IconMail size={16} />}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <TextInput
+            label="Phone"
+            placeholder="03XXXXXXXXX"
+            leftSection={<IconPhone size={16} />}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light">
+            <Text size="xs">
+              Only name, email, and phone can be edited. To change role or password, delete and recreate the user.
+            </Text>
+          </Alert>
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="light" onClick={() => {
+              setEditModalOpened(false);
+              resetForm();
+              setEditingUser(null);
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateUser}
+              loading={submitting}
+              leftSection={<IconCheck size={18} />}
+            >
+              Update User
             </Button>
           </Group>
         </Stack>

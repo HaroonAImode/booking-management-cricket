@@ -45,25 +45,32 @@ export async function signInAdmin(credentials: LoginCredentials): Promise<AuthRe
       };
     }
 
-    // Verify user is an admin
-    const { data: profile, error: profileError } = await supabase
-      .from('admin_profiles')
+    // Check if user exists in user_roles table and is active
+    const { data: userRole, error: profileError } = await supabase
+      .from('user_roles')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('user_id', authData.user.id)
       .eq('is_active', true)
       .single();
 
-    if (profileError || !profile) {
-      // User authenticated but is not an admin - sign them out
+    if (profileError || !userRole) {
+      // User authenticated but doesn't have a role or is inactive
       await supabase.auth.signOut();
       return {
         success: false,
-        error: 'Access denied. Admin privileges required.',
+        error: 'Access denied. Account not found or inactive.',
       };
     }
 
-    // Update last login timestamp
-    await supabase.rpc('update_admin_last_login');
+    // Map user_roles data to AdminProfile format
+    const profile: AdminProfile = {
+      id: userRole.user_id,
+      email: userRole.email,
+      full_name: userRole.name,
+      role: userRole.role as 'admin' | 'super_admin' | 'staff',
+      is_active: userRole.is_active,
+      last_login_at: null,
+    };
 
     return {
       success: true,
@@ -155,17 +162,27 @@ export async function getAdminProfile(): Promise<AdminProfile | null> {
       return null;
     }
 
-    // Get admin profile
-    const { data: profile, error: profileError } = await supabase
-      .from('admin_profiles')
+    // Get user role from user_roles table
+    const { data: userRole, error: profileError } = await supabase
+      .from('user_roles')
       .select('*')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .eq('is_active', true)
       .single();
 
-    if (profileError || !profile) {
+    if (profileError || !userRole) {
       return null;
     }
+
+    // Map to AdminProfile format
+    const profile: AdminProfile = {
+      id: userRole.user_id,
+      email: userRole.email,
+      full_name: userRole.name,
+      role: userRole.role as 'admin' | 'super_admin' | 'staff',
+      is_active: userRole.is_active,
+      last_login_at: null,
+    };
 
     return profile;
   } catch (error) {
@@ -211,17 +228,27 @@ export async function getServerAdminSession(cookieStore: any) {
       return null;
     }
 
-    // Verify admin profile exists
-    const { data: profile } = await supabase
-      .from('admin_profiles')
+    // Verify user role exists in user_roles table
+    const { data: userRole } = await supabase
+      .from('user_roles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('user_id', session.user.id)
       .eq('is_active', true)
       .single();
 
-    if (!profile) {
+    if (!userRole) {
       return null;
     }
+
+    // Map to profile format
+    const profile: AdminProfile = {
+      id: userRole.user_id,
+      email: userRole.email,
+      full_name: userRole.name,
+      role: userRole.role as 'admin' | 'super_admin' | 'staff',
+      is_active: userRole.is_active,
+      last_login_at: null,
+    };
 
     return { session, profile };
   } catch (error) {
