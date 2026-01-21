@@ -94,16 +94,17 @@ interface Booking {
 }
 
 export default function AdminBookingsPage() {
+  // Role-based access control
+  const { isAdmin, isGroundManager, canEditBookings, canDeleteBookings, loading: roleLoading } = useUserRole();
+  
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Ground managers are locked to 'approved' status, admins can filter
+  const [statusFilter, setStatusFilter] = useState<string>(isGroundManager ? 'approved' : 'all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
   const [summary, setSummary] = useState<any>(null);
-  
-  // Role-based access control
-  const { isAdmin, isGroundManager, canEditBookings, canDeleteBookings, loading: roleLoading } = useUserRole();
   
   // Modals
   const [detailsModalOpened, setDetailsModalOpened] = useState(false);
@@ -515,36 +516,38 @@ export default function AdminBookingsPage() {
               size="sm"
             />
             <Group wrap="wrap">
-              <Select
-                placeholder="Status"
-                leftSection={<IconFilter size={16} />}
-                data={[
-                  { value: 'all', label: 'All Statuses' },
-                  ...(isAdmin ? [
+              {isAdmin && (
+                <Select
+                  placeholder="Status"
+                  leftSection={<IconFilter size={16} />}
+                  data={[
+                    { value: 'all', label: 'All Statuses' },
                     { value: 'pending', label: 'Pending' },
+                    { value: 'approved', label: 'Approved' },
                     { value: 'completed', label: 'Completed' },
                     { value: 'cancelled', label: 'Cancelled' },
-                  ] : []),
-                  { value: 'approved', label: 'Approved' },
-                ]}
-                value={statusFilter}
-                onChange={(value) => setStatusFilter(value || 'all')}
-                style={{ flex: '1 1 120px', minWidth: 120 }}
-                size="sm"
-              />
-              <Select
-                placeholder="Payment"
-                leftSection={<IconFilter size={16} />}
-                data={[
-                  { value: 'all', label: 'All' },
-                  { value: 'paid', label: 'Paid' },
-                  { value: 'pending', label: 'Pending' },
-                ]}
-                value={paymentFilter}
-                onChange={(value) => setPaymentFilter(value || 'all')}
-                style={{ flex: '1 1 120px', minWidth: 120 }}
-                size="sm"
-              />
+                  ]}
+                  value={statusFilter}
+                  onChange={(value) => setStatusFilter(value || 'all')}
+                  style={{ flex: '1 1 120px', minWidth: 120 }}
+                  size="sm"
+                />
+              )}
+              {isAdmin && (
+                <Select
+                  placeholder="Payment"
+                  leftSection={<IconFilter size={16} />}
+                  data={[
+                    { value: 'all', label: 'All' },
+                    { value: 'paid', label: 'Paid' },
+                    { value: 'pending', label: 'Pending' },
+                  ]}
+                  value={paymentFilter}
+                  onChange={(value) => setPaymentFilter(value || 'all')}
+                  style={{ flex: '1 1 120px', minWidth: 120 }}
+                  size="sm"
+                />
+              )}
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}

@@ -34,21 +34,21 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       .order(sortBy, { ascending: sortOrder === 'asc' })
       .range(offset, offset + limit - 1);
 
-    // Filter by booking status
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
-    }
-
-    // Filter by payment status
-    if (paymentStatus === 'paid') {
-      query = query.eq('remaining_payment', 0);
-    } else if (paymentStatus === 'pending') {
-      query = query.gt('remaining_payment', 0);
-    }
-    
     // Ground managers only see approved bookings with remaining payment > 0
     if (remainingOnly) {
       query = query.gt('remaining_payment', 0).eq('status', 'approved');
+    } else {
+      // Filter by booking status (only for admins)
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      }
+
+      // Filter by payment status (only for admins)
+      if (paymentStatus === 'paid') {
+        query = query.eq('remaining_payment', 0);
+      } else if (paymentStatus === 'pending') {
+        query = query.gt('remaining_payment', 0);
+      }
     }
 
     // Search by booking number, customer name, or phone
