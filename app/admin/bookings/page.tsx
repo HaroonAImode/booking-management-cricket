@@ -432,31 +432,31 @@ export default function AdminBookingsPage() {
   return (
     <Container 
       size="xl" 
-      py={{ base: 'sm', sm: 'md', md: 'xl' }} 
-      px={{ base: 'xs', sm: 'sm', md: 'md' }}
+      py="md" 
+      px="sm"
       className="animate-fade-in"
     >
-      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
+      <Stack gap="xl">
         {/* Header */}
         <Stack gap="xs">
           <Group justify="space-between" align="flex-start" wrap="wrap">
             <div style={{ flex: 1, minWidth: 0 }}>
               <Title 
                 order={1}
-                size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+                size="h1"
                 style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
               >
                 Bookings Management
               </Title>
               {summary && (
                 <Group gap="xs" mt="xs" wrap="wrap">
-                  <Badge variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                  <Badge variant="light" size="sm">
                     Total: {summary.total}
                   </Badge>
-                  <Badge color="orange" variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                  <Badge color="orange" variant="light" size="sm">
                     Pending: {summary.pending}
                   </Badge>
-                  <Badge color="green" variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                  <Badge color="green" variant="light" size="sm">
                     Approved: {summary.approved}
                   </Badge>
                 </Group>
@@ -466,7 +466,7 @@ export default function AdminBookingsPage() {
             <Group wrap="wrap">
               <Button
                 leftSection={<IconPlus size={16} />}
-                size={{ base: 'xs', sm: 'sm', md: 'md' }}
+                size="sm"
                 onClick={() => setManualBookingOpened(true)}
               >
                 <Text visibleFrom="sm">Add Manual Booking</Text>
@@ -478,7 +478,7 @@ export default function AdminBookingsPage() {
                   <Button
                     variant="light"
                     leftSection={<IconDownload size={16} />}
-                    size={{ base: 'xs', sm: 'sm', md: 'md' }}
+                    size="sm"
                   >
                     <Text visibleFrom="sm">Export</Text>
                   </Button>
@@ -503,14 +503,14 @@ export default function AdminBookingsPage() {
         </Stack>
 
         {/* Filters */}
-        <Paper withBorder p={{ base: 'xs', sm: 'sm', md: 'md' }}>
-          <Stack gap={{ base: 'xs', sm: 'sm' }}>
+        <Paper withBorder p="sm">
+          <Stack gap="sm">
             <TextInput
               placeholder="Search by booking #, customer, phone..."
               leftSection={<IconSearch size={16} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              size={{ base: 'sm', sm: 'md' }}
+              size="sm"
             />
             <Group wrap="wrap">
               <Select
@@ -526,7 +526,7 @@ export default function AdminBookingsPage() {
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value || 'all')}
                 style={{ flex: '1 1 120px', minWidth: 120 }}
-                size={{ base: 'sm', sm: 'md' }}
+                size="sm"
               />
               <Select
                 placeholder="Payment"
@@ -539,14 +539,14 @@ export default function AdminBookingsPage() {
                 value={paymentFilter}
                 onChange={(value) => setPaymentFilter(value || 'all')}
                 style={{ flex: '1 1 120px', minWidth: 120 }}
-                size={{ base: 'sm', sm: 'md' }}
+                size="sm"
               />
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}
                 onClick={fetchBookings}
                 loading={loading}
-                size={{ base: 'sm', sm: 'md' }}
+                size="sm"
                 style={{ flex: '0 0 auto' }}
               >
                 <Text visibleFrom="sm">Refresh</Text>
