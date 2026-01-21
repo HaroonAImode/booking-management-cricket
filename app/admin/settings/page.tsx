@@ -204,19 +204,29 @@ export default function AdminSettingsPage() {
   }));
 
   return (
-    <Container size="lg" py="xl">
-      <Stack gap="xl">
+    <Container 
+      size="lg" 
+      py={{ base: 'sm', sm: 'md', md: 'xl' }}
+      px={{ base: 'xs', sm: 'sm', md: 'md' }}
+    >
+      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
         {/* Header */}
         <div>
-          <Title order={1}>System Settings</Title>
-          <Text c="dimmed" mt="xs">
+          <Title 
+            order={1}
+            size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+            style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
+          >
+            System Settings
+          </Title>
+          <Text c="dimmed" mt="xs" size={{ base: 'xs', sm: 'sm' }}>
             Configure booking rates and operating hours. Changes apply immediately to new bookings.
           </Text>
         </div>
 
         {/* Alert */}
-        <Alert icon={<IconAlertCircle size={18} />} color="blue">
-          <Text size="sm">
+        <Alert icon={<IconAlertCircle size={16} />} color="blue">
+          <Text size={{ base: 'xs', sm: 'sm' }}>
             <strong>Important:</strong> Changing these settings will affect all new booking calculations.
             Existing bookings will retain their original rates.
           </Text>
@@ -225,15 +235,26 @@ export default function AdminSettingsPage() {
         <Grid>
           {/* Hourly Rates Section */}
           <Grid.Col span={{ base: 12, md: 6 }}>
-            <Paper withBorder p="xl" h="100%" pos="relative">
+            <Paper 
+              withBorder 
+              p={{ base: 'sm', sm: 'md', md: 'xl' }} 
+              h="100%" 
+              pos="relative"
+            >
               <LoadingOverlay visible={loading} />
               
-              <Stack gap="lg">
-                <Group>
-                  <IconCurrencyRupee size={24} />
+              <Stack gap={{ base: 'sm', sm: 'md', md: 'lg' }}>
+                <Group gap="xs">
+                  <IconCurrencyRupee size={{ base: 20, sm: 24 }} />
                   <div>
-                    <Title order={3}>Hourly Rates</Title>
-                    <Text size="sm" c="dimmed">
+                    <Title 
+                      order={3}
+                      size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                      style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+                    >
+                      Hourly Rates
+                    </Title>
+                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
                       Set day and night rates
                     </Text>
                   </div>
@@ -249,7 +270,8 @@ export default function AdminSettingsPage() {
                   onChange={(value) => setDayRate(Number(value))}
                   min={0}
                   step={100}
-                  leftSection={<IconSun size={18} />}
+                  size={{ base: 'sm', sm: 'md' }}
+                  leftSection={<IconSun size={16} />}
                   rightSection={
                     <Text size="xs" c="dimmed">
                       Rs/hour
@@ -265,7 +287,8 @@ export default function AdminSettingsPage() {
                   onChange={(value) => setNightRate(Number(value))}
                   min={0}
                   step={100}
-                  leftSection={<IconMoon size={18} />}
+                  size={{ base: 'sm', sm: 'md' }}
+                  leftSection={<IconMoon size={16} />}
                   rightSection={
                     <Text size="xs" c="dimmed">
                       Rs/hour
@@ -275,10 +298,11 @@ export default function AdminSettingsPage() {
 
                 <Button
                   fullWidth
-                  leftSection={<IconCheck size={18} />}
+                  leftSection={<IconCheck size={16} />}
                   onClick={handleSaveRates}
                   loading={saving}
                   disabled={loading || dayRate <= 0 || nightRate <= 0}
+                  size={{ base: 'sm', sm: 'md' }}
                 >
                   Save Rates
                 </Button>
@@ -296,15 +320,26 @@ export default function AdminSettingsPage() {
 
           {/* Night Hours Section */}
           <Grid.Col span={{ base: 12, md: 6 }}>
-            <Paper withBorder p="xl" h="100%" pos="relative">
+            <Paper 
+              withBorder 
+              p={{ base: 'sm', sm: 'md', md: 'xl' }} 
+              h="100%" 
+              pos="relative"
+            >
               <LoadingOverlay visible={loading} />
               
-              <Stack gap="lg">
-                <Group>
-                  <IconClock size={24} />
+              <Stack gap={{ base: 'sm', sm: 'md', md: 'lg' }}>
+                <Group gap="xs">
+                  <IconClock size={{ base: 20, sm: 24 }} />
                   <div>
-                    <Title order={3}>Night Rate Hours</Title>
-                    <Text size="sm" c="dimmed">
+                    <Title 
+                      order={3}
+                      size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                      style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+                    >
+                      Night Rate Hours
+                    </Title>
+                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
                       Define night rate time range
                     </Text>
                   </div>
@@ -319,6 +354,7 @@ export default function AdminSettingsPage() {
                   value={nightStartHour.toString()}
                   onChange={(value) => setNightStartHour(parseInt(value || '17'))}
                   searchable
+                  size={{ base: 'sm', sm: 'md' }}
                 />
 
                 <Select
@@ -328,14 +364,16 @@ export default function AdminSettingsPage() {
                   value={nightEndHour.toString()}
                   onChange={(value) => setNightEndHour(parseInt(value || '6'))}
                   searchable
+                  size={{ base: 'sm', sm: 'md' }}
                 />
 
                 <Button
                   fullWidth
-                  leftSection={<IconCheck size={18} />}
+                  leftSection={<IconCheck size={16} />}
                   onClick={handleSaveNightHours}
                   loading={saving}
                   disabled={loading}
+                  size={{ base: 'sm', sm: 'md' }}
                 >
                   Save Night Hours
                 </Button>
@@ -354,18 +392,24 @@ export default function AdminSettingsPage() {
         </Grid>
 
         {/* Rate Schedule Preview */}
-        <Paper withBorder p="xl">
-          <Stack gap="lg">
-            <Title order={3}>24-Hour Rate Schedule</Title>
-            <Text size="sm" c="dimmed">
+        <Paper withBorder p={{ base: 'sm', sm: 'md', md: 'xl' }}>
+          <Stack gap={{ base: 'sm', sm: 'md', md: 'lg' }}>
+            <Title 
+              order={3}
+              size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+              style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+            >
+              24-Hour Rate Schedule
+            </Title>
+            <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
               Preview of hourly rates throughout the day
             </Text>
 
             <Grid>
               {Array.from({ length: 24 }, (_, hour) => (
-                <Grid.Col span={3} key={hour}>
+                <Grid.Col span={{ base: 6, xs: 4, sm: 3 }} key={hour}>
                   <Paper
-                    p="sm"
+                    p={{ base: 'xs', sm: 'sm' }}
                     withBorder
                     style={{
                       backgroundColor: isNightHour(hour)
@@ -373,23 +417,23 @@ export default function AdminSettingsPage() {
                         : 'var(--mantine-color-yellow-0)',
                     }}
                   >
-                    <Group justify="space-between" gap="xs">
+                    <Group justify="space-between" gap={{ base: 2, sm: 'xs' }} wrap="nowrap">
                       <Badge
-                        size="sm"
+                        size={{ base: 'xs', sm: 'sm' }}
                         variant="light"
                         color={isNightHour(hour) ? 'indigo' : 'yellow'}
                         leftSection={
                           isNightHour(hour) ? (
-                            <IconMoon size={12} />
+                            <IconMoon size={10} />
                           ) : (
-                            <IconSun size={12} />
+                            <IconSun size={10} />
                           )
                         }
                       >
                         {getHourLabel(hour)}
                       </Badge>
-                      <Text size="sm" fw={600}>
-                        Rs {isNightHour(hour) ? nightRate : dayRate}
+                      <Text size={{ base: 'xs', sm: 'sm' }} fw={600}>
+                        {isNightHour(hour) ? nightRate : dayRate}
                       </Text>
                     </Group>
                   </Paper>

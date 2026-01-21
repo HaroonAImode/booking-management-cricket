@@ -422,11 +422,22 @@ export default function BookingForm({
 
   if (loading) {
     return (
-      <Container size="md" py={{ base: "md", sm: "xl" }} px={{ base: "xs", sm: "md" }} className="animate-fade-in">
-        <Stack gap="xl">
+      <Container 
+        size="md" 
+        py={{ base: "sm", sm: "md", md: "xl" }} 
+        px={{ base: "xs", sm: "sm", md: "md" }} 
+        className="animate-fade-in"
+      >
+        <Stack gap={{ base: "sm", sm: "md", md: "xl" }}>
           <Stack gap="xs">
-            <Title order={1}>Book Cricket Ground</Title>
-            <Text c="dimmed">Loading booking system...</Text>
+            <Title 
+              order={1}
+              size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+              style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
+            >
+              Book Cricket Ground
+            </Title>
+            <Text c="dimmed" size={{ base: 'xs', sm: 'sm' }}>Loading booking system...</Text>
           </Stack>
           <FormSkeleton />
         </Stack>
@@ -438,24 +449,32 @@ export default function BookingForm({
     <>
       <Container 
         size="md" 
-        py={{ base: "md", sm: "xl" }} 
-        px={{ base: "xs", sm: "md" }} 
+        py={{ base: "sm", sm: "md", md: "xl" }} 
+        px={{ base: "xs", sm: "sm", md: "md" }} 
         className="animate-fade-in"
         style={{ 
           maxWidth: '100%',
           overflowX: 'hidden',
         }}
       >
-        <Stack gap="xl" style={{ maxWidth: '100%' }}>
+        <Stack gap={{ base: "sm", sm: "md", md: "xl" }} style={{ maxWidth: '100%' }}>
           {/* Header */}
           <Stack gap="xs">
-            <Title order={1} size="h1">Book Cricket Ground</Title>
-            <Text c="dimmed" size="md">Fill in the details below to book your time slot</Text>
+            <Title 
+              order={1}
+              size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+              style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
+            >
+              Book Cricket Ground
+            </Title>
+            <Text c="dimmed" size={{ base: 'xs', sm: 'sm', md: 'md' }}>
+              Fill in the details below to book your time slot
+            </Text>
           </Stack>
 
           {/* Customer Information */}
           <Paper 
-            p={{ base: "md", sm: "lg" }} 
+            p={{ base: "sm", sm: "md", md: "lg" }} 
             withBorder 
             className="hover-lift"
             style={{ 
@@ -463,8 +482,14 @@ export default function BookingForm({
               overflowX: 'hidden',
             }}
           >
-            <Stack gap="md" style={{ maxWidth: '100%' }}>
-              <Title order={3} size="h3">Customer Information</Title>
+            <Stack gap={{ base: "sm", sm: "md" }} style={{ maxWidth: '100%' }}>
+              <Title 
+                order={3}
+                size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+              >
+                Customer Information
+              </Title>
               <Divider />
 
               <TextInput
@@ -474,6 +499,7 @@ export default function BookingForm({
                 onChange={(e) => setName(e.currentTarget.value)}
                 error={errors.name}
                 required
+                size={{ base: 'sm', sm: 'md' }}
                 leftSection={<IconUser size={16} />}
               />
 
@@ -483,6 +509,7 @@ export default function BookingForm({
                 value={phone}
                 onChange={(e) => setPhone(e.currentTarget.value)}
                 error={errors.phone}
+                size={{ base: 'sm', sm: 'md' }}
                 leftSection={<IconPhone size={16} />}
               />
             </Stack>
@@ -490,9 +517,15 @@ export default function BookingForm({
 
           {/* Booking Details */}
           {!hideCalendar && (
-            <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
-              <Stack gap="md">
-                <Title order={3} size="h3">Booking Details</Title>
+            <Paper p={{ base: "sm", sm: "md", md: "lg" }} withBorder className="hover-lift">
+              <Stack gap={{ base: "sm", sm: "md" }}>
+                <Title 
+                  order={3}
+                  size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                  style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+                >
+                  Booking Details
+                </Title>
                 <Divider />
 
                 <DatePickerInput
@@ -508,6 +541,7 @@ export default function BookingForm({
                   }}
                   error={errors.booking_date}
                   required
+                  size={{ base: 'sm', sm: 'md' }}
                   leftSection={<IconCalendar size={16} />}
                   minDate={new Date()}
                   clearable
@@ -534,6 +568,7 @@ export default function BookingForm({
                   value={customerNotes}
                   onChange={(e) => setCustomerNotes(e.currentTarget.value)}
                   minRows={3}
+                  size={{ base: 'sm', sm: 'md' }}
                 />
               </Stack>
             </Paper>
@@ -559,7 +594,7 @@ export default function BookingForm({
 
           {/* Payment Information */}
           <Paper 
-            p={{ base: "md", sm: "lg" }} 
+            p={{ base: "sm", sm: "md", md: "lg" }} 
             withBorder 
             bg="blue.0"
             style={{ 
@@ -567,20 +602,26 @@ export default function BookingForm({
               overflowX: 'hidden',
             }}
           >
-            <Stack gap="md" style={{ maxWidth: '100%' }}>
-              <Title order={3} size="h3">Payment Information</Title>
+            <Stack gap={{ base: "sm", sm: "md" }} style={{ maxWidth: '100%' }}>
+              <Title 
+                order={3}
+                size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+              >
+                Payment Information
+              </Title>
               <Divider />
 
               {/* Amount Summary */}
               {selectedSlots.length > 0 && (
-                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                <SimpleGrid cols={{ base: 1, xs: 3 }} spacing={{ base: 'xs', sm: 'md' }}>
                   <Box>
                     <Text size="xs" c="dimmed">
                       Total Amount
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyRupee size={18} />
-                      <Text size="xl" fw={700}>
+                      <IconCurrencyRupee size={16} />
+                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700}>
                         PKR {totalAmount.toLocaleString()}
                       </Text>
                     </Group>
@@ -591,8 +632,8 @@ export default function BookingForm({
                       Advance Payment (Required)
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyRupee size={18} />
-                      <Text size="xl" fw={700} c="green">
+                      <IconCurrencyRupee size={16} />
+                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="green">
                         PKR {advancePayment.toLocaleString()}
                       </Text>
                     </Group>
@@ -603,8 +644,8 @@ export default function BookingForm({
                       Remaining Payment
                     </Text>
                     <Group gap="xs">
-                      <IconCurrencyRupee size={18} />
-                      <Text size="xl" fw={700} c="orange">
+                      <IconCurrencyRupee size={16} />
+                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="orange">
                         PKR {(totalAmount - advancePayment).toLocaleString()}
                       </Text>
                     </Group>
@@ -619,6 +660,7 @@ export default function BookingForm({
                 value={paymentMethod}
                 onChange={setPaymentMethod}
                 error={errors.payment_method}
+                size={{ base: 'sm', sm: 'md' }}
                 required
               />
 
@@ -647,6 +689,7 @@ export default function BookingForm({
                 value={paymentProofFile}
                 onChange={setPaymentProofFile}
                 error={errors.payment_proof}
+                size={{ base: 'sm', sm: 'md' }}
                 required={paymentMethod !== 'cash'}
                 leftSection={<IconUpload size={16} />}
                 clearable
@@ -678,16 +721,16 @@ export default function BookingForm({
 
           {/* Submit Button */}
           <Button
-            size="lg"
+            size={{ base: 'md', sm: 'lg' }}
             fullWidth
             onClick={handleReviewBooking}
             disabled={selectedSlots.length === 0 || !bookingDate}
             loading={submitting}
-            leftSection={selectedSlots.length > 0 && bookingDate ? <IconCheck size={18} /> : null}
+            leftSection={selectedSlots.length > 0 && bookingDate ? <IconCheck size={16} /> : null}
             styles={{
               root: {
                 minHeight: '48px',
-                fontSize: '16px',
+                fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
               },
             }}
           >
@@ -697,31 +740,40 @@ export default function BookingForm({
           {/* Check Booking Status Button - Prominent */}
           <Paper 
             withBorder 
-            p={{ base: "md", sm: "lg" }} 
+            p={{ base: "sm", sm: "md", md: "lg" }} 
             radius="md" 
             style={{ 
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none'
             }}
           >
-            <Stack gap="md" align="center">
+            <Stack gap={{ base: "sm", sm: "md" }} align="center">
               <Box ta="center">
-                <Text size="lg" fw={600} c="white" mb={4}>
+                <Text 
+                  size={{ base: 'md', sm: 'lg' }} 
+                  fw={600} 
+                  c="white" 
+                  mb={4}
+                  style={{ fontSize: 'clamp(0.875rem, 3vw, 1.125rem)' }}
+                >
                   Already Booked? Check Your Status
                 </Text>
-                <Text size="sm" c="rgba(255,255,255,0.95)">
+                <Text 
+                  size={{ base: 'xs', sm: 'sm' }} 
+                  c="rgba(255,255,255,0.95)"
+                >
                   Search by name to view approval status & download booking slip
                 </Text>
               </Box>
               <Button
-                size="lg"
+                size={{ base: 'md', sm: 'lg' }}
                 variant="white"
-                leftSection={<IconSearch size={20} />}
+                leftSection={<IconSearch size={16} />}
                 onClick={() => router.push('/bookings/check')}
                 fullWidth
                 styles={{
                   root: {
-                    height: '50px',
+                    minHeight: '48px',
                   },
                 }}
               >
@@ -733,7 +785,7 @@ export default function BookingForm({
           {/* Important Info */}
           <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
             <Stack gap={4}>
-              <Text size="sm" fw={600}>
+              <Text size={{ base: 'xs', sm: 'sm' }} fw={600}>
                 📌 Important Information:
               </Text>
               <Text size="xs">

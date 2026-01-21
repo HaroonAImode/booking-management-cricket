@@ -164,57 +164,64 @@ export default function SlotSelector({
   };
 
   return (
-    <Stack gap="md" className="animate-fade-in">
+    <Stack gap={{ base: "sm", sm: "md" }} className="animate-fade-in">
       {/* Header */}
       <Group justify="space-between">
-        <Title order={4}>Select Time Slots</Title>
-        <Text size="sm" c="dimmed">
-          {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''} selected
+        <Title 
+          order={4}
+          size={{ base: 'h5', sm: 'h4' }}
+          style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}
+        >
+          Select Time Slots
+        </Title>
+        <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
+          {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''}
         </Text>
       </Group>
 
       {/* Pricing Info */}
       <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
-        <Group gap="xl">
-          <Text size="sm">
+        <Stack gap={{ base: 4, sm: 'xs' }}>
+          <Text size={{ base: 'xs', sm: 'sm' }}>
             <strong>Day Rate:</strong> PKR 1,500/hr
           </Text>
-          <Text size="sm">
+          <Text size={{ base: 'xs', sm: 'sm' }}>
             <strong>Night Rate:</strong> PKR 2,000/hr (5 PM - 7 AM)
           </Text>
-        </Group>
+        </Stack>
       </Alert>
 
       {/* Legend */}
       <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-        <Badge size="sm" style={{ background: '#F5B800', color: '#1A1A1A', borderWidth: '2px', borderColor: '#F5B800', borderStyle: 'solid' }}>
+        <Badge size={{ base: 'xs', sm: 'sm' }} style={{ background: '#F5B800', color: '#1A1A1A', borderWidth: '2px', borderColor: '#F5B800', borderStyle: 'solid' }}>
           Available
         </Badge>
-        <Badge size="sm" style={{ background: '#1A1A1A', color: '#F5B800' }}>
+        <Badge size={{ base: 'xs', sm: 'sm' }} style={{ background: '#1A1A1A', color: '#F5B800' }}>
           Selected
         </Badge>
-        <Badge size="sm" variant="light" color="orange" style={{ borderWidth: '2px', borderStyle: 'dashed' }}>
-          Pending Approval
+        <Badge size={{ base: 'xs', sm: 'sm' }} variant="light" color="orange" style={{ borderWidth: '2px', borderStyle: 'dashed' }}>
+          Pending
         </Badge>
-        <Badge size="sm" variant="light" color="gray">
+        <Badge size={{ base: 'xs', sm: 'sm' }} variant="light" color="gray">
           Booked
         </Badge>
-        <Badge size="sm" variant="light" color="red" style={{ opacity: 0.6 }}>
-          Past Time
+        <Badge size={{ base: 'xs', sm: 'sm' }} variant="light" color="red" style={{ opacity: 0.6 }}>
+          Past
         </Badge>
       </Group>
 
       {/* Warning Message */}
       <Alert icon={<IconAlertCircle size="1rem" />} color="yellow" variant="light">
-        ⚠️ Please select your time slots carefully. Slots marked as "Under Approval" are waiting
-        for admin confirmation and cannot be selected by others.
+        <Text size={{ base: 'xs', sm: 'sm' }}>
+          ⚠️ Please select carefully. Slots marked "Pending" are awaiting admin confirmation.
+        </Text>
       </Alert>
 
       {/* Slot Grid */}
       <SimpleGrid
-        cols={{ base: 3, xs: 4, sm: 6, md: 8 }}
-        spacing="xs"
-        verticalSpacing="xs"
+        cols={{ base: 2, xs: 3, sm: 4, md: 6, lg: 8 }}
+        spacing={{ base: 'xs', sm: 'sm' }}
+        verticalSpacing={{ base: 'xs', sm: 'sm' }}
       >
         {allSlots.map((slot) => {
           const isPastSlot = (slot as any).is_past;
@@ -237,7 +244,7 @@ export default function SlotSelector({
             disabled={isDisabled(slot)}
           >
             <Paper
-              p="xs"
+              p={{ base: 'xs', sm: 'sm' }}
               withBorder
               className="hover-lift"
               style={{
@@ -261,11 +268,12 @@ export default function SlotSelector({
                   : '#F5F5F5',
                 transition: 'all 200ms ease',
                 transform: selectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : 'scale(1)',
-                minHeight: '80px',
+                minHeight: 'clamp(72px, 15vw, 88px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: selectedSlots.includes(slot.slot_hour) ? '0 4px 12px rgba(245, 184, 0, 0.3)' : 'none',
+                WebkitTapHighlightColor: 'transparent',
               }}
               onClick={() => {
                 if (!isDisabled(slot)) {
@@ -281,10 +289,11 @@ export default function SlotSelector({
                   )}
                 </Group>
                 <Text
-                  size="sm"
+                  size={{ base: 'xs', sm: 'sm' }}
                   fw={selectedSlots.includes(slot.slot_hour) ? 900 : 600}
                   ta="center"
                   c={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
+                  style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}
                 >
                   {formatTimeDisplay(slot.slot_hour)}
                 </Text>
@@ -324,9 +333,14 @@ export default function SlotSelector({
 
       {/* Selection Summary */}
       {selectedSlots.length > 0 && (
-        <Paper p="md" withBorder style={{ background: '#FFECB3', borderColor: '#F5B800', borderWidth: '2px' }} className="animate-slide-up">
+        <Paper 
+          p={{ base: "sm", sm: "md" }} 
+          withBorder 
+          style={{ background: '#FFECB3', borderColor: '#F5B800', borderWidth: '2px' }} 
+          className="animate-slide-up"
+        >
           <Stack gap="xs">
-            <Text size="sm" fw={700} c="#1A1A1A">
+            <Text size={{ base: 'xs', sm: 'sm' }} fw={700} c="#1A1A1A">
               ✓ Selected Time Slots:
             </Text>
             <Group gap="xs">
@@ -337,7 +351,7 @@ export default function SlotSelector({
                   return (
                     <Badge
                       key={hour}
-                      size="lg"
+                      size={{ base: 'md', sm: 'lg' }}
                       style={{ background: '#1A1A1A', color: '#F5B800', cursor: 'pointer' }}
                       onClick={() => onSlotToggle(hour)}
                     >

@@ -17,6 +17,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const status = searchParams.get('status');
     const paymentStatus = searchParams.get('paymentStatus');
     const search = searchParams.get('search');
+    const remainingOnly = searchParams.get('remainingOnly') === 'true';
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -42,6 +43,11 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     if (paymentStatus === 'paid') {
       query = query.eq('remaining_payment', 0);
     } else if (paymentStatus === 'pending') {
+      query = query.gt('remaining_payment', 0);
+    }
+    
+    // Ground managers only see bookings with remaining payment > 0
+    if (remainingOnly) {
       query = query.gt('remaining_payment', 0);
     }
 

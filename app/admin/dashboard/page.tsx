@@ -222,33 +222,48 @@ export default function AdminDashboardPage() {
 
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '1px' }}>
-      <Container size="xl" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }} className="animate-fade-in">
-      <Stack gap={{ base: 'md', sm: 'xl' }}>
+      <Container size="xl" py={{ base: 'sm', sm: 'md', md: 'xl' }} px={{ base: 'xs', sm: 'sm', md: 'md' }} className="animate-fade-in">
+      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
         {/* Header */}
         <Paper
-          p={{ base: 'md', sm: 'xl' }}
-          radius="lg"
+          p={{ base: 'sm', sm: 'md', md: 'xl' }}
+          radius={{ base: 'md', sm: 'lg' }}
           style={{
             background: '#1A1A1A',
             border: '2px solid #F5B800',
             boxShadow: '0 4px 16px rgba(245, 184, 0, 0.2)',
           }}
         >
-          <Group justify="space-between" align="center">
-            <div>
-              <Title order={1} c="white" size={{ base: 'h2', sm: 'h1' }} fw={900}>
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title 
+                order={1} 
+                c="white" 
+                size={{ base: 'h3', sm: 'h2', md: 'h1' }} 
+                fw={900}
+                style={{ 
+                  fontSize: 'clamp(1.25rem, 5vw, 2.5rem)',
+                  lineHeight: 1.2
+                }}
+              >
                 Dashboard
               </Title>
-              <Text c="#D1D1D1" size={{ base: 'sm', sm: 'md' }} mt={4}>
-                PowerPlay Cricket Arena - Live Business Overview
+              <Text 
+                c="#D1D1D1" 
+                size={{ base: 'xs', sm: 'sm', md: 'md' }} 
+                mt={4}
+                lineClamp={1}
+              >
+                PowerPlay Cricket Arena
               </Text>
             </div>
             <Badge 
-              size="lg" 
+              size={{ base: 'md', sm: 'lg' }}
               style={{ 
                 background: '#F5B800', 
                 color: '#1A1A1A',
                 fontWeight: 900,
+                flexShrink: 0,
               }}
             >
               LIVE
@@ -296,60 +311,65 @@ export default function AdminDashboardPage() {
         {/* Last 7 Days Stats */}
         <Paper
           withBorder
-          p={{ base: 'md', sm: 'lg' }}
-          radius="lg"
+          p={{ base: 'sm', sm: 'md', md: 'lg' }}
+          radius={{ base: 'md', sm: 'lg' }}
           style={{
             background: '#FFFBF0',
             borderColor: '#F5B800',
             borderWidth: '2px',
           }}
         >
-          <Title order={3} mb="md" size={{ base: 'h4', sm: 'h3' }}>
+          <Title 
+            order={3} 
+            mb={{ base: 'sm', sm: 'md' }}
+            size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+            style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+          >
             Last 7 Days Performance
           </Title>
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 'md', sm: 'lg' }}>
+          <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing={{ base: 'sm', sm: 'md', md: 'lg' }}>
             <div>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Total Bookings
               </Text>
-              <Text fw={700} size="xl">
+              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.total_bookings}
               </Text>
-              <Text size="xs" c="dimmed" mt={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
                 {data.last_7_days.total_hours} total hours
               </Text>
             </div>
             <div>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Revenue
               </Text>
-              <Text fw={700} size="xl">
+              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {formatCurrency(data.last_7_days.total_revenue)}
               </Text>
-              <Text size="xs" c="dimmed" mt={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
                 Avg: {formatCurrency(data.last_7_days.average_booking_value)}
               </Text>
             </div>
             <div>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Approved
               </Text>
-              <Text fw={700} size="xl" c="green">
+              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} c="green" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.approved_bookings}
               </Text>
-              <Text size="xs" c="dimmed" mt={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
                 Successfully confirmed
               </Text>
             </div>
             <div>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Cancelled
               </Text>
-              <Text fw={700} size="xl" c="red">
+              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} c="red" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.cancelled_bookings}
               </Text>
-              <Text size="xs" c="dimmed" mt={5}>
-                Cancellation rate: {((data.last_7_days.cancelled_bookings / data.last_7_days.total_bookings) * 100).toFixed(1)}%
+              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
+                Cancel rate: {((data.last_7_days.cancelled_bookings / data.last_7_days.total_bookings) * 100).toFixed(1)}%
               </Text>
             </div>
           </SimpleGrid>
@@ -366,34 +386,38 @@ export default function AdminDashboardPage() {
 
         {/* Monthly Summary */}
         {data.monthly_summary && data.monthly_summary.length > 0 && (
-          <Paper
-            withBorder
-            p={{ base: 'md', sm: 'lg' }}
-            radius="lg"
+          <Paper 
+            p={{ base: 'sm', sm: 'md', md: 'lg' }}
+            radius={{ base: 'md', sm: 'lg' }}
             style={{ background: 'white' }}
           >
-            <Title order={3} mb="md" size={{ base: 'h4', sm: 'h3' }}>
+            <Title 
+              order={3} 
+              mb={{ base: 'sm', sm: 'md' }}
+              size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+              style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+            >
               Monthly Summary
             </Title>
-            <Box style={{ overflowX: 'auto' }}>
-              <Table highlightOnHover striped>
+            <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table highlightOnHover striped style={{ minWidth: 600 }}>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Month</Table.Th>
-                    <Table.Th>Bookings</Table.Th>
-                    <Table.Th>Hours</Table.Th>
-                    <Table.Th>Revenue</Table.Th>
-                    <Table.Th>Avg. Value</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Month</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Bookings</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Hours</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Revenue</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Avg. Value</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
                   {data.monthly_summary.map((month, index) => (
                     <Table.Tr key={index}>
-                      <Table.Td>{month.month_name}</Table.Td>
-                      <Table.Td>{month.total_bookings}</Table.Td>
-                      <Table.Td>{month.total_hours}</Table.Td>
-                      <Table.Td>{formatCurrency(month.total_revenue)}</Table.Td>
-                      <Table.Td>{formatCurrency(month.average_booking_value)}</Table.Td>
+                      <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{month.total_bookings}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{month.total_hours}</Text></Table.Td>
+                      <Table.Td><Text size="sm" fw={600}>{formatCurrency(month.total_revenue)}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{formatCurrency(month.average_booking_value)}</Text></Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
@@ -403,58 +427,62 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Recent Bookings */}
-        <Paper
-          withBorder
-          p={{ base: 'md', sm: 'lg' }}
-          radius="lg"
+        <Paper 
+          p={{ base: 'sm', sm: 'md', md: 'lg' }}
+          radius={{ base: 'md', sm: 'lg' }}
           style={{ background: 'white' }}
         >
-          <Title order={3} mb="md" size={{ base: 'h4', sm: 'h3' }}>
+          <Title 
+            order={3} 
+            mb={{ base: 'sm', sm: 'md' }}
+            size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+            style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
+          >
             Recent Bookings
           </Title>
-          <Box style={{ overflowX: 'auto' }}>
-            <Table highlightOnHover striped>
+          <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <Table highlightOnHover striped style={{ minWidth: 700 }}>
               <Table.Thead>
                 <Table.Tr>
-                <Table.Th>Booking #</Table.Th>
-                <Table.Th>Customer</Table.Th>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Hours</Table.Th>
-                <Table.Th>Amount</Table.Th>
-                <Table.Th>Status</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Hours</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {data.recent_bookings.slice(0, 10).map((booking) => (
                 <Table.Tr key={booking.id}>
                   <Table.Td>
-                    <Text size="sm" fw={500}>
+                    <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
                       {booking.booking_number}
                     </Text>
                   </Table.Td>
                   <Table.Td>
                     <div>
-                      <Text size="sm">{booking.customer_name}</Text>
+                      <Text size={{ base: 'xs', sm: 'sm' }}>{booking.customer_name}</Text>
                       <Text size="xs" c="dimmed">
                         {booking.customer_phone}
                       </Text>
                     </div>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">
-                      {new Date(booking.booking_date).toLocaleDateString()}
+                    <Text size={{ base: 'xs', sm: 'sm' }}>
+                      {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{booking.total_hours}h</Text>
+                    <Text size={{ base: 'xs', sm: 'sm' }}>{booking.total_hours}h</Text>
                   </Table.Td>
                   <Table.Td>
                     <div>
-                      <Text size="sm" fw={500}>
+                      <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
                         {formatCurrency(booking.total_amount)}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        Advance: {formatCurrency(booking.advance_payment)}
+                        Adv: {formatCurrency(booking.advance_payment)}
                       </Text>
                     </div>
                   </Table.Td>

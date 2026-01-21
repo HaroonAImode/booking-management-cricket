@@ -67,6 +67,7 @@ import EditBookingModal from '@/components/EditBookingModal';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTimeDisplay, formatSlotRanges } from '@/lib/supabase/bookings';
+import { useUserRole } from '@/lib/hooks/useUserRole';
 
 interface Booking {
   id: string;
@@ -101,6 +102,9 @@ export default function AdminBookingsPage() {
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
   const [summary, setSummary] = useState<any>(null);
   
+  // Role-based access control
+  const { isAdmin, isGroundManager, canEditBookings, canDeleteBookings, loading: roleLoading } = useUserRole();
+  
   // Modals
   const [detailsModalOpened, setDetailsModalOpened] = useState(false);
   const [paymentModalOpened, setPaymentModalOpened] = useState(false);
@@ -126,6 +130,11 @@ export default function AdminBookingsPage() {
 
       if (debouncedSearch) {
         params.append('search', debouncedSearch);
+      }
+      
+      // Ground managers only see bookings with remaining payment
+      if (isGroundManager) {
+        params.append('remainingOnly', 'true');
       }
 
       const response = await fetch(`/api/admin/bookings?${params}`);
@@ -421,46 +430,67 @@ export default function AdminBookingsPage() {
   };
 
   return (
-    <Container size="xl" py="xl" className="animate-fade-in">
-      <Stack gap="xl">
+    <Container 
+      size="xl" 
+      py={{ base: 'sm', sm: 'md', md: 'xl' }} 
+      px={{ base: 'xs', sm: 'sm', md: 'md' }}
+      className="animate-fade-in"
+    >
+      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
         {/* Header */}
-        <Group justify="space-between">
-          <div>
-            <Title order={1}>Bookings Management</Title>
-            {summary && (
-              <Group gap="xs" mt="xs">
-                <Badge variant="light">Total: {summary.total}</Badge>
-                <Badge color="orange" variant="light">Pending: {summary.pending}</Badge>
-                <Badge color="green" variant="light">Approved: {summary.approved}</Badge>
-              </Group>
-            )}
-          </div>
+        <Stack gap="xs">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title 
+                order={1}
+                size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+                style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
+              >
+                Bookings Management
+              </Title>
+              {summary && (
+                <Group gap="xs" mt="xs" wrap="wrap">
+                  <Badge variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                    Total: {summary.total}
+                  </Badge>
+                  <Badge color="orange" variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                    Pending: {summary.pending}
+                  </Badge>
+                  <Badge color="green" variant="light" size={{ base: 'xs', sm: 'sm' }}>
+                    Approved: {summary.approved}
+                  </Badge>
+                </Group>
+              )}
+            </div>
 
-          <Group>
-            <Button
-              leftSection={<IconPlus size={18} />}
-              onClick={() => setManualBookingOpened(true)}
-            >
-              Manual Booking
-            </Button>
+            <Group wrap="wrap">
+              <Button
+                leftSection={<IconPlus size={16} />}
+                size={{ base: 'xs', sm: 'sm', md: 'md' }}
+                onClick={() => setManualBookingOpened(true)}
+              >
+                <Text visibleFrom="sm">Add Manual Booking</Text>
+                <Text hiddenFrom="sm">Add</Text>
+              </Button>
             <Menu shadow="md">
               <Menu.Target>
                 <Button
                   variant="light"
-                  leftSection={<IconDownload size={18} />}
+                  leftSection={<IconDownload size={16} />}
+                  size={{ base: 'xs', sm: 'sm', md: 'md' }}
                 >
-                  Export
+                  <Text visibleFrom="sm">Export</Text>
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item
-                  leftSection={<IconFileTypePdf size={18} />}
+                  leftSection={<IconFileTypePdf size={16} />}
                   onClick={exportToPDF}
                 >
                   Export as PDF
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={<IconFileSpreadsheet size={18} />}
+                  leftSection={<IconFileSpreadsheet size={16} />}
                   onClick={exportToExcel}
                 >
                   Export as Excel
@@ -468,53 +498,59 @@ export default function AdminBookingsPage() {
               </Menu.Dropdown>
             </Menu>
           </Group>
-        </Group>
+        </Stack>
 
         {/* Filters */}
-        <Paper withBorder p="md">
-          <Group>
+        <Paper withBorder p={{ base: 'xs', sm: 'sm', md: 'md' }}>
+          <Stack gap={{ base: 'xs', sm: 'sm' }}>
             <TextInput
-              placeholder="Search by booking #, customer name, phone..."
-              leftSection={<IconSearch size={18} />}
+              placeholder="Search by booking #, customer, phone..."
+              leftSection={<IconSearch size={16} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ flex: 1 }}
+              size={{ base: 'sm', sm: 'md' }}
             />
-            <Select
-              placeholder="Status"
-              leftSection={<IconFilter size={18} />}
-              data={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'completed', label: 'Completed' },
-                { value: 'cancelled', label: 'Cancelled' },
-              ]}
-              value={statusFilter}
-              onChange={(value) => setStatusFilter(value || 'all')}
-              w={150}
-            />
-            <Select
-              placeholder="Payment"
-              leftSection={<IconFilter size={18} />}
-              data={[
-                { value: 'all', label: 'All Payments' },
-                { value: 'paid', label: 'Fully Paid' },
-                { value: 'pending', label: 'Has Remaining' },
-              ]}
-              value={paymentFilter}
-              onChange={(value) => setPaymentFilter(value || 'all')}
-              w={150}
-            />
-            <Button
-              variant="light"
-              leftSection={<IconRefresh size={18} />}
-              onClick={fetchBookings}
-              loading={loading}
-            >
-              Refresh
-            </Button>
-          </Group>
+            <Group wrap="wrap">
+              <Select
+                placeholder="Status"
+                leftSection={<IconFilter size={16} />}
+                data={[
+                  { value: 'all', label: 'All Statuses' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'approved', label: 'Approved' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ]}
+                value={statusFilter}
+                onChange={(value) => setStatusFilter(value || 'all')}
+                style={{ flex: '1 1 120px', minWidth: 120 }}
+                size={{ base: 'sm', sm: 'md' }}
+              />
+              <Select
+                placeholder="Payment"
+                leftSection={<IconFilter size={16} />}
+                data={[
+                  { value: 'all', label: 'All' },
+                  { value: 'paid', label: 'Paid' },
+                  { value: 'pending', label: 'Pending' },
+                ]}
+                value={paymentFilter}
+                onChange={(value) => setPaymentFilter(value || 'all')}
+                style={{ flex: '1 1 120px', minWidth: 120 }}
+                size={{ base: 'sm', sm: 'md' }}
+              />
+              <Button
+                variant="light"
+                leftSection={<IconRefresh size={16} />}
+                onClick={fetchBookings}
+                loading={loading}
+                size={{ base: 'sm', sm: 'md' }}
+                style={{ flex: '0 0 auto' }}
+              >
+                <Text visibleFrom="sm">Refresh</Text>
+              </Button>
+            </Group>
+          </Stack>
         </Paper>
 
         {/* Table */}
@@ -523,8 +559,8 @@ export default function AdminBookingsPage() {
         ) : (
           <Paper withBorder radius="md" className="hover-lift">
           
-          <Table.ScrollContainer minWidth={1200}>
-            <Table highlightOnHover striped>
+          <Table.ScrollContainer minWidth={{ base: 800, sm: 1000, md: 1200 }}>
+            <Table highlightOnHover striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Booking #</Table.Th>
@@ -533,7 +569,7 @@ export default function AdminBookingsPage() {
                   <Table.Th>Slots</Table.Th>
                   <Table.Th>Amount</Table.Th>
                   <Table.Th>Payment</Table.Th>
-                  <Table.Th>Payment Proofs</Table.Th>
+                  <Table.Th>Proofs</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Actions</Table.Th>
                 </Table.Tr>
@@ -710,24 +746,33 @@ export default function AdminBookingsPage() {
                             >
                               View Details
                             </Menu.Item>
-                            <Menu.Item
-                              leftSection={<IconEdit size={16} />}
-                              color="blue"
-                              onClick={() => {
-                                setSelectedBookingId(booking.id);
-                                setEditModalOpened(true);
-                              }}
-                            >
-                              Edit Booking
-                            </Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item
-                              leftSection={<IconTrash size={16} />}
-                              color="red"
-                              onClick={() => handleDelete(booking.id, booking.booking_number)}
-                            >
-                              Delete Booking
-                            </Menu.Item>
+                            
+                            {/* Only admins can edit and delete */}
+                            {canEditBookings && (
+                              <>
+                                <Menu.Item
+                                  leftSection={<IconEdit size={16} />}
+                                  color="blue"
+                                  onClick={() => {
+                                    setSelectedBookingId(booking.id);
+                                    setEditModalOpened(true);
+                                  }}
+                                >
+                                  Edit Booking
+                                </Menu.Item>
+                                <Menu.Divider />
+                              </>
+                            )}
+                            
+                            {canDeleteBookings && (
+                              <Menu.Item
+                                leftSection={<IconTrash size={16} />}
+                                color="red"
+                                onClick={() => handleDelete(booking.id, booking.booking_number)}
+                              >
+                                Delete Booking
+                              </Menu.Item>
+                            )}
                           </Menu.Dropdown>
                         </Menu>
                       </Group>

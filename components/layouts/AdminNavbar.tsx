@@ -30,6 +30,7 @@ export default function AdminNavbar({ toggleMobile, mobileOpened }: AdminNavbarP
     { href: '/admin/dashboard', label: 'Dashboard', icon: IconDashboard, color: 'yellow' },
     { href: '/admin/calendar', label: 'Calendar', icon: IconCalendar, color: 'dark' },
     { href: '/admin/bookings', label: 'Bookings', icon: IconClipboardList, color: 'yellow' },
+    { href: '/admin/users', label: 'Users', icon: IconUsers, color: 'blue' },
     { href: '/admin/settings', label: 'Settings', icon: IconSettings, color: 'dark' },
   ];
 
