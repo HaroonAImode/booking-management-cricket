@@ -34,55 +34,66 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_email ON user_roles(email);
 -- Enable RLS on user_roles table
 ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own profile" ON user_roles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON user_roles;
+DROP POLICY IF EXISTS "Admins can create users" ON user_roles;
+DROP POLICY IF EXISTS "Admins can update users" ON user_roles;
+DROP POLICY IF EXISTS "Admins can delete ground managers" ON user_roles;
+
+-- Create a SECURITY DEFINER function to check admin role
+-- This bypasses RLS and prevents infinite recursion
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM user_roles
+    WHERE user_id = auth.uid()
+    AND role = 'admin'
+    AND is_active = true
+  );
+END;
+$$;
+
+-- Grant execute permission on the function
+GRANT EXECUTE ON FUNCTION is_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION is_admin() TO service_role;
+
 -- Policy: Users can read their own profile
 CREATE POLICY "Users can view own profile"
   ON user_roles
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- Policy: Admins can view all profiles
+-- Policy: Admins can view all profiles (using SECURITY DEFINER function)
 CREATE POLICY "Admins can view all profiles"
   ON user_roles
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (is_admin());
 
--- Policy: Admins can insert new users
+-- Policy: Admins can insert new users (using SECURITY DEFINER function)
 CREATE POLICY "Admins can create users"
   ON user_roles
   FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
+  WITH CHECK (is_admin());
 
--- Policy: Admins can update users
+-- Policy: Admins can update users (using SECURITY DEFINER function)
 CREATE POLICY "Admins can update users"
   ON user_roles
   FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (is_admin());
 
--- Policy: Admins can delete ground managers only
+-- Policy: Admins can delete ground managers only (using SECURITY DEFINER function)
 CREATE POLICY "Admins can delete ground managers"
   ON user_roles
   FOR DELETE
   USING (
-    role = 'ground_manager' AND
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
+    role = 'ground_manager' AND is_admin()
   );
 
 -- =====================================================

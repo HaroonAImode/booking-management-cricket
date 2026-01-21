@@ -65,21 +65,20 @@ export default function UsersManagementPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const supabase = createClient();
       
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const response = await fetch('/api/admin/users');
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch users');
+      }
 
-      setUsers(data || []);
+      setUsers(result.users || []);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       notifications.show({
         title: '❌ Error',
-        message: 'Failed to load users',
+        message: error.message || 'Failed to load users',
         color: 'red',
       });
     } finally {
@@ -142,18 +141,26 @@ export default function UsersManagementPage() {
 
   const handleToggleActive = async (userId: string, currentStatus: boolean) => {
     try {
-      const supabase = createClient();
-      
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ is_active: !currentStatus })
-        .eq('id', userId);
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          is_active: !currentStatus,
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update user');
+      }
 
       notifications.show({
         title: '✅ Status Updated',
-        message: `User ${!currentStatus ? 'activated' : 'deactivated'}`,
+        message: result.message || `User ${!currentStatus ? 'activated' : 'deactivated'}`,
         color: 'green',
       });
 
@@ -161,7 +168,7 @@ export default function UsersManagementPage() {
     } catch (error: any) {
       notifications.show({
         title: '❌ Update Failed',
-        message: error.message,
+        message: error.message || 'Failed to update user status',
         color: 'red',
       });
     }
