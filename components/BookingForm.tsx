@@ -294,23 +294,29 @@ export default function BookingForm({
   };
 
   const handleConfirmBooking = async () => {
-    if (!bookingSummary || !paymentProofFile || !bookingDate) return;
+    if (!bookingSummary || !bookingDate) return;
 
     setSubmitting(true);
 
     try {
-      // Step 1: Upload payment proof
-      const bookingIdTemp = `temp-${Date.now()}`;
-      const dateStr = formatDateForSQL(bookingDate);
+      let uploadData = null;
 
-      const { data: uploadData, error: uploadError } = await uploadPaymentProof(
-        paymentProofFile,
-        bookingIdTemp,
-        dateStr
-      );
+      // Step 1: Upload payment proof (only if file is provided)
+      if (paymentProofFile) {
+        const bookingIdTemp = `temp-${Date.now()}`;
+        const dateStr = formatDateForSQL(bookingDate);
 
-      if (uploadError || !uploadData) {
-        throw new Error(uploadError || 'Failed to upload payment proof');
+        const uploadResult = await uploadPaymentProof(
+          paymentProofFile,
+          bookingIdTemp,
+          dateStr
+        );
+
+        if (uploadResult.error || !uploadResult.data) {
+          throw new Error(uploadResult.error || 'Failed to upload payment proof');
+        }
+
+        uploadData = uploadResult.data;
       }
 
       // Step 2: Create booking
