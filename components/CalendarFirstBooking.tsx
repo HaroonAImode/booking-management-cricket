@@ -52,6 +52,37 @@ export default function CalendarFirstBooking() {
   const [todayLoading, setTodayLoading] = useState(true);
   const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
+  // Auto-refresh slots every 60 seconds to keep data fresh
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      loadTodaySlots();
+      if (selectedDate) {
+        loadAvailableSlots();
+      }
+      setLastRefreshed(new Date());
+    }, 60000); // 60 seconds = 1 minute
+
+    return () => clearInterval(refreshInterval);
+  }, [selectedDate, quickViewDate]);
+
+  // Refresh when page becomes visible (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page is now visible, refresh slots
+        loadTodaySlots();
+        if (selectedDate) {
+          loadAvailableSlots();
+        }
+        setLastRefreshed(new Date());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [selectedDate, quickViewDate]);
 
   // Load today's slots on component mount and when quickViewDate changes
   useEffect(() => {
@@ -138,18 +169,44 @@ export default function CalendarFirstBooking() {
   };
 
   const handleSlotToggle = (hour: number) => {
-    // Check if the slot is actually available
+    // Re-fetch latest slot data before toggling to prevent stale state
     const slotsToCheck = selectedDate ? availableSlots : todaySlots;
     const slotInfo = slotsToCheck?.find(s => s.slot_hour === hour);
     
-    if (!slotInfo || !slotInfo.is_available) {
+    // More thorough availability check
+    if (!slotInfo) {
       notifications.show({
-        title: '⚠️ Slot Not Available',
-        message: 'This time slot is not available for booking.',
+        title: '⚠️ Slot Data Unavailable',
+        message: 'Unable to verify slot status. Please refresh the page.',
         color: 'orange',
         autoClose: 3000,
         icon: <IconInfoCircle size={18} />,
       });
+      return;
+    }
+
+    // Check if slot is actually available
+    if (!slotInfo.is_available || slotInfo.current_status !== 'available') {
+      const statusMessage = slotInfo.current_status === 'booked' 
+        ? 'This slot is already booked by another customer.'
+        : slotInfo.current_status === 'pending'
+        ? 'This slot has a pending booking.'
+        : 'This slot is not available for booking.';
+
+      notifications.show({
+        title: '⚠️ Slot Not Available',
+        message: statusMessage,
+        color: 'orange',
+        autoClose: 4000,
+        icon: <IconInfoCircle size={18} />,
+      });
+      
+      // Refresh slots to get latest data
+      if (selectedDate) {
+        loadAvailableSlots();
+      } else {
+        loadTodaySlots();
+      }
       return;
     }
 
@@ -357,8 +414,19 @@ export default function CalendarFirstBooking() {
                       </Group>
                     </Group>
                     
-                    <Text size="sm" c="#1A1A1A" fw={600}>
-                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
+                    <Group justify="space-between" align="center">
+                      <Text size="sm" c="#1A1A1A" fw={600}>
+                        {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </Text>
+                      <Text size="xs" c="#2A2A2A" fw={500} style={{ opacity: 0.8 }}>
+                        🔄 Auto-updates every minute
+                      </Text>
+                    </Group>
                         weekday: 'long',
                         month: 'long',
                         day: 'numeric',
@@ -460,18 +528,32 @@ export default function CalendarFirstBooking() {
                             >
                               {slot.slot_hour < 12 ? 'AM' : 'PM'}
                             </Text>
-                            <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
-                              {selectedSlots.includes(slot.slot_hour) && isAvailable 
-                                ? '✅' 
-                                : isPast 
-                                ? '⏱️' 
-                                : isBooked 
-                                ? '✕' 
-                                : isPending 
-                                ? '⏳' 
-                                : '✓'
-                              }
-                            </Text>
+                            {isBooked ? (
+                              <Badge 
+                                size="xs" 
+                                style={{ 
+                                  background: '#DC2626', 
+                                  color: 'white',
+                                  fontSize: '9px',
+                                  padding: '2px 6px',
+                                  fontWeight: 700,
+                                  marginTop: '-2px',
+                                }}
+                              >
+                                BOOKED
+                              </Badge>
+                            ) : (
+                              <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
+                                {selectedSlots.includes(slot.slot_hour) && isAvailable 
+                                  ? '✅' 
+                                  : isPast 
+                                  ? '⏱️' 
+                                  : isPending 
+                                  ? '⏳' 
+                                  : '✓'
+                                }
+                              </Text>
+                            )}
                           </Paper>
                         );
                       })}
