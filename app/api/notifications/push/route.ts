@@ -90,7 +90,8 @@ export async function POST(request: NextRequest) {
     const pushOptions = {
       TTL: 3600, // 1 hour expiry
       urgency: 'high', // High priority for instant FCM delivery
-      topic: bookingId ? `booking-${bookingId}` : undefined, // Replace old notifications
+      // Topic must be max 32 chars - use short hash of bookingId
+      topic: bookingId ? bookingId.substring(0, 8) : undefined,
     };
 
     console.log('📤 Sending HIGH PRIORITY notifications to all subscriptions...');
