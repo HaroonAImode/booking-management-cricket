@@ -57,41 +57,6 @@ export default function CalendarFirstBooking() {
   // Ensure selectedSlots is always an array for safety
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
 
-  // Auto-refresh slots every 60 seconds to keep data fresh
-  useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      loadTodaySlots();
-      if (selectedDate) {
-        loadAvailableSlots();
-      }
-      setLastRefreshed(new Date());
-    }, 60000); // 60 seconds = 1 minute
-
-    return () => clearInterval(refreshInterval);
-  }, [selectedDate, quickViewDate]);
-
-  // Refresh when page becomes visible (user returns to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page is now visible, refresh slots
-        loadTodaySlots();
-        if (selectedDate) {
-          loadAvailableSlots();
-        }
-        setLastRefreshed(new Date());
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [selectedDate, quickViewDate]);
-
-  // Load today's slots on component mount and when quickViewDate changes
-  useEffect(() => {
-    loadTodaySlots();
-  }, [quickViewDate]);
-
   const loadTodaySlots = async (viewDate?: Date) => {
     setTodayLoading(true);
     const dateToView = viewDate || quickViewDate;
@@ -135,17 +100,6 @@ export default function CalendarFirstBooking() {
     setTodayLoading(false);
   };
 
-  // Load slots when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      loadAvailableSlots();
-      setSelectedSlots([]); // Reset selected slots when date changes
-    } else {
-      setAvailableSlots(null);
-      setSelectedSlots([]);
-    }
-  }, [selectedDate]);
-
   const loadAvailableSlots = async () => {
     if (!selectedDate) return;
 
@@ -171,8 +125,53 @@ export default function CalendarFirstBooking() {
     setSlotsLoading(false);
   };
 
+  // Load today's slots on component mount and when quickViewDate changes
+  useEffect(() => {
+    loadTodaySlots();
+  }, [quickViewDate]);
+
+  // Auto-refresh slots every 60 seconds to keep data fresh
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      loadTodaySlots();
+      if (selectedDate) {
+        loadAvailableSlots();
+      }
+      setLastRefreshed(new Date());
+    }, 60000); // 60 seconds = 1 minute
+
+    return () => clearInterval(refreshInterval);
+  }, [selectedDate, quickViewDate]);
+
+  // Refresh when page becomes visible (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page is now visible, refresh slots
+        loadTodaySlots();
+        if (selectedDate) {
+          loadAvailableSlots();
+        }
+        setLastRefreshed(new Date());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [selectedDate, quickViewDate]);
+
+  // Load slots when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      loadAvailableSlots();
+      setSelectedSlots([]); // Reset selected slots when date changes
+    } else {
+      setAvailableSlots(null);
+      setSelectedSlots([]);
+    }
+  }, [selectedDate]);
+
   const handleSlotToggle = (hour: number) => {
-    // Re-fetch latest slot data before toggling to prevent stale state
     const slotsToCheck = selectedDate ? availableSlots : todaySlots;
     const slotInfo = slotsToCheck?.find(s => s.slot_hour === hour);
     
