@@ -45,6 +45,9 @@ export const theme = createTheme({
   /* Primary color - PowerPlay Yellow */
   primaryColor: 'yellow',
   
+  /* Default color scheme */
+  defaultColorScheme: 'light',
+  
   colors: {
     yellow: powerplayYellow,
     dark: deepBlack,
