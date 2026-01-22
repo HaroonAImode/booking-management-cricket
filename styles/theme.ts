@@ -190,28 +190,6 @@ export const theme = createTheme({
       },
     },
 
-    Modal: {
-      styles: {
-        content: {
-          '@media (max-width: 768px)': {
-            margin: '0 !important',
-            maxWidth: '100% !important',
-            minHeight: '100vh',
-          },
-        },
-        body: {
-          '@media (max-width: 768px)': {
-            padding: '16px',
-          },
-        },
-        header: {
-          '@media (max-width: 768px)': {
-            padding: '16px',
-          },
-        },
-      },
-    },
-
     Container: {
       styles: {
         root: {
@@ -222,27 +200,6 @@ export const theme = createTheme({
           '@media (min-width: 768px) and (max-width: 992px)': {
             paddingLeft: '16px',
             paddingRight: '16px',
-          },
-        },
-      },
-    },
-
-    Table: {
-      styles: {
-        root: {
-          '@media (max-width: 768px)': {
-            fontSize: '13px',
-          },
-        },
-        th: {
-          '@media (max-width: 768px)': {
-            padding: '8px',
-            fontSize: '12px',
-          },
-        },
-        td: {
-          '@media (max-width: 768px)': {
-            padding: '8px',
           },
         },
       },
