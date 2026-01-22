@@ -25,6 +25,21 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     // Remove 'payment-proofs/' prefix if it exists
     const cleanPath = path.replace('payment-proofs/', '');
 
+    // First check if file exists
+    const { data: fileList, error: listError } = await supabase.storage
+      .from('payment-proofs')
+      .list(cleanPath.split('/')[0], {
+        search: cleanPath.split('/').pop()
+      });
+
+    if (listError || !fileList || fileList.length === 0) {
+      console.error('File not found in storage:', cleanPath);
+      return NextResponse.json(
+        { success: false, error: 'Payment proof image not found' },
+        { status: 404 }
+      );
+    }
+
     // Generate signed URL (valid for 1 hour)
     const { data, error } = await supabase.storage
       .from('payment-proofs')

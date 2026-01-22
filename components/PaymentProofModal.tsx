@@ -41,10 +41,16 @@ export default function PaymentProofModal({
       const response = await fetch(`/api/admin/storage/payment-proof?path=${encodeURIComponent(imagePath)}`);
       
       if (!response.ok) {
-        throw new Error('Failed to load image');
+        console.error('Failed to load payment proof:', response.status);
+        throw new Error('Payment proof image not found');
       }
 
       const data = await response.json();
+      
+      if (!data.success || !data.url) {
+        throw new Error(data.error || 'Invalid image data');
+      }
+      
       setImageUrl(data.url);
     } catch (err) {
       console.error('Image load error:', err);
@@ -82,9 +88,15 @@ export default function PaymentProofModal({
         <LoadingOverlay visible={loading} />
 
         {error && (
-          <Text c="red" ta="center">
-            Failed to load payment proof image
-          </Text>
+          <Stack gap="sm" align="center" py="xl">
+            <Text c="orange" ta="center" fw={500} size="lg">
+              ⚠️ Image Not Available
+            </Text>
+            <Text c="dimmed" ta="center" size="sm">
+              The payment proof image could not be found in storage.
+              It may have been uploaded using a temporary filename.
+            </Text>
+          </Stack>
         )}
 
         {imageUrl && !error && (

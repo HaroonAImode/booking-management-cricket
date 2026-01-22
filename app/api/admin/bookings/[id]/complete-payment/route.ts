@@ -44,9 +44,10 @@ async function handler(
       );
     }
 
-    if (!paymentProof) {
+    // Payment proof is optional for cash payments, required for digital
+    if (!paymentProof && paymentMethod !== 'cash') {
       return NextResponse.json(
-        { success: false, error: 'Payment proof is required' },
+        { success: false, error: 'Payment proof is required for digital payments' },
         { status: 400 }
       );
     }
@@ -84,21 +85,27 @@ async function handler(
       );
     }
 
-    // Upload payment proof to storage
-    const uploadResult = await uploadPaymentProof(
-      paymentProof,
-      bookingId,
-      booking.booking_date
-    );
-
-    if (uploadResult.error || !uploadResult.data) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: uploadResult.error || 'Failed to upload payment proof' 
-        },
-        { status: 500 }
+    // Upload payment proof to storage (if provided)
+    let uploadedProofPath = null;
+    
+    if (paymentProof) {
+      const uploadResult = await uploadPaymentProof(
+        paymentProof,
+        bookingId,
+        booking.booking_date
       );
+
+      if (uploadResult.error || !uploadResult.data) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: uploadResult.error || 'Failed to upload payment proof' 
+          },
+          { status: 500 }
+        );
+      }
+      
+      uploadedProofPath = uploadResult.data;
     }
 
     // Call SQL function to verify payment and complete booking
@@ -107,7 +114,7 @@ async function handler(
       {
         p_booking_id: bookingId,
         p_payment_method: paymentMethod,
-        p_payment_proof_path: uploadResult.data,
+        p_payment_proof_path: uploadedProofPath,
         p_admin_notes: adminNotes,
       }
     );

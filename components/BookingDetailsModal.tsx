@@ -105,9 +105,9 @@ export default function BookingDetailsModal({
         setLightboxImage(result.url);
       } else {
         notifications.show({
-          title: 'Error',
-          message: 'Failed to load payment proof image',
-          color: 'red',
+          title: '❌ Image Not Found',
+          message: result.error || 'Payment proof image not found in storage',
+          color: 'orange',
         });
       }
     } catch (error) {
