@@ -758,8 +758,8 @@ export default function CalendarFirstBooking() {
 
               {/* Pass data to original BookingForm */}
               <BookingForm
-                preSelectedDate={selectedDate}
-                preSelectedSlots={selectedSlots}
+                preSelectedDate={selectedDate ? new Date(selectedDate) : null}
+                preSelectedSlots={[...safeSelectedSlots]}
                 hideCalendar={true}
               />
             </Stack>
