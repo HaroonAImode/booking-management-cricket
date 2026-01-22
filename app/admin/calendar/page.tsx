@@ -160,10 +160,10 @@ export default function AdminCalendarPage() {
             lineHeight: 1.2,
           }}
         >
-          <Text size="xs" fw={600} lineClamp={1}>
+          <Text size="xs" fw={600} lineClamp={1} style={{ color: 'white' }}>
             {props.customerName}
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" fw={500} style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
             {eventInfo.timeText} {props.isNightRate && '🌙'}
           </Text>
         </Box>
@@ -172,10 +172,10 @@ export default function AdminCalendarPage() {
 
     return (
       <Box p={6} style={{ overflow: 'hidden' }}>
-        <Text size="sm" fw={600} lineClamp={1}>
+        <Text size="sm" fw={600} lineClamp={1} style={{ color: 'white' }}>
           {props.customerName}
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" fw={500} style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
           {eventInfo.timeText}
           {props.isNightRate && ' 🌙'}
         </Text>
