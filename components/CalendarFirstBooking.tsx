@@ -336,10 +336,10 @@ export default function CalendarFirstBooking() {
                   : 'Complete your booking details'}
               </Text>
               <Group gap={{ base: 'xs', sm: 'md' }} justify="center" style={{ flexWrap: 'wrap' }}>
-                <Text size={{ base: 'xs', sm: 'sm' }} c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
+                <Text size="sm" c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
                   💰 Day Rate (7 AM - 5 PM): <Text component="span" fw={700} c="#F5B800">Rs 1,500/hr</Text>
                 </Text>
-                <Text size={{ base: 'xs', sm: 'sm' }} c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
+                <Text size="sm" c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
                   🌙 Night Rate (5 PM - 7 AM): <Text component="span" fw={700} c="#F5B800">Rs 2,000/hr</Text>
                 </Text>
               </Group>
@@ -769,3 +769,4 @@ export default function CalendarFirstBooking() {
     </Box>
   );
 }
+

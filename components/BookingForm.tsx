@@ -437,12 +437,12 @@ export default function BookingForm({
           <Stack gap="xs">
             <Title 
               order={1}
-              size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+              size="md"
               style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
             >
               Book Cricket Ground
             </Title>
-            <Text c="dimmed" size={{ base: 'xs', sm: 'sm' }}>Loading booking system...</Text>
+            <Text c="dimmed" size="md">Loading booking system...</Text>
           </Stack>
           <FormSkeleton />
         </Stack>
@@ -467,12 +467,12 @@ export default function BookingForm({
           <Stack gap="xs">
             <Title 
               order={1}
-              size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+              size="md"
               style={{ fontSize: 'clamp(1.25rem, 5vw, 2.5rem)' }}
             >
               Book Cricket Ground
             </Title>
-            <Text c="dimmed" size={{ base: 'xs', sm: 'sm', md: 'md' }}>
+            <Text c="dimmed" size="md">
               Fill in the details below to book your time slot
             </Text>
           </Stack>
@@ -490,7 +490,7 @@ export default function BookingForm({
             <Stack gap={{ base: "sm", sm: "md" }} style={{ maxWidth: '100%' }}>
               <Title 
                 order={3}
-                size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                size="md"
                 style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
               >
                 Customer Information
@@ -504,7 +504,7 @@ export default function BookingForm({
                 onChange={(e) => setName(e.currentTarget.value)}
                 error={errors.name}
                 required
-                size={{ base: 'sm', sm: 'md' }}
+                size="md"
                 leftSection={<IconUser size={16} />}
               />
 
@@ -515,7 +515,7 @@ export default function BookingForm({
                 onChange={(e) => setPhone(e.currentTarget.value)}
                 error={errors.phone}
                 required
-                size={{ base: 'sm', sm: 'md' }}
+                size="md"
                 leftSection={<IconPhone size={16} />}
               />
             </Stack>
@@ -527,7 +527,7 @@ export default function BookingForm({
               <Stack gap={{ base: "sm", sm: "md" }}>
                 <Title 
                   order={3}
-                  size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                  size="md"
                   style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
                 >
                   Booking Details
@@ -547,7 +547,7 @@ export default function BookingForm({
                   }}
                   error={errors.booking_date}
                   required
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                   leftSection={<IconCalendar size={16} />}
                   minDate={new Date()}
                   clearable
@@ -574,7 +574,7 @@ export default function BookingForm({
                   value={customerNotes}
                   onChange={(e) => setCustomerNotes(e.currentTarget.value)}
                   minRows={3}
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                 />
               </Stack>
             </Paper>
@@ -611,7 +611,7 @@ export default function BookingForm({
             <Stack gap={{ base: "sm", sm: "md" }} style={{ maxWidth: '100%' }}>
               <Title 
                 order={3}
-                size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+                size="md"
                 style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
               >
                 Payment Information
@@ -627,7 +627,7 @@ export default function BookingForm({
                     </Text>
                     <Group gap="xs">
                       <IconCurrencyRupee size={16} />
-                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700}>
+                      <Text size="md" fw={700}>
                         PKR {totalAmount.toLocaleString()}
                       </Text>
                     </Group>
@@ -639,7 +639,7 @@ export default function BookingForm({
                     </Text>
                     <Group gap="xs">
                       <IconCurrencyRupee size={16} />
-                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="green">
+                      <Text size="md" fw={700} c="green">
                         PKR {advancePayment.toLocaleString()}
                       </Text>
                     </Group>
@@ -651,7 +651,7 @@ export default function BookingForm({
                     </Text>
                     <Group gap="xs">
                       <IconCurrencyRupee size={16} />
-                      <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="orange">
+                      <Text size="md" fw={700} c="orange">
                         PKR {(totalAmount - advancePayment).toLocaleString()}
                       </Text>
                     </Group>
@@ -666,7 +666,7 @@ export default function BookingForm({
                 value={paymentMethod}
                 onChange={setPaymentMethod}
                 error={errors.payment_method}
-                size={{ base: 'sm', sm: 'md' }}
+                size="md"
                 required
               />
 
@@ -695,7 +695,7 @@ export default function BookingForm({
                 value={paymentProofFile}
                 onChange={setPaymentProofFile}
                 error={errors.payment_proof}
-                size={{ base: 'sm', sm: 'md' }}
+                size="md"
                 required={paymentMethod !== 'cash'}
                 leftSection={<IconUpload size={16} />}
                 clearable
@@ -727,7 +727,7 @@ export default function BookingForm({
 
           {/* Submit Button */}
           <Button
-            size={{ base: 'md', sm: 'lg' }}
+            size="md"
             fullWidth
             onClick={handleReviewBooking}
             disabled={selectedSlots.length === 0 || !bookingDate}
@@ -756,7 +756,7 @@ export default function BookingForm({
             <Stack gap={{ base: "sm", sm: "md" }} align="center">
               <Box ta="center">
                 <Text 
-                  size={{ base: 'md', sm: 'lg' }} 
+                  size="md" 
                   fw={600} 
                   c="white" 
                   mb={4}
@@ -765,14 +765,14 @@ export default function BookingForm({
                   Already Booked? Check Your Status
                 </Text>
                 <Text 
-                  size={{ base: 'xs', sm: 'sm' }} 
+                  size="md" 
                   c="rgba(255,255,255,0.95)"
                 >
                   Search by name to view approval status & download booking slip
                 </Text>
               </Box>
               <Button
-                size={{ base: 'md', sm: 'lg' }}
+                size="md"
                 variant="white"
                 leftSection={<IconSearch size={16} />}
                 onClick={() => router.push('/bookings/check')}
@@ -791,7 +791,7 @@ export default function BookingForm({
           {/* Important Info */}
           <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
             <Stack gap={4}>
-              <Text size={{ base: 'xs', sm: 'sm' }} fw={600}>
+              <Text size="md" fw={600}>
                 📌 Important Information:
               </Text>
               <Text size="xs">
@@ -823,3 +823,4 @@ export default function BookingForm({
     </>
   );
 }
+
