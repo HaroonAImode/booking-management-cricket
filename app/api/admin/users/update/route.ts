@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { withAdminAuth } from '@/lib/supabase/api-auth';
 
 /**
  * PATCH /api/admin/users/update
  * Update user details (admin only)
  */
-export async function PATCH(request: NextRequest) {
+async function handler(request: NextRequest, { adminProfile }: { adminProfile: any }) {
   try {
     const { userId, name, email, phone } = await request.json();
 
@@ -17,29 +18,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     const adminClient = createAdminClient();
-
-    // Verify current user is admin
-    const { data: currentUser } = await adminClient.auth.getUser();
-    if (!currentUser.user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    const { data: adminCheck } = await adminClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', currentUser.user.id)
-      .eq('role', 'admin')
-      .single();
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { success: false, error: 'Only admins can update users' },
-        { status: 403 }
-      );
-    }
 
     // Get the user to update
     const { data: userToUpdate } = await adminClient
@@ -108,3 +86,5 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+export const PATCH = withAdminAuth(handler);

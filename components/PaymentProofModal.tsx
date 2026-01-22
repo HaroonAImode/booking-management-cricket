@@ -5,7 +5,7 @@
 
 'use client';
 
-import { Modal, Image, Stack, Text, Group, Button, LoadingOverlay } from '@mantine/core';
+import { Modal, Image, Stack, Text, Group, Button, LoadingOverlay, Box } from '@mantine/core';
 import { IconDownload, IconExternalLink } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 
@@ -80,11 +80,33 @@ export default function PaymentProofModal({
       opened={opened}
       onClose={onClose}
       title={`Payment Proof - ${bookingNumber}`}
-      size="xl"
+      size="auto"
       centered
       zIndex={300}
+      padding="md"
+      withCloseButton
+      closeButtonProps={{
+        size: 'xl',
+        iconSize: 24,
+      }}
+      styles={{
+        content: {
+          maxWidth: '95vw',
+          maxHeight: '95vh',
+        },
+        body: {
+          padding: '1rem',
+        },
+        header: {
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e9ecef',
+        },
+      }}
     >
-      <Stack gap="md">
+      <Stack gap="md" style={{ minHeight: '300px' }}>
         <LoadingOverlay visible={loading} />
 
         {error && (
@@ -101,15 +123,29 @@ export default function PaymentProofModal({
 
         {imageUrl && !error && (
           <>
-            <Image
-              src={imageUrl}
-              alt="Payment Proof"
-              radius="md"
-              fit="contain"
-              style={{ maxHeight: '70vh' }}
-            />
+            <Box
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                maxHeight: '70vh',
+                overflow: 'hidden',
+              }}
+            >
+              <Image
+                src={imageUrl}
+                alt="Payment Proof"
+                radius="md"
+                fit="contain"
+                style={{ 
+                  maxWidth: '100%',
+                  maxHeight: '70vh',
+                  objectFit: 'contain',
+                }}
+              />
+            </Box>
 
-            <Group justify="center">
+            <Group justify="center" gap="sm" wrap="wrap">
               <Button
                 variant="light"
                 leftSection={<IconDownload size={18} />}

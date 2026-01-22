@@ -80,6 +80,7 @@ interface Booking {
   advance_payment_method: string;
   advance_payment_proof: string;
   remaining_payment_proof: string;
+  remaining_payment_method?: string;
   status: string;
   created_at: string;
   customer: {
@@ -661,6 +662,10 @@ export default function AdminBookingsPage() {
                           >
                             Advance
                           </Button>
+                        ) : booking.advance_payment_method === 'cash' ? (
+                          <Badge size="md" color="green" variant="filled">
+                            💵 Cash
+                          </Badge>
                         ) : (
                           <Text size="xs" c="dimmed">-</Text>
                         )}
@@ -680,6 +685,10 @@ export default function AdminBookingsPage() {
                           >
                             Remaining
                           </Button>
+                        ) : booking.remaining_payment_method === 'cash' ? (
+                          <Badge size="md" color="blue" variant="filled">
+                            💵 Cash
+                          </Badge>
                         ) : (
                           <Text size="xs" c="dimmed">-</Text>
                         )}
