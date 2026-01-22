@@ -40,11 +40,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Mantine color scheme script - prevents flash of unstyled content */}
-        <ColorSchemeScript />
+        <ColorSchemeScript defaultColorScheme="light" />
       </head>
       <body>
         {/* Mantine Provider wraps the entire app with theme configuration */}
-        <MantineProvider theme={theme}>
+        <MantineProvider theme={theme} defaultColorScheme="light">
           {/* Notifications - Professional, centered, mobile-optimized */}
           <Notifications 
             position="top-center"
