@@ -104,10 +104,10 @@ export default function BookingForm({
 
   // Sync preselected values from props
   useEffect(() => {
-    if (preSelectedDate) {
+    if (preSelectedDate && preSelectedDate instanceof Date) {
       setBookingDate(preSelectedDate);
     }
-    if (preSelectedSlots && preSelectedSlots.length > 0) {
+    if (Array.isArray(preSelectedSlots) && preSelectedSlots.length > 0) {
       setSelectedSlots(preSelectedSlots);
     }
   }, [preSelectedDate, preSelectedSlots]);
@@ -121,9 +121,12 @@ export default function BookingForm({
       }
     } else if (!hideCalendar) {
       setAvailableSlots(null);
-      setSelectedSlots([]);
+      if (!preSelectedSlots || preSelectedSlots.length === 0) {
+        setSelectedSlots([]);
+      }
     }
-  }, [bookingDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingDate, hideCalendar]);
 
   // Calculate amount when slots change
   useEffect(() => {
