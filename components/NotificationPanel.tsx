@@ -190,6 +190,12 @@ export default function NotificationPanel() {
       closeOnClickOutside={true}
       closeOnEscape={true}
       withinPortal={true}
+      styles={{
+        dropdown: {
+          maxWidth: 'calc(100vw - 20px)',
+          right: '10px !important',
+        },
+      }}
     >
       <Menu.Target>
         <ActionIcon
@@ -222,8 +228,8 @@ export default function NotificationPanel() {
 
       <Menu.Dropdown p={0}>
         {/* Header */}
-        <Group justify="space-between" p="md" pb="xs">
-          <Text fw={600} size="lg">
+        <Group justify="space-between" p="sm" pb="xs" wrap="nowrap">
+          <Text fw={600} size={{ base: 'md', sm: 'lg' }}>
             Notifications
           </Text>
           {unreadCount > 0 && (
@@ -233,8 +239,10 @@ export default function NotificationPanel() {
               leftSection={<IconChecks size={14} />}
               onClick={markAllAsRead}
               loading={loading}
+              style={{ flexShrink: 0 }}
             >
-              Mark all read
+              <Text visibleFrom="sm">Mark all read</Text>
+              <Text hiddenFrom="sm">Read</Text>
             </Button>
           )}
         </Group>
@@ -242,7 +250,7 @@ export default function NotificationPanel() {
         <Divider />
 
         {/* Notifications List */}
-        <ScrollArea h={400} type="auto">
+        <ScrollArea h={{ base: 300, sm: 400 }} type="auto">
           {notificationsList.length === 0 ? (
             <Box p="md">
               <EmptyState
@@ -256,8 +264,7 @@ export default function NotificationPanel() {
               {notificationsList.map((notification) => (
                 <Box
                   key={notification.id}
-                  p="md"
-                  className="hover-lift"
+                  p={{ base: 'xs', sm: 'md' }}
                   style={{
                     cursor: 'pointer',
                     backgroundColor: notification.is_read
@@ -280,28 +287,42 @@ export default function NotificationPanel() {
                   }}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <Group align="flex-start" gap="sm" wrap="nowrap">
+                  <Group align="flex-start" gap={{ base: 'xs', sm: 'sm' }} wrap="nowrap">
                     <ThemeIcon
-                      size="lg"
+                      size={{ base: 'md', sm: 'lg' }}
                       variant="light"
                       color={getNotificationColor(notification.notification_type)}
+                      style={{ flexShrink: 0 }}
                     >
                       {getNotificationIcon(notification.notification_type)}
                     </ThemeIcon>
 
-                    <Stack gap={4} style={{ flex: 1 }}>
-                      <Group justify="space-between" gap="xs">
-                        <Text size="sm" fw={600} lineClamp={1}>
+                    <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                      <Group justify="space-between" gap="xs" wrap="nowrap">
+                        <Text 
+                          size={{ base: 'xs', sm: 'sm' }} 
+                          fw={600} 
+                          lineClamp={1}
+                          style={{ flex: 1, minWidth: 0 }}
+                        >
                           {notification.title}
                         </Text>
                         {notification.priority === 'high' && (
-                          <Badge size="xs" color="red" variant="light">
+                          <Badge size="xs" color="red" variant="light" style={{ flexShrink: 0 }}>
                             High
                           </Badge>
                         )}
                       </Group>
 
-                      <Text size="xs" c="dimmed" lineClamp={2}>
+                      <Text 
+                        size="xs" 
+                        c="dimmed" 
+                        lineClamp={2}
+                        style={{ 
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                        }}
+                      >
                         {notification.message}
                       </Text>
 
@@ -312,7 +333,12 @@ export default function NotificationPanel() {
                       )}
 
                       <Text size="xs" c="dimmed">
-                        {new Date(notification.created_at).toLocaleString()}
+                        {new Date(notification.created_at).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
                       </Text>
                     </Stack>
                   </Group>
