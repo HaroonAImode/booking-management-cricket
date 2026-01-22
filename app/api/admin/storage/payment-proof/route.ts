@@ -25,30 +25,16 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     // Remove 'payment-proofs/' prefix if it exists
     const cleanPath = path.replace('payment-proofs/', '');
 
-    // First check if file exists
-    const { data: fileList, error: listError } = await supabase.storage
-      .from('payment-proofs')
-      .list(cleanPath.split('/')[0], {
-        search: cleanPath.split('/').pop()
-      });
-
-    if (listError || !fileList || fileList.length === 0) {
-      console.error('File not found in storage:', cleanPath);
-      return NextResponse.json(
-        { success: false, error: 'Payment proof image not found' },
-        { status: 404 }
-      );
-    }
-
     // Generate signed URL (valid for 1 hour)
+    // This will naturally fail if the file doesn't exist
     const { data, error } = await supabase.storage
       .from('payment-proofs')
       .createSignedUrl(cleanPath, 3600);
 
     if (error || !data) {
-      console.error('Signed URL error:', error);
+      console.error('Signed URL error for path:', cleanPath, error);
       return NextResponse.json(
-        { success: false, error: error?.message || 'Failed to generate signed URL' },
+        { success: false, error: 'Payment proof image not found or inaccessible' },
         { status: 404 }
       );
     }
