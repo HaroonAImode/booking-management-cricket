@@ -242,6 +242,7 @@ export default function EditBookingModal({
       title="Edit Booking"
       size="lg"
       centered
+      zIndex={300}
     >
       <LoadingOverlay visible={loading} />
       

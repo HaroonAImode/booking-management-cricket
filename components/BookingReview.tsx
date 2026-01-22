@@ -75,6 +75,7 @@ export default function BookingReview({
       size="lg"
       centered
       padding="lg"
+      zIndex={300}
       overlayProps={{
         backgroundOpacity: 0.65,
         blur: 8,

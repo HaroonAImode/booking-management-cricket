@@ -132,6 +132,7 @@ export default function CompletePaymentModal({
       onClose={handleClose}
       title="Complete Payment Verification"
       size="md"
+      zIndex={300}
     >
       <Stack gap="md">
         {/* Booking Info */}

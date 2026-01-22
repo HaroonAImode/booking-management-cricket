@@ -184,6 +184,7 @@ export default function ManualBookingModal({
       onClose={onClose}
       title="Create Manual Booking"
       size="xl"
+      zIndex={300}
     >
       <form onSubmit={handleSubmit}>
         <Stack gap="md">

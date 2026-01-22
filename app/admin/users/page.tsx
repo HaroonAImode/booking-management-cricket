@@ -406,6 +406,7 @@ export default function UsersManagementPage() {
         title="Add New User"
         size="md"
         centered
+        zIndex={300}
       >
         <Stack gap="md">
           <TextInput
@@ -492,6 +493,7 @@ export default function UsersManagementPage() {
         title="Edit User Details"
         size="md"
         centered
+        zIndex={300}
       >
         <Stack gap="md">
           <TextInput

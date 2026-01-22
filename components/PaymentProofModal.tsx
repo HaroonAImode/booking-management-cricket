@@ -76,6 +76,7 @@ export default function PaymentProofModal({
       title={`Payment Proof - ${bookingNumber}`}
       size="xl"
       centered
+      zIndex={300}
     >
       <Stack gap="md">
         <LoadingOverlay visible={loading} />

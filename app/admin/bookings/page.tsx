@@ -99,8 +99,15 @@ export default function AdminBookingsPage() {
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  // Ground managers are locked to 'approved' status, admins can filter
-  const [statusFilter, setStatusFilter] = useState<string>(isGroundManager ? 'approved' : 'all');
+  // Ground managers see only approved bookings with remaining payment
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Update status filter when role is determined
+  useEffect(() => {
+    if (isGroundManager && statusFilter !== 'approved') {
+      setStatusFilter('approved');
+    }
+  }, [isGroundManager, statusFilter]);
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
@@ -566,10 +573,10 @@ export default function AdminBookingsPage() {
         {loading ? (
           <TableSkeleton rows={8} />
         ) : (
-          <Paper withBorder radius="md" className="hover-lift">
+          <Paper withBorder radius="md">
           
           <Table.ScrollContainer minWidth={{ base: 800, sm: 1000, md: 1200 }}>
-            <Table highlightOnHover striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+            <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Booking #</Table.Th>

@@ -336,6 +336,7 @@ export default function BookingDetailsModal({
         </Group>
       }
       size="xl"
+      zIndex={300}
     >
       <LoadingOverlay visible={loading} />
 
@@ -658,6 +659,7 @@ export default function BookingDetailsModal({
         withCloseButton
         closeButtonProps={{ size: 'lg' }}
         padding={0}
+        zIndex={400}
         styles={{
           body: { padding: 0 },
           content: { backgroundColor: 'transparent' }
