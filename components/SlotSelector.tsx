@@ -39,6 +39,9 @@ export default function SlotSelector({
   const [nightStart, setNightStart] = useState(17);
   const [nightEnd, setNightEnd] = useState(7);
 
+  // Ensure selectedSlots is always an array
+  const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
+
   // Generate all 24 slots (0-23)
   const generateAllSlots = (): SlotInfo[] => {
     const allSlots: SlotInfo[] = [];
@@ -133,14 +136,14 @@ export default function SlotSelector({
   }
 
   const getSlotColor = (slot: SlotInfo) => {
-    if (selectedSlots.includes(slot.slot_hour)) return 'yellow';
+    if (safeSelectedSlots.includes(slot.slot_hour)) return 'yellow';
     if (slot.current_status === 'booked') return 'gray';
     if (slot.current_status === 'pending') return 'orange';
     return 'yellow';
   };
 
   const getSlotVariant = (slot: SlotInfo) => {
-    if (selectedSlots.includes(slot.slot_hour)) return 'filled';
+    if (safeSelectedSlots.includes(slot.slot_hour)) return 'filled';
     if (slot.is_available) return 'outline';
     return 'light';
   };
@@ -156,7 +159,7 @@ export default function SlotSelector({
     // Disable if it's in the past (for today)
     if ((slot as any).is_past) return true;
     // Disable if not available and not selected
-    return !slot.is_available && !selectedSlots.includes(slot.slot_hour);
+    return !slot.is_available && !safeSelectedSlots.includes(slot.slot_hour);
   };
 
   const isNightSlot = (hour: number) => {
@@ -175,7 +178,7 @@ export default function SlotSelector({
           Select Time Slots
         </Title>
         <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
-          {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''}
+          {safeSelectedSlots.length} slot{safeSelectedSlots.length !== 1 ? 's' : ''}
         </Text>
       </Group>
 
@@ -250,8 +253,8 @@ export default function SlotSelector({
               style={{
                 cursor: isDisabled(slot) ? 'not-allowed' : 'pointer',
                 opacity: isPastSlot ? 0.3 : isDisabled(slot) ? 0.6 : 1,
-                borderWidth: selectedSlots.includes(slot.slot_hour) ? 3 : 2,
-                borderColor: selectedSlots.includes(slot.slot_hour)
+                borderWidth: safeSelectedSlots.includes(slot.slot_hour) ? 3 : 2,
+                borderColor: safeSelectedSlots.includes(slot.slot_hour)
                   ? '#1A1A1A'
                   : isPastSlot
                   ? '#EF4444'
@@ -261,18 +264,18 @@ export default function SlotSelector({
                   ? '#F5B800'
                   : '#9E9E9E',
                 borderStyle: slot.current_status === 'pending' ? 'dashed' : 'solid',
-                backgroundColor: selectedSlots.includes(slot.slot_hour)
+                backgroundColor: safeSelectedSlots.includes(slot.slot_hour)
                   ? '#F5B800'
                   : slot.is_available && !isPastSlot
                   ? 'white'
                   : '#F5F5F5',
                 transition: 'all 200ms ease',
-                transform: selectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : 'scale(1)',
+                transform: safeSelectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : 'scale(1)',
                 minHeight: 'clamp(72px, 15vw, 88px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: selectedSlots.includes(slot.slot_hour) ? '0 4px 12px rgba(245, 184, 0, 0.3)' : 'none',
+                boxShadow: safeSelectedSlots.includes(slot.slot_hour) ? '0 4px 12px rgba(245, 184, 0, 0.3)' : 'none',
                 WebkitTapHighlightColor: 'transparent',
               }}
               onClick={() => {
@@ -283,16 +286,16 @@ export default function SlotSelector({
             >
               <Stack gap={4} align="center">
                 <Group gap={4} justify="center">
-                  <IconClock size={14} color={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#4A4A4A'} />
+                  <IconClock size={14} color={safeSelectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#4A4A4A'} />
                   {isNightSlot(slot.slot_hour) && (
                     <Text size="xs">🌙</Text>
                   )}
                 </Group>
                 <Text
                   size={{ base: 'xs', sm: 'sm' }}
-                  fw={selectedSlots.includes(slot.slot_hour) ? 900 : 600}
+                  fw={safeSelectedSlots.includes(slot.slot_hour) ? 900 : 600}
                   ta="center"
-                  c={selectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
+                  c={safeSelectedSlots.includes(slot.slot_hour) ? '#1A1A1A' : '#1A1A1A'}
                   style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}
                 >
                   {formatTimeDisplay(slot.slot_hour)}
@@ -303,19 +306,19 @@ export default function SlotSelector({
                   variant={getSlotVariant(slot)}
                   fullWidth
                   style={{
-                    background: selectedSlots.includes(slot.slot_hour) 
+                    background: safeSelectedSlots.includes(slot.slot_hour) 
                       ? '#1A1A1A' 
                       : isPastSlot 
                       ? '#FEE2E2' 
                       : undefined,
-                    color: selectedSlots.includes(slot.slot_hour) 
+                    color: safeSelectedSlots.includes(slot.slot_hour) 
                       ? 'white' 
                       : isPastSlot 
                       ? '#7F1D1D' 
                       : undefined,
                   }}
                 >
-                  {selectedSlots.includes(slot.slot_hour)
+                  {safeSelectedSlots.includes(slot.slot_hour)
                     ? '✓'
                     : isPastSlot
                     ? 'Past'
@@ -332,7 +335,7 @@ export default function SlotSelector({
       </SimpleGrid>
 
       {/* Selection Summary */}
-      {selectedSlots.length > 0 && (
+      {safeSelectedSlots.length > 0 && (
         <Paper 
           p={{ base: "sm", sm: "md" }} 
           withBorder 
@@ -344,7 +347,7 @@ export default function SlotSelector({
               ✓ Selected Time Slots:
             </Text>
             <Group gap="xs">
-              {selectedSlots
+              {safeSelectedSlots
                 .sort((a, b) => a - b)
                 .map((hour) => {
                   const slot = allSlots.find((s) => s.slot_hour === hour);

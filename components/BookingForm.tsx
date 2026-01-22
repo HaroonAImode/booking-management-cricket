@@ -200,8 +200,10 @@ export default function BookingForm({
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) newErrors.name = 'Name is required';
-    // Phone is now optional, only validate format if provided
-    if (phone.trim() && !/^[0-9]{11}$/.test(phone.replace(/[-\s]/g, ''))) {
+    // Phone is now required
+    if (!phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^[0-9]{11}$/.test(phone.replace(/[-\s]/g, ''))) {
       newErrors.phone = 'Invalid phone number (11 digits required)';
     }
     if (!bookingDate) newErrors.booking_date = 'Please select a booking date';
@@ -504,11 +506,12 @@ export default function BookingForm({
               />
 
               <TextInput
-                label="Phone Number (Optional)"
-                placeholder="03XXXXXXXXX (optional)"
+                label="Phone Number"
+                placeholder="03XXXXXXXXX"
                 value={phone}
                 onChange={(e) => setPhone(e.currentTarget.value)}
                 error={errors.phone}
+                required
                 size={{ base: 'sm', sm: 'md' }}
                 leftSection={<IconPhone size={16} />}
               />

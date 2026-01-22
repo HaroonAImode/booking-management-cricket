@@ -54,6 +54,9 @@ export default function CalendarFirstBooking() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
+  // Ensure selectedSlots is always an array for safety
+  const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
+
   // Auto-refresh slots every 60 seconds to keep data fresh
   useEffect(() => {
     const refreshInterval = setInterval(() => {
@@ -211,13 +214,15 @@ export default function CalendarFirstBooking() {
     }
 
     setSelectedSlots((prev) => {
+      // Ensure prev is an array
+      const safePrev = Array.isArray(prev) ? prev : [];
       // If deselecting, just remove it
-      if (prev.includes(hour)) {
-        return prev.filter((h) => h !== hour);
+      if (safePrev.includes(hour)) {
+        return safePrev.filter((h) => h !== hour);
       }
 
       // If selecting, check if it's consecutive with existing selections
-      const newSelection = [...prev, hour].sort((a, b) => a - b);
+      const newSelection = [...safePrev, hour].sort((a, b) => a - b);
       
       // Check if all slots are consecutive
       if (newSelection.length > 1) {
@@ -231,7 +236,7 @@ export default function CalendarFirstBooking() {
               autoClose: 5000,
               icon: <IconInfoCircle size={18} />,
             });
-            return prev; // Don't add the slot
+            return safePrev; // Don't add the slot
           }
         }
       }
@@ -240,12 +245,12 @@ export default function CalendarFirstBooking() {
     });
   };
 
-  const canProceedToForm = selectedDate && selectedSlots.length > 0;
+  const canProceedToForm = selectedDate && safeSelectedSlots.length > 0;
 
   const validateConsecutiveSlots = (): boolean => {
-    if (selectedSlots.length <= 1) return true;
+    if (safeSelectedSlots.length <= 1) return true;
     
-    const sorted = [...selectedSlots].sort((a, b) => a - b);
+    const sorted = [...safeSelectedSlots].sort((a, b) => a - b);
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i] - sorted[i - 1] !== 1) {
         return false;
@@ -452,7 +457,7 @@ export default function CalendarFirstBooking() {
                             style={{
                               cursor: isAvailable ? 'pointer' : 'not-allowed',
                               opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
-                              background: selectedSlots.includes(slot.slot_hour) && isAvailable
+                              background: safeSelectedSlots.includes(slot.slot_hour) && isAvailable
                                 ? '#F5B800'
                                 : isAvailable 
                                 ? '#1A1A1A' 
@@ -461,20 +466,20 @@ export default function CalendarFirstBooking() {
                                 : isBooked 
                                 ? '#6B7280' 
                                 : '#F59E0B',
-                              color: selectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
+                              color: safeSelectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
                               minHeight: '75px',
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '8px',
-                              border: selectedSlots.includes(slot.slot_hour) && isAvailable 
+                              border: safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
                                 ? '3px solid #1A1A1A' 
                                 : isAvailable 
                                 ? '2px solid #F5B800' 
                                 : 'none',
                               transition: 'all 0.2s ease',
-                              transform: selectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
+                              transform: safeSelectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
                             }}
                             onClick={() => {
                               if (isAvailable) {
@@ -489,13 +494,13 @@ export default function CalendarFirstBooking() {
                               }
                             }}
                             onMouseEnter={(e) => {
-                              if (isAvailable && !selectedSlots.includes(slot.slot_hour)) {
+                              if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
                                 e.currentTarget.style.transform = 'scale(1.05)';
                                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (isAvailable && !selectedSlots.includes(slot.slot_hour)) {
+                              if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
                                 e.currentTarget.style.transform = 'scale(1)';
                                 e.currentTarget.style.boxShadow = 'none';
                               }
@@ -538,7 +543,7 @@ export default function CalendarFirstBooking() {
                               </Badge>
                             ) : (
                               <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
-                                {selectedSlots.includes(slot.slot_hour) && isAvailable 
+                                {safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
                                   ? '✅' 
                                   : isPast 
                                   ? '⏱️' 
@@ -562,8 +567,8 @@ export default function CalendarFirstBooking() {
                       }}
                     >
                       <Text size="sm" fw={600}>
-                        {selectedSlots.length > 0 
-                          ? `✓ ${selectedSlots.length} slot${selectedSlots.length > 1 ? 's' : ''} selected! Click "Continue to Booking Form" below.`
+                        {safeSelectedSlots.length > 0 
+                          ? `✓ ${safeSelectedSlots.length} slot${safeSelectedSlots.length > 1 ? 's' : ''} selected! Click "Continue to Booking Form" below.`
                           : `💡 ${todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any to select.`
                         }
                       </Text>
@@ -659,7 +664,7 @@ export default function CalendarFirstBooking() {
                   <Stack gap="md" align="center">
                     <Box ta="center">
                       <Text size="lg" fw={700} c="white" mb={4}>
-                        Selected: {selectedSlots.length} time slot{selectedSlots.length !== 1 ? 's' : ''}
+                        Selected: {safeSelectedSlots.length} time slot{safeSelectedSlots.length !== 1 ? 's' : ''}
                       </Text>
                       <Text size="sm" c="#D1D1D1">
                         Click below to proceed with your booking details
@@ -746,7 +751,7 @@ export default function CalendarFirstBooking() {
                       Time Slots
                     </Text>
                     <Badge size="lg" style={{ background: '#F5B800', color: '#1A1A1A' }}>
-                      {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''} selected
+                      {safeSelectedSlots.length} slot{safeSelectedSlots.length !== 1 ? 's' : ''} selected
                     </Badge>
                   </Box>
                 </Group>
