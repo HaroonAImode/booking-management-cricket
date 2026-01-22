@@ -9,7 +9,7 @@
  * Step 3: Show booking form after slot selection
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -57,7 +57,7 @@ export default function CalendarFirstBooking() {
   // Ensure selectedSlots is always an array for safety
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
 
-  const loadTodaySlots = async (viewDate?: Date) => {
+  const loadTodaySlots = useCallback(async (viewDate?: Date) => {
     setTodayLoading(true);
     const dateToView = viewDate || quickViewDate;
     // Ensure dateToView is a Date object
@@ -98,9 +98,9 @@ export default function CalendarFirstBooking() {
       setTodaySlots(allSlots);
     }
     setTodayLoading(false);
-  };
+  }, [quickViewDate]);
 
-  const loadAvailableSlots = async () => {
+  const loadAvailableSlots = useCallback(async () => {
     if (!selectedDate) return;
 
     setSlotsLoading(true);
@@ -123,12 +123,12 @@ export default function CalendarFirstBooking() {
     }
 
     setSlotsLoading(false);
-  };
+  }, [selectedDate]);
 
   // Load today's slots on component mount and when quickViewDate changes
   useEffect(() => {
     loadTodaySlots();
-  }, [quickViewDate]);
+  }, [loadTodaySlots]);
 
   // Auto-refresh slots every 60 seconds to keep data fresh
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function CalendarFirstBooking() {
     }, 60000); // 60 seconds = 1 minute
 
     return () => clearInterval(refreshInterval);
-  }, [selectedDate, quickViewDate]);
+  }, [loadTodaySlots, loadAvailableSlots, selectedDate]);
 
   // Refresh when page becomes visible (user returns to tab)
   useEffect(() => {
@@ -158,7 +158,7 @@ export default function CalendarFirstBooking() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [selectedDate, quickViewDate]);
+  }, [loadTodaySlots, loadAvailableSlots, selectedDate]);
 
   // Load slots when date changes
   useEffect(() => {
@@ -169,7 +169,7 @@ export default function CalendarFirstBooking() {
       setAvailableSlots(null);
       setSelectedSlots([]);
     }
-  }, [selectedDate]);
+  }, [selectedDate, loadAvailableSlots]);
 
   const handleSlotToggle = (hour: number) => {
     const slotsToCheck = selectedDate ? availableSlots : todaySlots;
