@@ -37,14 +37,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Mantine color scheme script - prevents flash of unstyled content */}
-        <ColorSchemeScript defaultColorScheme="light" />
+        <ColorSchemeScript />
       </head>
       <body>
-        {/* Mantine Provider wraps the entire app with theme configuration */}
-        <MantineProvider theme={theme} defaultColorScheme="light">
+        <MantineProvider theme={theme}>
           {/* Notifications - Professional, centered, mobile-optimized */}
           <Notifications 
             position="top-center"
