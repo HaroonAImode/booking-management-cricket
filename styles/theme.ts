@@ -212,16 +212,6 @@ export const theme = createTheme({
       },
     },
 
-    Paper: {
-      styles: {
-        root: {
-          '@media (max-width: 768px)': {
-            padding: '12px',
-          },
-        },
-      },
-    },
-
     Container: {
       styles: {
         root: {
@@ -321,51 +311,6 @@ export const theme = createTheme({
       },
     },
 
-    TextInput: {
-      defaultProps: {
-        radius: 'md',
-        size: 'md',
-      },
-      styles: {
-        input: {
-          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:focus': {
-            transform: 'scale(1.01)',
-          },
-        },
-      },
-    },
-
-    Textarea: {
-      defaultProps: {
-        radius: 'md',
-        size: 'md',
-      },
-      styles: {
-        input: {
-          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:focus': {
-            transform: 'scale(1.01)',
-          },
-        },
-      },
-    },
-
-    Select: {
-      defaultProps: {
-        radius: 'md',
-        size: 'md',
-      },
-      styles: {
-        input: {
-          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:focus': {
-            transform: 'scale(1.01)',
-          },
-        },
-      },
-    },
-
     Modal: {
       defaultProps: {
         radius: 'md',
@@ -373,11 +318,6 @@ export const theme = createTheme({
         overlayProps: {
           backgroundOpacity: 0.6,
           blur: 4,
-        },
-        transitionProps: {
-          transition: 'slide-up',
-          duration: 300,
-          timingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
       styles: {
@@ -453,7 +393,6 @@ export const theme = createTheme({
       defaultProps: {
         radius: 'sm',
         withArrow: true,
-        transitionProps: { duration: 200 },
       },
     },
   },
