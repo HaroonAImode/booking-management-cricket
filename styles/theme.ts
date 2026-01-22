@@ -315,10 +315,6 @@ export const theme = createTheme({
       defaultProps: {
         radius: 'md',
         centered: true,
-        overlayProps: {
-          backgroundOpacity: 0.6,
-          blur: 4,
-        },
       },
       styles: {
         content: {
@@ -372,9 +368,7 @@ export const theme = createTheme({
 
     LoadingOverlay: {
       defaultProps: {
-        overlayProps: {
-          blur: 2,
-        },
+        radius: 'md',
       },
     },
 
