@@ -58,8 +58,8 @@ export default function CompletePaymentModal({
       return;
     }
 
-    // Payment proof is required for digital payments (easypaisa, sadapay)
-    // but optional for cash payments
+    // Payment proof is optional for cash payments
+    // Required for digital payments (easypaisa, sadapay)
     if (!paymentProof && paymentMethod !== 'cash') {
       setError('Please upload payment proof for digital payments');
       return;
@@ -72,6 +72,7 @@ export default function CompletePaymentModal({
       // Create form data
       const formData = new FormData();
       formData.append('paymentMethod', paymentMethod);
+      // Only append proof if it exists (cash payments may not have proof)
       if (paymentProof) {
         formData.append('paymentProof', paymentProof);
       }

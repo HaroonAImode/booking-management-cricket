@@ -475,6 +475,10 @@ export default function BookingDetailsModal({
                         >
                           View Proof Image
                         </Button>
+                      ) : booking.advance_payment_method === 'cash' ? (
+                        <Badge size="lg" color="green" variant="filled" fullWidth py="sm">
+                          💵 Cash Payment
+                        </Badge>
                       ) : (
                         <Text size="xs" c="dimmed" ta="center" py="sm">
                           No proof uploaded
@@ -517,6 +521,10 @@ export default function BookingDetailsModal({
                         >
                           View Proof Image
                         </Button>
+                      ) : booking.remaining_payment_method === 'cash' ? (
+                        <Badge size="lg" color="blue" variant="filled" fullWidth py="sm">
+                          💵 Cash Payment
+                        </Badge>
                       ) : (
                         <Text size="xs" c="dimmed" ta="center" py="sm">
                           {booking.remaining_payment > 0 ? 'Not received yet' : 'No payment due'}
