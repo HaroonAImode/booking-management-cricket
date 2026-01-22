@@ -17,7 +17,7 @@ import '@mantine/notifications/styles.css';
 import '@/styles/globals.css';
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { theme } from '@/styles/theme';
+import { theme } from '@/styles/theme-new';
 
 export const metadata = {
   title: 'Powerplay Cricket Arena - Book Your Slot',
