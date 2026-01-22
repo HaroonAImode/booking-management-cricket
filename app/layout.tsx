@@ -17,7 +17,6 @@ import '@mantine/notifications/styles.css';
 import '@/styles/globals.css';
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { theme } from '@/styles/theme-new';
 
 export const metadata = {
   title: 'Powerplay Cricket Arena - Book Your Slot',
@@ -42,7 +41,7 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider theme={theme}>
+        <MantineProvider>
           {/* Notifications - Professional, centered, mobile-optimized */}
           <Notifications 
             position="top-center"
