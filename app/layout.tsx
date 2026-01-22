@@ -29,6 +29,7 @@ export const metadata = {
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
