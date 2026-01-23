@@ -245,7 +245,7 @@ export default function AdminSettingsPage() {
               
               <Stack gap={{ base: 'sm', sm: 'md', md: 'lg' }}>
                 <Group gap="xs">
-                  <IconCurrencyRupee size={{ base: 20, sm: 24 }} />
+                  <IconCurrencyRupee size={24} />
                   <div>
                     <Title 
                       order={3}
@@ -330,7 +330,7 @@ export default function AdminSettingsPage() {
               
               <Stack gap={{ base: 'sm', sm: 'md', md: 'lg' }}>
                 <Group gap="xs">
-                  <IconClock size={{ base: 20, sm: 24 }} />
+                  <IconClock size={24} />
                   <div>
                     <Title 
                       order={3}
