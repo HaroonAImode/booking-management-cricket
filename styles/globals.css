@@ -635,11 +635,6 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
   }
   
-  /* Prevent pull-to-refresh on Chrome mobile */
-  body {
-    overscroll-behavior-y: contain;
-  }
-  
   /* Better tap highlights */
   * {
     -webkit-tap-highlight-color: rgba(245, 184, 0, 0.2);
