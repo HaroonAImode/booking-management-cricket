@@ -219,14 +219,14 @@ export default function AdminSettingsPage() {
           >
             System Settings
           </Title>
-          <Text c="dimmed" mt="xs" size={{ base: 'xs', sm: 'sm' }}>
+          <Text c="dimmed" mt="xs" size="sm">
             Configure booking rates and operating hours. Changes apply immediately to new bookings.
           </Text>
         </div>
 
         {/* Alert */}
         <Alert icon={<IconAlertCircle size={16} />} color="blue">
-          <Text size={{ base: 'xs', sm: 'sm' }}>
+          <Text size="sm">
             <strong>Important:</strong> Changing these settings will affect all new booking calculations.
             Existing bookings will retain their original rates.
           </Text>
@@ -254,7 +254,7 @@ export default function AdminSettingsPage() {
                     >
                       Hourly Rates
                     </Title>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
+                    <Text size="sm" c="dimmed">
                       Set day and night rates
                     </Text>
                   </div>
@@ -270,7 +270,7 @@ export default function AdminSettingsPage() {
                   onChange={(value) => setDayRate(Number(value))}
                   min={0}
                   step={100}
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                   leftSection={<IconSun size={16} />}
                   rightSection={
                     <Text size="xs" c="dimmed">
@@ -287,7 +287,7 @@ export default function AdminSettingsPage() {
                   onChange={(value) => setNightRate(Number(value))}
                   min={0}
                   step={100}
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                   leftSection={<IconMoon size={16} />}
                   rightSection={
                     <Text size="xs" c="dimmed">
@@ -302,7 +302,7 @@ export default function AdminSettingsPage() {
                   onClick={handleSaveRates}
                   loading={saving}
                   disabled={loading || dayRate <= 0 || nightRate <= 0}
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                 >
                   Save Rates
                 </Button>
@@ -339,7 +339,7 @@ export default function AdminSettingsPage() {
                     >
                       Night Rate Hours
                     </Title>
-                    <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
+                    <Text size="sm" c="dimmed">
                       Define night rate time range
                     </Text>
                   </div>
@@ -354,7 +354,7 @@ export default function AdminSettingsPage() {
                   value={nightStartHour.toString()}
                   onChange={(value) => setNightStartHour(parseInt(value || '17'))}
                   searchable
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                 />
 
                 <Select
@@ -364,7 +364,7 @@ export default function AdminSettingsPage() {
                   value={nightEndHour.toString()}
                   onChange={(value) => setNightEndHour(parseInt(value || '6'))}
                   searchable
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                 />
 
                 <Button
@@ -373,7 +373,7 @@ export default function AdminSettingsPage() {
                   onClick={handleSaveNightHours}
                   loading={saving}
                   disabled={loading}
-                  size={{ base: 'sm', sm: 'md' }}
+                  size="md"
                 >
                   Save Night Hours
                 </Button>
@@ -401,7 +401,7 @@ export default function AdminSettingsPage() {
             >
               24-Hour Rate Schedule
             </Title>
-            <Text size={{ base: 'xs', sm: 'sm' }} c="dimmed">
+            <Text size="sm" c="dimmed">
               Preview of hourly rates throughout the day
             </Text>
 
@@ -419,7 +419,7 @@ export default function AdminSettingsPage() {
                   >
                     <Group justify="space-between" gap={{ base: 2, sm: 'xs' }} wrap="nowrap">
                       <Badge
-                        size={{ base: 'xs', sm: 'sm' }}
+                        size="sm"
                         variant="light"
                         color={isNightHour(hour) ? 'indigo' : 'yellow'}
                         leftSection={
@@ -432,7 +432,7 @@ export default function AdminSettingsPage() {
                       >
                         {getHourLabel(hour)}
                       </Badge>
-                      <Text size={{ base: 'xs', sm: 'sm' }} fw={600}>
+                      <Text size="sm" fw={600}>
                         {isNightHour(hour) ? nightRate : dayRate}
                       </Text>
                     </Group>
