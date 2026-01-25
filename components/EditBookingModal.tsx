@@ -605,10 +605,22 @@ export default function EditBookingModal({
                   leftSection={<IconCalendar size={16} />}
                   value={bookingDate}
                   onChange={(date) => {
+                    const previousDate = bookingDate?.toISOString().split('T')[0];
+                    const newDate = date?.toISOString().split('T')[0];
+                    
                     setBookingDate(date);
-                    if (date) {
+                    
+                    // If date actually changed (not just same date selected), clear slots and require new selection
+                    if (date && previousDate !== newDate) {
                       setSlots([]);
-                      setSlotsModified(false);
+                      setSlotsModified(true); // Force user to select new slots for new date
+                      
+                      notifications.show({
+                        title: '📅 Date Changed',
+                        message: 'Please select time slots for the new date.',
+                        color: 'blue',
+                        icon: <IconInfoCircle size={18} />,
+                      });
                     }
                   }}
                   required
