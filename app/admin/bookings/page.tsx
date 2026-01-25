@@ -85,6 +85,7 @@ interface Booking {
   remaining_payment_proof: string;
   remaining_payment_method?: string;
   remaining_payment_amount?: number;
+  discount_amount?: number;
   status: string;
   created_at: string;
   customer: {
