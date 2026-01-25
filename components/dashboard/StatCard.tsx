@@ -68,9 +68,7 @@ export default function StatCard({
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = 'none';
       }}
-      onClick={clickable ? onClick : undefined e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-      }}
+      onClick={clickable ? onClick : undefined}
     >
       <Stack gap="md">
         <Group justify="space-between" align="flex-start">
