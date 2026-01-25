@@ -107,26 +107,26 @@ BEGIN
 
   -- Create notification only when payment is fully completed
   IF new_remaining <= 0 THEN
-    INSERT INTO notifications (
-      user_id,
-      notification_type,
-      title,
-      message,
-      booking_id,
-      booking_number,
-      customer_name,
-      priority
-    )
-    SELECT
-      (SELECT id FROM users WHERE role IN ('admin', 'super_admin') LIMIT 1),
-      'payment_completed',
-      'Payment Completed',
-      format('Full payment of Rs %s verified for booking %s', 
-             v_booking.total_amount, v_booking.booking_number),
-      p_booking_id,
-      v_booking.booking_number,
-      (SELECT name FROM customers WHERE id = v_booking.customer_id),
-      'normal';
+      INSERT INTO notifications (
+        customer_id,
+        notification_type,
+        title,
+        message,
+        booking_id,
+        booking_number,
+        customer_name,
+        priority
+      )
+      SELECT
+        v_booking.customer_id,
+        'payment_completed',
+        'Payment Completed',
+        format('Full payment of Rs %s verified for booking %s', 
+               v_booking.total_amount, v_booking.booking_number),
+        p_booking_id,
+        v_booking.booking_number,
+        (SELECT name FROM customers WHERE id = v_booking.customer_id),
+        'normal';
   END IF;
 
   -- Return success with actual values
