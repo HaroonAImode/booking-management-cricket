@@ -772,6 +772,10 @@ export default function AdminBookingsPage() {
                         </Text>
                       )}
                     </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        {booking.advance_payment_proof ? (
+                          <Button
                             size="xs"
                             variant="light"
                             color="green"
