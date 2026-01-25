@@ -172,8 +172,8 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return `Rs ${amount.toLocaleString()}`;
+  const formatCurrency = (amount?: number) => {
+    return `Rs ${(amount ?? 0).toLocaleString()}`;
   };
 
   const formatSlotTime = (slot_hour: number) => {

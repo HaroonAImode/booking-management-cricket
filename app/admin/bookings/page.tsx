@@ -410,8 +410,8 @@ export default function AdminBookingsPage() {
 
     const tableData = bookings.map(b => {
       const { cash, online } = getPaymentBreakdown(b);
-      const totalPaid = b.advance_payment + (b.status === 'completed' ? b.remaining_payment : 0);
-      
+      // Use actual paid: advance_payment + remaining_payment_amount (not remaining_payment)
+      const totalPaid = b.advance_payment + (b.remaining_payment_amount || 0);
       return [
         b.booking_number,
         b.customer.name,
@@ -656,7 +656,7 @@ export default function AdminBookingsPage() {
         ) : (
           <Paper withBorder radius="md">
           
-          <Table.ScrollContainer minWidth={{ base: 800, sm: 1000, md: 1200 }}>
+          <Table.ScrollContainer minWidth={800}>
             <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
               <Table.Thead>
                 <Table.Tr>
