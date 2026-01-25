@@ -18,9 +18,9 @@ ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10, 2) DEFAULT 0 NOT NULL;
 
 COMMENT ON COLUMN bookings.discount_amount IS 'Total discount given on this booking (not counted in revenue)';
 
--- Add constraint to ensure discount is valid
-ALTER TABLE bookings
-ADD CONSTRAINT IF NOT EXISTS valid_discount CHECK (
+-- Add constraint to ensure discount is valid (idempotent)
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS valid_discount;
+ALTER TABLE bookings ADD CONSTRAINT valid_discount CHECK (
   discount_amount >= 0 AND
   discount_amount <= total_amount
 );
