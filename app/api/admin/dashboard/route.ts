@@ -26,21 +26,42 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     // Parse the JSON response
     const dashboardData = typeof data === 'string' ? JSON.parse(data) : data;
 
-    // Get recent bookings separately for better formatting
-    const { data: recentBookings, error: bookingsError } = await supabase.rpc(
-      'get_recent_bookings',
-      { limit_count: 10 }
-    );
+    // Get recent bookings with slot details
+    const { data: recentBookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        customer:customers!inner(name, phone),
+        slots:booking_slots(slot_hour, is_night_rate)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
     if (bookingsError) {
       console.error('Recent bookings fetch error:', bookingsError);
     }
 
+    // Format recent bookings
+    const formattedBookings = recentBookings?.map(booking => ({
+      id: booking.id,
+      booking_number: booking.booking_number,
+      customer_name: booking.customer.name,
+      customer_phone: booking.customer.phone,
+      booking_date: booking.booking_date,
+      total_hours: booking.total_hours,
+      total_amount: booking.total_amount,
+      advance_payment: booking.advance_payment,
+      status: booking.status,
+      created_at: booking.created_at,
+      pending_expires_at: booking.pending_expires_at,
+      slots: booking.slots || [],
+    })) || [];
+
     return NextResponse.json({
       success: true,
       data: {
         ...dashboardData,
-        recent_bookings: recentBookings || [],
+        recent_bookings: formattedBookings,
       },
       fetched_at: new Date().toISOString(),
       admin: {

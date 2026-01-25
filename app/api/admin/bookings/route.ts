@@ -17,6 +17,8 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const status = searchParams.get('status');
     const paymentStatus = searchParams.get('paymentStatus');
     const search = searchParams.get('search');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
     const remainingOnly = searchParams.get('remainingOnly') === 'true';
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
@@ -54,6 +56,14 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     // Search by booking number, customer name, or phone
     if (search) {
       query = query.or(`booking_number.ilike.%${search}%,customer.name.ilike.%${search}%,customer.phone.ilike.%${search}%`);
+    }
+
+    // Filter by date range
+    if (dateFrom) {
+      query = query.gte('booking_date', dateFrom);
+    }
+    if (dateTo) {
+      query = query.lte('booking_date', dateTo);
     }
 
     const { data: bookings, error, count } = await query;

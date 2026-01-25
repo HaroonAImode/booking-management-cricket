@@ -17,6 +17,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
   Title,
@@ -35,6 +36,7 @@ import {
   Paper,
   Tooltip,
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import {
   IconPlus,
   IconDownload,
@@ -81,6 +83,7 @@ interface Booking {
   advance_payment_proof: string;
   remaining_payment_proof: string;
   remaining_payment_method?: string;
+  remaining_payment_amount?: number;
   status: string;
   created_at: string;
   customer: {
@@ -95,13 +98,16 @@ interface Booking {
 }
 
 export default function AdminBookingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   // Role-based access control
   const { isAdmin, isGroundManager, canEditBookings, canDeleteBookings, loading: roleLoading } = useUserRole();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   // Ground managers see only approved bookings with remaining payment
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
   
   // Update status filter when role is determined
   useEffect(() => {
@@ -112,6 +118,8 @@ export default function AdminBookingsPage() {
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
   const [summary, setSummary] = useState<any>(null);
   
   // Modals
@@ -124,9 +132,45 @@ export default function AdminBookingsPage() {
   const [selectedPaymentProof, setSelectedPaymentProof] = useState<{ path: string; number: string } | null>(null);
   const [selectedPaymentBooking, setSelectedPaymentBooking] = useState<{ id: string; number: string; remaining: number } | null>(null);
 
+  // Helper function to calculate payment breakdown
+  const getPaymentBreakdown = (booking: Booking) => {
+    let cash = 0;
+    let online = 0;
+
+    // Count advance payment
+    if (booking.advance_payment_method === 'cash') {
+      cash += booking.advance_payment;
+    } else {
+      online += booking.advance_payment;
+    }
+
+    // Count remaining payment (only if paid - status is completed)
+    if (booking.status === 'completed' && booking.remaining_payment_method) {
+      const remainingPaid = booking.remaining_payment_amount || 0;
+      if (booking.remaining_payment_method === 'cash') {
+        cash += remainingPaid;
+      } else {
+        online += remainingPaid;
+      }
+    }
+
+    return { cash, online };
+  };
+
+  // Helper function to get payment method badge
+  const getPaymentMethodBadge = (method: string) => {
+    const methodMap: Record<string, { label: string; color: string }> = {
+      cash: { label: 'Cash', color: 'green' },
+      easypaisa: { label: 'Easypaisa', color: 'blue' },
+      sadapay: { label: 'SadaPay', color: 'cyan' },
+    };
+    
+    return methodMap[method] || { label: method, color: 'gray' };
+  };
+
   useEffect(() => {
     fetchBookings();
-  }, [statusFilter, paymentFilter, debouncedSearch]);
+  }, [statusFilter, paymentFilter, debouncedSearch, dateFrom, dateTo]);
 
   const fetchBookings = async () => {
     try {
@@ -139,6 +183,14 @@ export default function AdminBookingsPage() {
 
       if (debouncedSearch) {
         params.append('search', debouncedSearch);
+      }
+      
+      // Add date range filters
+      if (dateFrom) {
+        params.append('dateFrom', dateFrom.toISOString().split('T')[0]);
+      }
+      if (dateTo) {
+        params.append('dateTo', dateTo.toISOString().split('T')[0]);
       }
       
       // Ground managers only see bookings with remaining payment
@@ -254,21 +306,11 @@ export default function AdminBookingsPage() {
   };
 
   const handleDelete = async (bookingId: string, bookingNumber: string) => {
-    const confirmed = confirm(
-      `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n- Customer information\n- Payment records\n- Slot reservations\n\nType 'DELETE' to confirm.`
+    const confirmed = window.confirm(
+      `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations`
     );
 
     if (!confirmed) return;
-
-    const confirmText = prompt('Type DELETE to confirm:');
-    if (confirmText !== 'DELETE') {
-      notifications.show({
-        title: '❌ Cancelled',
-        message: 'Deletion cancelled',
-        color: 'orange',
-      });
-      return;
-    }
 
     try {
       const response = await fetch(`/api/admin/bookings/${bookingId}`, {
@@ -556,6 +598,26 @@ export default function AdminBookingsPage() {
                   size="sm"
                 />
               )}
+              <DatePickerInput
+                placeholder="From Date"
+                leftSection={<IconCalendarEvent size={16} />}
+                value={dateFrom}
+                onChange={setDateFrom}
+                clearable
+                style={{ flex: '1 1 140px', minWidth: 140 }}
+                size="sm"
+                maxDate={dateTo || undefined}
+              />
+              <DatePickerInput
+                placeholder="To Date"
+                leftSection={<IconCalendarEvent size={16} />}
+                value={dateTo}
+                onChange={setDateTo}
+                clearable
+                style={{ flex: '1 1 140px', minWidth: 140 }}
+                size="sm"
+                minDate={dateFrom || undefined}
+              />
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}
@@ -585,8 +647,9 @@ export default function AdminBookingsPage() {
                   <Table.Th>Date</Table.Th>
                   <Table.Th>Slots</Table.Th>
                   <Table.Th>Amount</Table.Th>
-                  <Table.Th>Payment</Table.Th>
-                  <Table.Th>Proofs</Table.Th>
+                  <Table.Th>Total Paid</Table.Th>
+                  <Table.Th>Cash</Table.Th>
+                  <Table.Th>Online</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Actions</Table.Th>
                 </Table.Tr>
@@ -630,24 +693,85 @@ export default function AdminBookingsPage() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Group gap={4}>
-                        <Badge
-                          size="sm"
-                          color={getPaymentStatusColor(booking.remaining_payment)}
-                        >
-                          {booking.remaining_payment === 0 ? 'Paid' : 'Remaining'}
-                        </Badge>
-                        {booking.remaining_payment > 0 && (
-                          <Text size="xs" c="red" fw={500}>
-                            Rs {booking.remaining_payment.toLocaleString()}
-                          </Text>
-                        )}
-                      </Group>
+                      {(() => {
+                        const totalPaid = booking.advance_payment + (booking.remaining_payment_amount || 0);
+                        return (
+                          <Stack gap={4}>
+                            <Text size="sm" fw={700} c={totalPaid === booking.total_amount ? 'green' : 'orange'}>
+                              Rs {totalPaid.toLocaleString()}
+                            </Text>
+                            {totalPaid < booking.total_amount && (
+                              <Text size="xs" c="red">
+                                Due: Rs {(booking.total_amount - totalPaid).toLocaleString()}
+                              </Text>
+                            )}
+                          </Stack>
+                        );
+                      })()}
                     </Table.Td>
                     <Table.Td>
-                      <Group gap="xs">
-                        {booking.advance_payment_proof && booking.advance_payment_proof !== 'manual-booking-no-proof' ? (
-                          <Button
+                      {(() => {
+                        const { cash } = getPaymentBreakdown(booking);
+                        if (cash === 0) return <Text size="xs" c="dimmed">-</Text>;
+                        return (
+                          <Stack gap={4}>
+                            <Text size="sm" fw={600}>
+                              Rs {cash.toLocaleString()}
+                            </Text>
+                            <Group gap={4}>
+                              {booking.advance_payment_method === 'cash' && (
+                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                              )}
+                              {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
+                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                              )}
+                            </Group>
+                          </Stack>
+                        );
+                      })()}
+                    </Table.Td>
+                    <Table.Td>
+                      {(() => {
+                        const { online } = getPaymentBreakdown(booking);
+                        if (online === 0) return <Text size="xs" c="dimmed">-</Text>;
+                        return (
+                          <Stack gap={4}>
+                            <Text size="sm" fw={600}>
+                              Rs {online.toLocaleString()}
+                            </Text>
+                            <Group gap={4}>
+                              {booking.advance_payment_method !== 'cash' && (
+                                <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
+                                  {getPaymentMethodBadge(booking.advance_payment_method).label}
+                                </Badge>
+                              )}
+                              {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
+                                <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
+                                  {getPaymentMethodBadge(booking.remaining_payment_method).label}
+                                </Badge>
+                              )}
+                            </Group>
+                          </Stack>
+                        );
+                      })()}
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge
+                        color={
+                          booking.status === 'pending' ? 'orange' :
+                          booking.status === 'approved' ? 'green' :
+                          booking.status === 'completed' ? 'blue' : 'red'
+                        }
+                        variant="light"
+                      >
+                        {booking.status}
+                      </Badge>
+                      {booking.remaining_payment > 0 && booking.status === 'approved' && (
+                        <Text size="xs" c="red" fw={500} mt={4}>
+                          Remaining: Rs {booking.remaining_payment.toLocaleString()}
+                        </Text>
+                      )}
+                    </Table.Td>
                             size="xs"
                             variant="light"
                             color="green"

@@ -15,6 +15,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Title,
@@ -29,6 +30,7 @@ import {
   Alert,
   Divider,
   Box,
+  Button,
 } from '@mantine/core';
 import {
   IconCurrencyRupee,
@@ -38,6 +40,7 @@ import {
   IconTrendingUp,
   IconUsers,
   IconClock,
+  IconArrowRight,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import StatCard from '@/components/dashboard/StatCard';
@@ -111,10 +114,15 @@ interface DashboardData {
     status: string;
     created_at: string;
     pending_expires_at: string | null;
+    slots?: Array<{
+      slot_hour: number;
+      is_night_rate: boolean;
+    }>;
   }>;
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -166,6 +174,22 @@ export default function AdminDashboardPage() {
 
   const formatCurrency = (amount: number) => {
     return `Rs ${amount.toLocaleString()}`;
+  };
+
+  const formatSlotTime = (slot_hour: number) => {
+    const hour = slot_hour % 12 || 12;
+    const ampm = slot_hour < 12 ? 'AM' : 'PM';
+    return `${hour}${ampm}`;
+  };
+
+  const formatSlotRange = (slots: Array<{ slot_hour: number; is_night_rate: boolean }>) => {
+    if (!slots || slots.length === 0) return '';
+    
+    const sortedSlots = [...slots].sort((a, b) => a.slot_hour - b.slot_hour);
+    const firstSlot = sortedSlots[0].slot_hour;
+    const lastSlot = sortedSlots[sortedSlots.length - 1].slot_hour;
+    
+    return `${formatSlotTime(firstSlot)} - ${formatSlotTime(lastSlot + 1)}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -291,6 +315,8 @@ export default function AdminDashboardPage() {
             icon={<IconClockHour4 size={24} />}
             color="warning"
             description="Awaiting approval"
+            onClick={() => router.push('/admin/bookings?status=pending')}
+            clickable
           />
           <StatCard
             title="Today's Bookings"
@@ -447,7 +473,7 @@ export default function AdminDashboardPage() {
                 <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
                 <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
                 <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Hours</Table.Th>
+                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Timings</Table.Th>
                 <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
                 <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
               </Table.Tr>
@@ -474,7 +500,9 @@ export default function AdminDashboardPage() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size={{ base: 'xs', sm: 'sm' }}>{booking.total_hours}h</Text>
+                    <Text size={{ base: 'xs', sm: 'sm' }}>
+                      {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <div>
@@ -507,6 +535,26 @@ export default function AdminDashboardPage() {
               ))}
             </Table.Tbody>
           </Table>
+          
+          {/* See All Bookings Button */}
+          <Group justify="center" mt="md">
+            <Button
+              variant="light"
+              color="yellow"
+              rightSection={<IconArrowRight size={16} />}
+              onClick={() => router.push('/admin/bookings')}
+              fullWidth
+              size="md"
+              style={{
+                background: '#FFF9E6',
+                border: '2px solid #F5B800',
+                color: '#1A1A1A',
+                fontWeight: 700,
+              }}
+            >
+              See All Bookings
+            </Button>
+          </Group>
           </Box>
         </Paper>
       </Stack>

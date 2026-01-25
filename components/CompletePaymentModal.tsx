@@ -12,7 +12,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Modal,
   Stack,
@@ -24,8 +24,9 @@ import {
   Alert,
   Group,
   Badge,
+  NumberInput,
 } from '@mantine/core';
-import { IconUpload, IconAlertCircle, IconCheck } from '@tabler/icons-react';
+import { IconUpload, IconAlertCircle, IconCheck, IconCurrencyRupee } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
 interface CompletePaymentModalProps {
@@ -50,11 +51,23 @@ export default function CompletePaymentModal({
   const [adminNotes, setAdminNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number>(remainingAmount);
 
   const handleSubmit = async () => {
     // Validation
     if (!paymentMethod) {
       setError('Please select a payment method');
+      return;
+    }
+
+    // Validate payment amount
+    if (!paymentAmount || paymentAmount <= 0) {
+      setError('Please enter a valid payment amount');
+      return;
+    }
+
+    if (paymentAmount > remainingAmount) {
+      setError(`Payment amount cannot exceed remaining amount (Rs ${remainingAmount.toLocaleString()})`);
       return;
     }
 
@@ -72,6 +85,7 @@ export default function CompletePaymentModal({
       // Create form data
       const formData = new FormData();
       formData.append('paymentMethod', paymentMethod);
+      formData.append('paymentAmount', paymentAmount.toString());
       // Only append proof if it exists (cash payments may not have proof)
       if (paymentProof) {
         formData.append('paymentProof', paymentProof);
@@ -122,10 +136,16 @@ export default function CompletePaymentModal({
       setPaymentMethod('');
       setPaymentProof(null);
       setAdminNotes('');
+      setPaymentAmount(remainingAmount);
       setError(null);
       onClose();
     }
   };
+
+  // Update payment amount when remaining amount changes
+  useEffect(() => {
+    setPaymentAmount(remainingAmount);
+  }, [remainingAmount]);
 
   return (
     <Modal
@@ -143,7 +163,7 @@ export default function CompletePaymentModal({
               <strong>Booking:</strong> {bookingNumber}
             </Text>
             <Badge size="lg" color="orange">
-              Remaining: Rs {remainingAmount.toLocaleString()}
+              Total Remaining: Rs {remainingAmount.toLocaleString()}
             </Badge>
           </Group>
         </Alert>
@@ -158,6 +178,31 @@ export default function CompletePaymentModal({
             withCloseButton
           >
             {error}
+          </Alert>
+        )}
+
+        {/* Payment Amount Input */}
+        <NumberInput
+          label="Payment Amount"
+          description="Enter amount to be paid (you can apply discount if needed)"
+          placeholder="Enter amount"
+          required
+          leftSection={<IconCurrencyRupee size={18} />}
+          value={paymentAmount}
+          onChange={(value) => setPaymentAmount(Number(value) || 0)}
+          min={1}
+          max={remainingAmount}
+          thousandSeparator=","
+          allowNegative={false}
+          decimalScale={0}
+        />
+
+        {/* Show discount amount if different */}
+        {paymentAmount < remainingAmount && (
+          <Alert color="yellow" variant="light">
+            <Text size="sm">
+              <strong>Discount Applied:</strong> Rs {(remainingAmount - paymentAmount).toLocaleString()}
+            </Text>
           </Alert>
         )}
 

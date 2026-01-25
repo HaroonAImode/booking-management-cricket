@@ -183,16 +183,22 @@ export default function ManualBookingModal({
       opened={opened}
       onClose={onClose}
       title="Create Manual Booking"
-      size="xl"
+      size={{ base: 'full', sm: 'xl' }}
       zIndex={300}
+      fullScreen={window.innerWidth < 768}
+      styles={{
+        body: {
+          padding: window.innerWidth < 768 ? '0.5rem' : undefined,
+        },
+      }}
     >
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
           {/* Customer Info */}
-          <Paper withBorder p="md">
-            <Text fw={600} mb="sm">Customer Information</Text>
-            <Grid>
-              <Grid.Col span={6}>
+          <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
+            <Text fw={600} mb="sm" size={{ base: 'sm', sm: 'md' }}>Customer Information</Text>
+            <Grid gutter={{ base: 'xs', sm: 'md' }}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Customer Name"
                   placeholder="Enter name"
@@ -201,9 +207,10 @@ export default function ManualBookingModal({
                   onChange={(e) =>
                     setFormData({ ...formData, customerName: e.target.value })
                   }
+                  size={{ base: 'sm', sm: 'md' }}
                 />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Phone Number (Optional)"
                   placeholder="03001234567 (optional)"
@@ -211,14 +218,15 @@ export default function ManualBookingModal({
                   onChange={(e) =>
                     setFormData({ ...formData, customerPhone: e.target.value })
                   }
+                  size={{ base: 'sm', sm: 'md' }}
                 />
               </Grid.Col>
             </Grid>
           </Paper>
 
           {/* Booking Details */}
-          <Paper withBorder p="md">
-            <Text fw={600} mb="sm">Booking Details</Text>
+          <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
+            <Text fw={600} mb="sm" size={{ base: 'sm', sm: 'md' }}>Booking Details</Text>
             <DateInput
               label="Booking Date"
               placeholder="Select date"
@@ -229,25 +237,35 @@ export default function ManualBookingModal({
                 setFormData({ ...formData, bookingDate: date });
               }}
               minDate={new Date()}
+              size={{ base: 'sm', sm: 'md' }}
             />
           </Paper>
 
           {/* Slots Selection */}
-          <Paper withBorder p="md">
-            <Text fw={600} mb="sm">Select Time Slots</Text>
-            <Group mb="sm">
-              <Select
-                label="Hour"
-                placeholder="Select hour"
-                data={Array.from({ length: 24 }, (_, i) => ({
-                  value: String(i),
-                  label: `${formatTimeDisplay(i)} ${isNightHour(i) ? '(Night Rate)' : '(Day Rate)'}`,
-                }))}
-                value={String(selectedHour)}
-                onChange={(value) => setSelectedHour(parseInt(value || '9'))}
-                style={{ flex: 1 }}
-              />
-              <Button
+          <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
+            <Text fw={600} mb="sm" size={{ base: 'sm', sm: 'md' }}>Select Time Slots</Text>
+            <Stack gap="sm">
+              <Group grow>
+                <Select
+                  label="Hour"
+                  placeholder="Select hour"
+                  data={Array.from({ length: 24 }, (_, i) => ({
+                    value: String(i),
+                    label: `${formatTimeDisplay(i)} ${isNightHour(i) ? '(Night)' : '(Day)'}`,
+                  }))}
+                  value={String(selectedHour)}
+                  onChange={(value) => setSelectedHour(parseInt(value || '9'))}
+                  size={{ base: 'sm', sm: 'md' }}
+                />
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  onClick={addSlot}
+                  size={{ base: 'sm', sm: 'md' }}
+                  mt={24}
+                >
+                  Add Slot
+                </Button>
+              </Group>
                 onClick={addSlot}
                 leftSection={<IconPlus size={18} />}
                 style={{ marginTop: 24 }}
@@ -259,7 +277,7 @@ export default function ManualBookingModal({
             {slots.length > 0 && (
               <Stack gap="xs">
                 {slots.map((slot) => (
-                  <Group key={slot.hour} justify="space-between">
+                  <Group key={slot.hour} justify="space-between" wrap="nowrap">
                     <Badge
                       size="lg"
                       color={slot.isNightRate ? 'indigo' : 'yellow'}
@@ -282,13 +300,14 @@ export default function ManualBookingModal({
                 ))}
               </Stack>
             )}
+            </Stack>
           </Paper>
 
           {/* Payment Details */}
-          <Paper withBorder p="md">
-            <Text fw={600} mb="sm">Payment Details</Text>
-            <Grid>
-              <Grid.Col span={6}>
+          <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
+            <Text fw={600} mb="sm" size={{ base: 'sm', sm: 'md' }}>Payment Details</Text>
+            <Grid gutter={{ base: 'xs', sm: 'md' }}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <NumberInput
                   label="Advance Payment"
                   placeholder="500"
@@ -299,9 +318,10 @@ export default function ManualBookingModal({
                   onChange={(value) =>
                     setFormData({ ...formData, advancePayment: Number(value) })
                   }
+                  size={{ base: 'sm', sm: 'md' }}
                 />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Select
                   label="Payment Method"
                   data={[
@@ -313,6 +333,7 @@ export default function ManualBookingModal({
                   onChange={(value) =>
                     setFormData({ ...formData, advancePaymentMethod: value || 'cash' })
                   }
+                  size={{ base: 'sm', sm: 'md' }}
                 />
               </Grid.Col>
             </Grid>
@@ -342,6 +363,7 @@ export default function ManualBookingModal({
               setFormData({ ...formData, notes: e.target.value })
             }
             minRows={2}
+            size={{ base: 'sm', sm: 'md' }}
           />
 
           {/* Auto Approve */}
@@ -351,14 +373,20 @@ export default function ManualBookingModal({
             onChange={(e) =>
               setFormData({ ...formData, autoApprove: e.currentTarget.checked })
             }
+            size={{ base: 'sm', sm: 'md' }}
           />
 
           {/* Actions */}
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={onClose}>
+          <Group justify="flex-end" gap={{ base: 'xs', sm: 'sm' }}>
+            <Button variant="subtle" onClick={onClose} size={{ base: 'sm', sm: 'md' }}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading} disabled={slots.length === 0}>
+            <Button 
+              type="submit" 
+              loading={loading} 
+              disabled={slots.length === 0}
+              size={{ base: 'sm', sm: 'md' }}
+            >
               Create Booking
             </Button>
           </Group>

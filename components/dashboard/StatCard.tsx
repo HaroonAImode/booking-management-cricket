@@ -16,6 +16,8 @@ interface StatCardProps {
     label: string;
   };
   description?: string;
+  onClick?: () => void;
+  clickable?: boolean;
 }
 
 export default function StatCard({
@@ -25,6 +27,8 @@ export default function StatCard({
   color = 'blue',
   trend,
   description,
+  onClick,
+  clickable = false,
 }: StatCardProps) {
   const isPositiveTrend = trend && trend.value > 0;
   const isNegativeTrend = trend && trend.value < 0;
@@ -52,16 +56,19 @@ export default function StatCard({
       radius="lg"
       style={{
         background: '#FFFBF0',
-        borderColor: '#F5B800',
-        transition: 'all 0.3s ease',
-        cursor: 'pointer',
+        borderCoclickable ? 'pointer' : 'default',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+        if (clickable || true) {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+        }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+      onClick={clickable ? onClick : undefined e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = 'none';
       }}
     >

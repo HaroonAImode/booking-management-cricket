@@ -33,6 +33,7 @@ async function handler(
     // Parse form data
     const formData = await request.formData();
     const paymentMethod = formData.get('paymentMethod') as string;
+    const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
     const paymentProof = formData.get('paymentProof') as File | null;
     const adminNotes = formData.get('adminNotes') as string | null;
 
@@ -40,6 +41,14 @@ async function handler(
     if (!paymentMethod) {
       return NextResponse.json(
         { success: false, error: 'Payment method is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate payment amount
+    if (!paymentAmount || paymentAmount <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Valid payment amount is required' },
         { status: 400 }
       );
     }
@@ -85,6 +94,17 @@ async function handler(
       );
     }
 
+    // Validate payment amount doesn't exceed remaining
+    if (paymentAmount > booking.remaining_payment) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Payment amount (Rs ${paymentAmount}) cannot exceed remaining amount (Rs ${booking.remaining_payment})` 
+        },
+        { status: 400 }
+      );
+    }
+
     // Upload payment proof to storage (if provided)
     let uploadedProofPath = null;
     
@@ -114,6 +134,7 @@ async function handler(
       {
         p_booking_id: bookingId,
         p_payment_method: paymentMethod,
+        p_payment_amount: paymentAmount,
         p_payment_proof_path: uploadedProofPath,
         p_admin_notes: adminNotes,
       }

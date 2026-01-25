@@ -63,6 +63,7 @@ export default function AdminCalendarPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [mobileView, setMobileView] = useState<'list' | 'calendar'>('list');
   const [dateRange, setDateRange] = useState({
     start: new Date().toISOString().split('T')[0],
     end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -260,20 +261,35 @@ export default function AdminCalendarPage() {
           </Group>
 
           {/* Filters */}
-          <Select
-            placeholder="Filter by status"
-            leftSection={<IconFilter size={16} />}
-            data={[
-              { value: '', label: 'All Statuses' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'approved', label: 'Approved' },
-              { value: 'completed', label: 'Completed' },
-            ]}
-            value={statusFilter || ''}
-            onChange={(value) => setStatusFilter(value || null)}
-            clearable
-            size={isMobile ? "sm" : "md"}
-          />
+          <Group gap="xs">
+            <Select
+              placeholder="Filter by status"
+              leftSection={<IconFilter size={16} />}
+              data={[
+                { value: '', label: 'All Statuses' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'completed', label: 'Completed' },
+              ]}
+              value={statusFilter || ''}
+              onChange={(value) => setStatusFilter(value || null)}
+              clearable
+              size={isMobile ? "sm" : "md"}
+              style={{ flex: 1 }}
+            />
+            
+            {/* Mobile View Toggle */}
+            {isMobile && (
+              <Button
+                variant={mobileView === 'calendar' ? 'filled' : 'light'}
+                size="sm"
+                onClick={() => setMobileView(mobileView === 'list' ? 'calendar' : 'list')}
+                leftSection={<IconCalendar size={16} />}
+              >
+                {mobileView === 'list' ? 'Calendar' : 'List'}
+              </Button>
+            )}
+          </Group>
         </Stack>
 
         {/* Legend - Compact on mobile */}
@@ -305,7 +321,7 @@ export default function AdminCalendarPage() {
         )}
 
         {/* Mobile List View or Desktop Calendar */}
-        {isMobile ? (
+        {isMobile && mobileView === 'list' ? (
           <Stack gap="xs">
             {sortedDates.length === 0 && !loading && (
               <Paper p="xl" withBorder>
@@ -420,24 +436,24 @@ export default function AdminCalendarPage() {
             })}
           </Stack>
         ) : (
-          // Desktop Calendar View
+          // Calendar View (Desktop or Mobile Calendar Mode)
           <Paper 
             withBorder 
-            p={isTablet ? "sm" : "md"} 
+            p={isMobile ? "xs" : isTablet ? "sm" : "md"} 
             radius="md" 
             pos="relative" 
-            style={{ minHeight: '600px' }}
+            style={{ minHeight: isMobile ? '400px' : '600px' }}
           >
             <LoadingOverlay visible={loading} />
             
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
+              initialView={isMobile ? "listWeek" : "dayGridMonth"}
               headerToolbar={{
-                left: 'prev,next today',
+                left: isMobile ? 'prev,next' : 'prev,next today',
                 center: 'title',
-                right: isTablet ? 'dayGridMonth,listWeek' : 'dayGridMonth,timeGridWeek,timeGridDay',
+                right: isMobile ? '' : isTablet ? 'dayGridMonth,listWeek' : 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
               events={events}
               eventClick={handleEventClick}
@@ -461,10 +477,10 @@ export default function AdminCalendarPage() {
               eventDisplay="block"
               displayEventTime={true}
               displayEventEnd={false}
-              eventMaxStack={isTablet ? 2 : 3}
+              eventMaxStack={isMobile ? 1 : isTablet ? 2 : 3}
               dayMaxEvents={true}
               moreLinkClick="popover"
-              navLinks={true}
+              navLinks={!isMobile}
               selectable={false}
               selectMirror={true}
               weekends={true}
