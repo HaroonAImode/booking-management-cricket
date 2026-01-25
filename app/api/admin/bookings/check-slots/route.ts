@@ -28,26 +28,30 @@ async function handler(req: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get all booked slots for the date, excluding the current booking if editing
-    let query = supabase
-      .from('booking_slots')
-      .select(`
-        slot_hour,
-        booking:bookings!inner(
-          id,
-          booking_date,
-          status
-        )
-      `)
-      .eq('booking.booking_date', date)
-      .in('booking.status', ['pending', 'approved', 'completed']);
+    // Get all bookings for the date (not cancelled)
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('booking_date', date)
+      .in('status', ['pending', 'approved', 'completed']);
 
-    // Exclude current booking when editing
-    if (excludeBookingId) {
-      query = query.neq('booking.id', excludeBookingId);
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError);
+      throw bookingsError;
     }
 
-    const { data: bookedSlots, error } = await query;
+    // Filter out the current booking if editing
+    const bookingIds = (bookings || [])
+      .map(b => b.id)
+      .filter(id => id !== excludeBookingId);
+
+    // Get slots for these bookings
+    const { data: bookedSlots, error } = bookingIds.length > 0
+      ? await supabase
+          .from('booking_slots')
+          .select('slot_hour')
+          .in('booking_id', bookingIds)
+      : { data: [], error: null };
 
     if (error) {
       console.error('Error fetching booked slots:', error);

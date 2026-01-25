@@ -382,17 +382,23 @@ export default function EditBookingModal({
           throw new Error(validation.error);
         }
 
-        const { data: uploadData, error: uploadError } = await uploadPaymentProof(
-          newAdvanceProof,
-          bookingId,
-          bookingDate.toISOString().split('T')[0]
-        );
+        const dateStr = bookingDate.toISOString().split('T')[0];
+        const timestamp = Date.now();
+        const fileExt = newAdvanceProof.name.split('.').pop();
+        const filePath = `${dateStr}/${bookingId}-advance-${timestamp}.${fileExt}`;
 
-        if (uploadError || !uploadData) {
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(filePath, newAdvanceProof, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
           throw new Error('Failed to upload advance payment proof');
         }
 
-        advanceProofUrl = uploadData;
+        advanceProofUrl = `payment-proofs/${filePath}`;
       }
 
       if (newRemainingProof) {
@@ -401,34 +407,48 @@ export default function EditBookingModal({
           throw new Error(validation.error);
         }
 
-        const { data: uploadData, error: uploadError } = await uploadPaymentProof(
-          newRemainingProof,
-          bookingId,
-          bookingDate.toISOString().split('T')[0],
-          'remaining'
-        );
+        const dateStr = bookingDate.toISOString().split('T')[0];
+        const timestamp = Date.now();
+        const fileExt = newRemainingProof.name.split('.').pop();
+        const filePath = `${dateStr}/${bookingId}-remaining-${timestamp}.${fileExt}`;
 
-        if (uploadError || !uploadData) {
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(filePath, newRemainingProof, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
           throw new Error('Failed to upload remaining payment proof');
         }
 
-        remainingProofUrl = uploadData;
+        remainingProofUrl = `payment-proofs/${filePath}`;
       }
 
       // Calculate amounts - ensure never null
-      const finalTotalAmount = slotsModified && slots.length > 0 
-        ? slots.reduce((sum, slot) => sum + slot.rate, 0)
-        : (totalAmount || bookingData.total_amount || 0);
+      let finalTotalAmount: number;
+      let finalTotalHours: number;
       
-      const finalTotalHours = slotsModified && slots.length > 0
-        ? slots.length
-        : (bookingData.total_hours || 1);
+      if (slotsModified && slots.length > 0) {
+        // Calculate from new slots
+        finalTotalAmount = slots.reduce((sum, slot) => sum + slot.rate, 0);
+        finalTotalHours = slots.length;
+      } else {
+        // Use existing values from database
+        finalTotalAmount = bookingData.total_amount;
+        finalTotalHours = bookingData.total_hours;
+      }
       
       const remainingPayment = Math.max(0, finalTotalAmount - advancePayment);
 
       // Validate amounts
-      if (finalTotalAmount <= 0) {
+      if (!finalTotalAmount || finalTotalAmount <= 0) {
         throw new Error('Total amount must be greater than zero');
+      }
+      
+      if (!finalTotalHours || finalTotalHours <= 0) {
+        throw new Error('Total hours must be greater than zero');
       }
 
       // Update booking
