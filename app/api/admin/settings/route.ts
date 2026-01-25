@@ -39,12 +39,16 @@ async function getHandler(request: NextRequest) {
     const bookingRates = settings.booking_rates || {};
     const nightHours = settings.night_rate_hours || {};
 
-    // Map to expected structure
+    // Map to expected structure (nested objects)
     const transformedSettings = {
-      day_rate: bookingRates.day_rate || 1500,
-      night_rate: bookingRates.night_rate || 2000,
-      night_rate_start_hour: nightHours.start_hour || 17,
-      night_rate_end_hour: nightHours.end_hour || 7,
+      booking_rates: {
+        day_rate: bookingRates.day_rate || 1500,
+        night_rate: bookingRates.night_rate || 2000,
+      },
+      night_rate_hours: {
+        start_hour: nightHours.start_hour || 17,
+        end_hour: nightHours.end_hour || 7,
+      },
     };
 
     return NextResponse.json({
