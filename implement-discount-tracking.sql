@@ -148,6 +148,11 @@ COMMENT ON FUNCTION verify_remaining_payment IS 'Verifies remaining payment with
 -- STEP 3: Update revenue calculation to exclude discounts
 -- ========================================
 
+-- Drop all existing versions of the function (handles overloads)
+DROP FUNCTION IF EXISTS get_revenue_stats();
+DROP FUNCTION IF EXISTS get_revenue_stats(DATE);
+DROP FUNCTION IF EXISTS get_revenue_stats(DATE, DATE);
+
 CREATE OR REPLACE FUNCTION get_revenue_stats(
   p_start_date DATE DEFAULT NULL,
   p_end_date DATE DEFAULT NULL
