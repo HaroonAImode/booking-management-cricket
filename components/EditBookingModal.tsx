@@ -586,8 +586,6 @@ export default function EditBookingModal({
 
             <Tabs.Panel value="payment" pt="md">
               <Stack gap="md">
-            <Tabs.Panel value="payment" pt="md">
-              <Stack gap="md">
                 {/* Payment Details */}
                 <Divider label="Payment Details" />
 
