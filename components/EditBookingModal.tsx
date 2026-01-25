@@ -392,7 +392,7 @@ export default function EditBookingModal({
       if (newAdvanceProof) {
         const validation = validatePaymentProofFile(newAdvanceProof);
         if (!validation.valid) {
-          throw new Error(validation.error);
+          throw new Error(validation.error || 'Invalid payment proof file');
         }
 
         const dateStr = bookingDate.toISOString().split('T')[0];
@@ -417,7 +417,7 @@ export default function EditBookingModal({
       if (newRemainingProof) {
         const validation = validatePaymentProofFile(newRemainingProof);
         if (!validation.valid) {
-          throw new Error(validation.error);
+          throw new Error(validation.error || 'Invalid payment proof file');
         }
 
         const dateStr = bookingDate.toISOString().split('T')[0];
@@ -623,8 +623,8 @@ export default function EditBookingModal({
                   leftSection={<IconCalendar size={16} />}
                   value={bookingDate}
                   onChange={(date) => {
-                    const previousDate = bookingDate?.toISOString().split('T')[0];
-                    const newDate = date?.toISOString().split('T')[0];
+                    const previousDate = bookingDate ? new Date(bookingDate).toISOString().split('T')[0] : null;
+                    const newDate = date ? new Date(date).toISOString().split('T')[0] : null;
                     
                     setBookingDate(date);
                     
