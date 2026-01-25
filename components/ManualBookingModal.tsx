@@ -266,13 +266,6 @@ export default function ManualBookingModal({
                   Add Slot
                 </Button>
               </Group>
-                onClick={addSlot}
-                leftSection={<IconPlus size={18} />}
-                style={{ marginTop: 24 }}
-              >
-                Add Slot
-              </Button>
-            </Group>
 
             {slots.length > 0 && (
               <Stack gap="xs">

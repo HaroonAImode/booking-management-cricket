@@ -269,17 +269,6 @@ export default function EditBookingModal({
     
     return `${formatHour(startHour)} - ${formatHour(endHour)}`;
   };
-    } catch (error: any) {
-      console.error('Error fetching booking:', error);
-      notifications.show({
-        title: '❌ Error',
-        message: 'Failed to load booking data',
-        color: 'red',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!bookingData || !bookingDate) return;
