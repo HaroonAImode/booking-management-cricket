@@ -510,8 +510,10 @@ export default function EditBookingModal({
         if (deleteError) throw deleteError;
 
         // Insert new slots
+        const bookingDateStr = bookingDate.toISOString().split('T')[0];
         const slotsToInsert = slots.map(slot => ({
           booking_id: bookingId,
+          slot_date: bookingDateStr,
           slot_hour: slot.hour,
           is_night_rate: slot.isNightRate,
         }));
