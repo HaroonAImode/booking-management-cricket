@@ -465,7 +465,9 @@ export default function EditBookingModal({
         });
       }
       
-      const remainingPayment = Math.max(0, finalTotalAmount - advancePayment);
+      // IMPORTANT: Keep advance payment the same, only recalculate remaining payment
+      const finalAdvancePayment = bookingData.advance_payment; // Don't use state value
+      const remainingPayment = Math.max(0, finalTotalAmount - finalAdvancePayment);
 
       // Validate amounts
       if (!finalTotalAmount || finalTotalAmount <= 0) {
@@ -487,7 +489,7 @@ export default function EditBookingModal({
         .from('bookings')
         .update({
           booking_date: bookingDate.toISOString().split('T')[0],
-          total_amount: finalTotalAmount,
+          total_amount: finfinalAdvancePayment, // Keep original advance
           total_hours: finalTotalHours,
           advance_payment: advancePayment,
           remaining_payment: remainingPayment,
@@ -511,12 +513,18 @@ export default function EditBookingModal({
 
         // Insert new slots
         const bookingDateStr = bookingDate.toISOString().split('T')[0];
-        const slotsToInsert = slots.map(slot => ({
-          booking_id: bookingId,
-          slot_date: bookingDateStr,
-          slot_hour: slot.hour,
-          is_night_rate: slot.isNightRate,
-        }));
+        const slotsToInsert = slots.map(slot => {
+          // Format slot_time as HH:00:00
+          const slotTime = `${slot.hour.toString().padStart(2, '0')}:00:00`;
+          
+          return {
+            booking_id: bookingId,
+            slot_date: bookingDateStr,
+            slot_hour: slot.hour,
+            slot_time: slotTime,
+            is_night_rate: slot.isNightRate,
+          };
+        });
 
         const { error: insertError } = await supabase
           .from('booking_slots')
