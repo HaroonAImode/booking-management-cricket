@@ -21,6 +21,8 @@ import {
   Grid,
   ActionIcon,
   Checkbox,
+  Loader,
+  SimpleGrid,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -34,6 +36,7 @@ import {
   IconX,
   IconClock,
   IconTrash,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { createClient } from '@/lib/supabase/client';
@@ -112,7 +115,6 @@ export default function EditBookingModal({
   // Slot editing state
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [originalSlots, setOriginalSlots] = useState<number[]>([]);
-  const [selectedHour, setSelectedHour] = useState<number>(9);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [availableSlots, setAvailableSlots] = useState<number[]>([]);
   const [checkingSlots, setCheckingSlots] = useState(false);
@@ -238,26 +240,55 @@ export default function EditBookingModal({
     return hour >= night_rate_start_hour && hour <= night_rate_end_hour;
   };
 
-  const addSlot = () => {
+  const validateConsecutiveSlots = (slotHours: number[]): boolean => {
+    if (slotHours.length <= 1) return true;
+    
+    const sorted = [...slotHours].sort((a, b) => a - b);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] !== 1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const toggleSlot = (hour: number) => {
     if (!settings) return;
     
-    if (slots.find(s => s.hour === selectedHour)) {
-      notifications.show({
-        title: 'Error',
-        message: 'This hour is already selected',
-        color: 'red',
-      });
+    // Check if slot is already selected
+    const existingSlot = slots.find(s => s.hour === hour);
+    
+    if (existingSlot) {
+      // Remove slot
+      setSlots(slots.filter(s => s.hour !== hour));
+      setSlotsModified(true);
       return;
     }
 
-    const isNight = isNightHour(selectedHour);
+    // Add new slot
+    const isNight = isNightHour(hour);
     const newSlot: SlotData = {
-      hour: selectedHour,
+      hour: hour,
       isNightRate: isNight,
       rate: isNight ? settings.night_rate : settings.day_rate,
     };
 
-    setSlots([...slots, newSlot].sort((a, b) => a.hour - b.hour));
+    const newSlots = [...slots, newSlot].sort((a, b) => a.hour - b.hour);
+    const newSlotHours = newSlots.map(s => s.hour);
+    
+    // Validate consecutive slots
+    if (!validateConsecutiveSlots(newSlotHours)) {
+      notifications.show({
+        title: '⚠️ Select Consecutive Slots Only',
+        message: 'You must select continuous time slots (e.g., 4 PM, 5 PM, 6 PM). For different times, please select consecutive hours.',
+        color: 'orange',
+        autoClose: 5000,
+        icon: <IconAlertCircle size={18} />,
+      });
+      return;
+    }
+
+    setSlots(newSlots);
     setSlotsModified(true);
   };
 
@@ -270,7 +301,7 @@ export default function EditBookingModal({
     if (slotsModified && slots.length > 0) {
       return slots.reduce((sum, slot) => sum + slot.rate, 0);
     }
-    return totalAmount;
+    return totalAmount || 0;
   };
 
   const formatTimeRange = (hour: number) => {
@@ -532,35 +563,46 @@ export default function EditBookingModal({
                 <Paper withBorder p="md">
                   <Text fw={600} mb="sm">Select New Time Slots</Text>
                   
-                  <Grid>
-                    <Grid.Col span={8}>
-                      <Select
-                        label="Select Hour"
-                        data={Array.from({ length: 24 }, (_, i) => ({
-                          value: i.toString(),
-                          label: formatTimeRange(i),
-                          disabled: !availableSlots.includes(i) && !originalSlots.includes(i),
-                        }))}
-                        value={selectedHour.toString()}
-                        onChange={(val) => setSelectedHour(Number(val))}
-                      />
-                    </Grid.Col>
-                    <Grid.Col span={4}>
-                      <Button
-                        fullWidth
-                        onClick={addSlot}
-                        mt="xl"
-                        disabled={!settings || checkingSlots}
-                      >
-                        Add Slot
-                      </Button>
-                    </Grid.Col>
-                  </Grid>
-
-                  {settings && (
-                    <Text size="xs" c="dimmed" mt="xs">
-                      Day Rate: Rs {settings.day_rate} | Night Rate: Rs {settings.night_rate}
-                    </Text>
+                  {checkingSlots ? (
+                    <Loader size="sm" />
+                  ) : (
+                    <>
+                      <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light" mb="md">
+                        Select consecutive time slots only. Click on available hours to add/remove them.
+                      </Alert>
+                      
+                      <SimpleGrid cols={{ base: 3, sm: 4, md: 6 }} spacing="xs">
+                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
+                          const isAvailable = availableSlots.includes(hour) || originalSlots.includes(hour);
+                          const isSelected = slots.some(s => s.hour === hour);
+                          const isNight = isNightHour(hour);
+                          
+                          return (
+                            <Button
+                              key={hour}
+                              variant={isSelected ? 'filled' : 'outline'}
+                              color={isNight ? 'indigo' : 'yellow'}
+                              size="xs"
+                              disabled={!isAvailable}
+                              onClick={() => toggleSlot(hour)}
+                              style={{
+                                opacity: isAvailable ? 1 : 0.3,
+                                fontWeight: isSelected ? 700 : 400,
+                              }}
+                            >
+                              {formatTimeRange(hour).split(' - ')[0]}
+                              {isNight && ' 🌙'}
+                            </Button>
+                          );
+                        })}
+                      </SimpleGrid>
+                      
+                      {settings && (
+                        <Text size="xs" c="dimmed" mt="md">
+                          💰 Day Rate: Rs {settings.day_rate} | 🌙 Night Rate: Rs {settings.night_rate}
+                        </Text>
+                      )}
+                    </>
                   )}
                 </Paper>
 
