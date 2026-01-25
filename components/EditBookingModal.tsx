@@ -447,17 +447,35 @@ export default function EditBookingModal({
         // Calculate from new slots
         finalTotalAmount = slots.reduce((sum, slot) => sum + slot.rate, 0);
         finalTotalHours = slots.length;
+        
+        // Debug logging
+        console.log('Calculating from new slots:', {
+          slots,
+          finalTotalAmount,
+          finalTotalHours
+        });
       } else {
         // Use existing values from database
         finalTotalAmount = bookingData.total_amount;
         finalTotalHours = bookingData.total_hours;
+        
+        console.log('Using existing values:', {
+          finalTotalAmount,
+          finalTotalHours
+        });
       }
       
       const remainingPayment = Math.max(0, finalTotalAmount - advancePayment);
 
       // Validate amounts
       if (!finalTotalAmount || finalTotalAmount <= 0) {
-        throw new Error('Total amount must be greater than zero');
+        console.error('Validation failed:', {
+          finalTotalAmount,
+          slots,
+          settings,
+          slotsModified
+        });
+        throw new Error(`Total amount must be greater than zero. Amount calculated: ${finalTotalAmount}`);
       }
       
       if (!finalTotalHours || finalTotalHours <= 0) {
