@@ -449,11 +449,11 @@ export default function AdminCalendarPage() {
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView={isMobile ? "listWeek" : "dayGridMonth"}
+              initialView={isMobile ? "dayGridMonth" : "dayGridMonth"}
               headerToolbar={{
                 left: isMobile ? 'prev,next' : 'prev,next today',
                 center: 'title',
-                right: isMobile ? '' : isTablet ? 'dayGridMonth,listWeek' : 'dayGridMonth,timeGridWeek,timeGridDay',
+                right: isMobile ? '' : isTablet ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
               events={events}
               eventClick={handleEventClick}

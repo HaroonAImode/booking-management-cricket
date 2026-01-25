@@ -35,6 +35,7 @@ import {
   ActionIcon,
   Paper,
   Tooltip,
+  ScrollArea,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -399,29 +400,36 @@ export default function AdminBookingsPage() {
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation for more columns
     
     doc.setFontSize(18);
     doc.text('Cricket Booking Report', 14, 22);
     doc.setFontSize(11);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
 
-    const tableData = bookings.map(b => [
-      b.booking_number,
-      b.customer.name,
-      b.customer.phone,
-      new Date(b.booking_date).toLocaleDateString(),
-      `${b.total_hours}h`,
-      `Rs ${b.total_amount.toLocaleString()}`,
-      `Rs ${b.remaining_payment.toLocaleString()}`,
-      b.status,
-    ]);
+    const tableData = bookings.map(b => {
+      const { cash, online } = getPaymentBreakdown(b);
+      const totalPaid = b.advance_payment + (b.status === 'completed' ? b.remaining_payment : 0);
+      
+      return [
+        b.booking_number,
+        b.customer.name,
+        b.customer.phone,
+        new Date(b.booking_date).toLocaleDateString(),
+        `${b.total_hours}h`,
+        `Rs ${b.total_amount.toLocaleString()}`,
+        `Rs ${totalPaid.toLocaleString()}`,
+        `Rs ${cash.toLocaleString()}`,
+        `Rs ${online.toLocaleString()}`,
+        b.status,
+      ];
+    });
 
     autoTable(doc, {
-      head: [['Booking #', 'Customer', 'Phone', 'Date', 'Hours', 'Total', 'Remaining', 'Status']],
+      head: [['Booking #', 'Customer', 'Phone', 'Date', 'Hours', 'Total', 'Paid', 'Cash', 'Online', 'Status']],
       body: tableData,
       startY: 35,
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       headStyles: { fillColor: [34, 139, 230] },
     });
 
@@ -436,21 +444,30 @@ export default function AdminBookingsPage() {
   };
 
   const exportToExcel = () => {
-    const data = bookings.map(b => ({
-      'Booking Number': b.booking_number,
-      'Customer Name': b.customer.name,
-      'Phone': b.customer.phone,
-      'Email': b.customer.email || '',
-      'Booking Date': new Date(b.booking_date).toLocaleDateString(),
-      'Total Hours': b.total_hours,
-      'Total Amount': b.total_amount,
-      'Advance Payment': b.advance_payment,
-      'Remaining Payment': b.remaining_payment,
-      'Payment Method': b.advance_payment_method,
-      'Status': b.status,
-      'Created At': new Date(b.created_at).toLocaleString(),
-      'Slots': formatSlotRanges(b.slots.map(s => s.slot_hour)),
-    }));
+    const data = bookings.map(b => {
+      const { cash, online } = getPaymentBreakdown(b);
+      const totalPaid = b.advance_payment + (b.status === 'completed' ? b.remaining_payment : 0);
+      
+      return {
+        'Booking Number': b.booking_number,
+        'Customer Name': b.customer.name,
+        'Phone': b.customer.phone,
+        'Email': b.customer.email || '',
+        'Booking Date': new Date(b.booking_date).toLocaleDateString(),
+        'Total Hours': b.total_hours,
+        'Total Amount': b.total_amount,
+        'Total Paid': totalPaid,
+        'Cash Payments': cash,
+        'Online Payments': online,
+        'Advance Payment': b.advance_payment,
+        'Advance Method': b.advance_payment_method,
+        'Remaining Payment': b.remaining_payment,
+        'Remaining Method': b.remaining_payment_method || '',
+        'Status': b.status,
+        'Created At': new Date(b.created_at).toLocaleString(),
+        'Slots': formatSlotRanges(b.slots.map(s => s.slot_hour)),
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -718,12 +735,12 @@ export default function AdminBookingsPage() {
                             <Text size="sm" fw={600}>
                               Rs {cash.toLocaleString()}
                             </Text>
-                            <Group gap={4}>
+                            <Group gap={4} wrap="nowrap">
                               {booking.advance_payment_method === 'cash' && (
-                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                <Badge size="xs" color="green" variant="dot" style={{ whiteSpace: 'nowrap' }}>Cash</Badge>
                               )}
                               {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
-                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                <Badge size="xs" color="green" variant="dot" style={{ whiteSpace: 'nowrap' }}>Cash</Badge>
                               )}
                             </Group>
                           </Stack>
@@ -739,14 +756,14 @@ export default function AdminBookingsPage() {
                             <Text size="sm" fw={600}>
                               Rs {online.toLocaleString()}
                             </Text>
-                            <Group gap={4}>
+                            <Group gap={4} wrap="nowrap">
                               {booking.advance_payment_method !== 'cash' && (
-                                <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
+                                <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot" style={{ whiteSpace: 'nowrap' }}>
                                   {getPaymentMethodBadge(booking.advance_payment_method).label}
                                 </Badge>
                               )}
                               {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
-                                <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
+                                <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot" style={{ whiteSpace: 'nowrap' }}>
                                   {getPaymentMethodBadge(booking.remaining_payment_method).label}
                                 </Badge>
                               )}
