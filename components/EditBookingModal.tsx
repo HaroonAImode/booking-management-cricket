@@ -120,8 +120,8 @@ export default function EditBookingModal({
 
   useEffect(() => {
     if (opened && bookingId) {
-      fetchBookingData();
       fetchSettings();
+      fetchBookingData();
     }
   }, [opened, bookingId]);
 
@@ -130,6 +130,18 @@ export default function EditBookingModal({
       checkAvailableSlots();
     }
   }, [bookingDate, settings]);
+
+  useEffect(() => {
+    if (bookingData && settings && slots.length === 0) {
+      initializeSlots(bookingData.slots);
+    }
+  }, [settings, bookingData]);
+
+  useEffect(() => {
+    if (bookingData && settings && !slots.length) {
+      initializeSlots(bookingData.slots);
+    }
+  }, [settings, bookingData]);
 
   const fetchBookingData = async () => {
     try {
@@ -160,7 +172,7 @@ export default function EditBookingModal({
       setPaymentMethod(data.advance_payment_method);
       
       // Initialize slots
-      const originalSlotHours = data.slots.map(s => s.slot_hour);
+      const originalSlotHours = data.slots.map((s: any) => s.slot_hour);
       setOriginalSlots(originalSlotHours);
     } catch (error: any) {
       console.error('Error fetching booking:', error);
@@ -185,6 +197,28 @@ export default function EditBookingModal({
     } catch (error) {
       console.error('Error fetching settings:', error);
     }
+  };
+
+  const initializeSlots = (bookingSlots: any[]) => {
+    if (!settings) return;
+    
+    const initialSlots: SlotData[] = bookingSlots.map((s: any) => ({
+      hour: s.slot_hour,
+      isNightRate: s.is_night_rate,
+      rate: s.is_night_rate ? settings.night_rate : settings.day_rate,
+    }));
+    setSlots(initialSlots);
+  };
+
+  const initializeSlots = (bookingSlots: any[]) => {
+    if (!settings) return;
+    
+    const initialSlots: SlotData[] = bookingSlots.map((s: any) => ({
+      hour: s.slot_hour,
+      isNightRate: s.is_night_rate,
+      rate: s.is_night_rate ? settings.night_rate : settings.day_rate,
+    }));
+    setSlots(initialSlots);
   };
 
   const checkAvailableSlots = async () => {
@@ -632,11 +666,15 @@ export default function EditBookingModal({
                   <Text size="sm" fw={600}>Current Advance Proof:</Text>
                   {bookingData.advance_payment_proof ? (
                     <Image
-                      src={bookingData.advance_payment_proof}
+                      src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/payment-proofs/${bookingData.advance_payment_proof}`}
                       alt="Current advance proof"
                       radius="md"
                       h={150}
                       fit="contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        console.error('Failed to load payment proof:', bookingData.advance_payment_proof);
+                      }}
                     />
                   ) : (
                     <Text size="sm" c="dimmed">No proof uploaded</Text>
@@ -657,11 +695,15 @@ export default function EditBookingModal({
                     <Stack gap="xs">
                       <Text size="sm" fw={600}>Current Remaining Proof:</Text>
                       <Image
-                        src={bookingData.remaining_payment_proof}
+                        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/payment-proofs/${bookingData.remaining_payment_proof}`}
                         alt="Current remaining proof"
                         radius="md"
                         h={150}
                         fit="contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          console.error('Failed to load remaining payment proof:', bookingData.remaining_payment_proof);
+                        }}
                       />
                     </Stack>
 

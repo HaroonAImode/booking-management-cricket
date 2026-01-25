@@ -26,7 +26,7 @@ async function handler(req: NextRequest) {
   }
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Get all booked slots for the date, excluding the current booking if editing
     let query = supabase
