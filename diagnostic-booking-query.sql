@@ -15,9 +15,14 @@ SELECT
   b.total_amount,
   b.advance_payment,
   b.remaining_payment,
+  b.remaining_payment_amount,
   b.advance_payment_method,
+  b.remaining_payment_method,
   c.name as customer_name,
-  c.phone as customer_phone
+  c.phone as customer_phone,
+  -- Payment verification
+  (b.advance_payment + COALESCE(b.remaining_payment_amount, 0)) as total_paid,
+  (b.total_amount - b.advance_payment - COALESCE(b.remaining_payment_amount, 0)) as expected_remaining
 FROM bookings b
 LEFT JOIN customers c ON c.id = b.customer_id
 WHERE b.id = '9a203e5a-d146-4943-b08f-f0617758f1ed'  -- Replace with your booking ID
@@ -45,13 +50,17 @@ SELECT
   total_amount,
   advance_payment,
   remaining_payment,
+  remaining_payment_amount,
   CASE 
     WHEN total_amount IS NULL THEN '❌ NULL total_amount'
     WHEN total_hours IS NULL THEN '❌ NULL total_hours'
     WHEN total_hours = 0 THEN '❌ Zero hours'
     WHEN total_amount = 0 THEN '❌ Zero amount'
     WHEN advance_payment > total_amount THEN '❌ Advance > Total'
-    WHEN (advance_payment + remaining_payment) != total_amount THEN '⚠️ Payment mismatch'
+    WHEN remaining_payment < 0 THEN '❌ Negative remaining'
+    WHEN remaining_payment > total_amount THEN '❌ Remaining > Total'
+    WHEN status = 'completed' AND remaining_payment != 0 THEN '⚠️ Completed but has remaining'
+    WHEN remaining_payment != (total_amount - advance_payment - COALESCE(remaining_payment_amount, 0)) THEN '⚠️ Payment calculation mismatch'
     ELSE '✅ OK'
   END as data_status
 FROM bookings
@@ -61,7 +70,10 @@ WHERE
   OR total_hours = 0
   OR total_amount = 0
   OR advance_payment > total_amount
-  OR (advance_payment + remaining_payment) != total_amount
+  OR remaining_payment < 0
+  OR remaining_payment > total_amount
+  OR (status = 'completed' AND remaining_payment != 0)
+  OR remaining_payment != (total_amount - advance_payment - COALESCE(remaining_payment_amount, 0))
 ORDER BY created_at DESC
 LIMIT 20;
 
