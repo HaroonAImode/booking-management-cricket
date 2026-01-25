@@ -113,20 +113,17 @@ BEGIN
         title,
         message,
         booking_id,
-        booking_number,
-        customer_name,
         priority
       )
-      SELECT
+      VALUES (
         v_booking.customer_id,
         'payment_completed',
         'Payment Completed',
         format('Full payment of Rs %s verified for booking %s', 
                v_booking.total_amount, v_booking.booking_number),
         p_booking_id,
-        v_booking.booking_number,
-        (SELECT name FROM customers WHERE id = v_booking.customer_id),
-        'normal';
+        'normal'
+      );
   END IF;
 
   -- Return success with actual values
