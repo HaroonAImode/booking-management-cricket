@@ -252,6 +252,11 @@ export default function EditBookingModal({
     return true;
   };
 
+  const clearAllSlots = () => {
+    setSlots([]);
+    setSlotsModified(true);
+  };
+
   const toggleSlot = (hour: number) => {
     if (!settings) return;
     
@@ -260,7 +265,24 @@ export default function EditBookingModal({
     
     if (existingSlot) {
       // Remove slot
-      setSlots(slots.filter(s => s.hour !== hour));
+      const newSlots = slots.filter(s => s.hour !== hour);
+      
+      // Check if removing this slot breaks consecutiveness
+      if (newSlots.length > 0) {
+        const newSlotHours = newSlots.map(s => s.hour);
+        if (!validateConsecutiveSlots(newSlotHours)) {
+          notifications.show({
+            title: '⚠️ Cannot Remove Middle Slot',
+            message: 'Removing this slot would break the consecutive selection. Please remove from the beginning or end, or use "Clear All Slots" to start fresh.',
+            color: 'orange',
+            autoClose: 5000,
+            icon: <IconAlertCircle size={18} />,
+          });
+          return;
+        }
+      }
+      
+      setSlots(newSlots);
       setSlotsModified(true);
       return;
     }
@@ -280,7 +302,7 @@ export default function EditBookingModal({
     if (!validateConsecutiveSlots(newSlotHours)) {
       notifications.show({
         title: '⚠️ Select Consecutive Slots Only',
-        message: 'You must select continuous time slots (e.g., 4 PM, 5 PM, 6 PM). For different times, please select consecutive hours.',
+        message: 'You must select continuous time slots (e.g., 4 PM, 5 PM, 6 PM). Use "Clear All Slots" to start a new selection range.',
         color: 'orange',
         autoClose: 5000,
         icon: <IconAlertCircle size={18} />,
@@ -320,6 +342,30 @@ export default function EditBookingModal({
 
   const handleSubmit = async () => {
     if (!bookingData || !bookingDate) return;
+
+    // Validate slots if modified
+    if (slotsModified) {
+      if (slots.length === 0) {
+        notifications.show({
+          title: '⚠️ No Slots Selected',
+          message: 'Please select at least one time slot for the booking.',
+          color: 'orange',
+          icon: <IconAlertCircle size={18} />,
+        });
+        return;
+      }
+
+      const slotHours = slots.map(s => s.hour);
+      if (!validateConsecutiveSlots(slotHours)) {
+        notifications.show({
+          title: '⚠️ Invalid Slot Selection',
+          message: 'Selected slots must be consecutive. Please fix your selection.',
+          color: 'red',
+          icon: <IconAlertCircle size={18} />,
+        });
+        return;
+      }
+    }
 
     setSubmitting(true);
 
@@ -369,8 +415,21 @@ export default function EditBookingModal({
         remainingProofUrl = uploadData;
       }
 
-      const finalTotalAmount = calculateTotal();
-      const remainingPayment = finalTotalAmount - advancePayment;
+      // Calculate amounts - ensure never null
+      const finalTotalAmount = slotsModified && slots.length > 0 
+        ? slots.reduce((sum, slot) => sum + slot.rate, 0)
+        : (totalAmount || bookingData.total_amount || 0);
+      
+      const finalTotalHours = slotsModified && slots.length > 0
+        ? slots.length
+        : (bookingData.total_hours || 1);
+      
+      const remainingPayment = Math.max(0, finalTotalAmount - advancePayment);
+
+      // Validate amounts
+      if (finalTotalAmount <= 0) {
+        throw new Error('Total amount must be greater than zero');
+      }
 
       // Update booking
       const { error: updateError } = await supabase
@@ -378,7 +437,7 @@ export default function EditBookingModal({
         .update({
           booking_date: bookingDate.toISOString().split('T')[0],
           total_amount: finalTotalAmount,
-          total_hours: slotsModified ? slots.length : bookingData.total_hours,
+          total_hours: finalTotalHours,
           advance_payment: advancePayment,
           remaining_payment: remainingPayment,
           advance_payment_method: paymentMethod,
@@ -561,14 +620,27 @@ export default function EditBookingModal({
 
                 {/* Slot Selection */}
                 <Paper withBorder p="md">
-                  <Text fw={600} mb="sm">Select New Time Slots</Text>
+                  <Group justify="space-between" mb="sm">
+                    <Text fw={600}>Select New Time Slots</Text>
+                    {slots.length > 0 && (
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftSection={<IconX size={14} />}
+                        onClick={clearAllSlots}
+                      >
+                        Clear All Slots
+                      </Button>
+                    )}
+                  </Group>
                   
                   {checkingSlots ? (
                     <Loader size="sm" />
                   ) : (
                     <>
                       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light" mb="md">
-                        Select consecutive time slots only. Click on available hours to add/remove them.
+                        💡 <strong>Tip:</strong> Select consecutive time slots. Use "Clear All Slots" to start a new selection range.
                       </Alert>
                       
                       <SimpleGrid cols={{ base: 3, sm: 4, md: 6 }} spacing="xs">
@@ -576,6 +648,7 @@ export default function EditBookingModal({
                           const isAvailable = availableSlots.includes(hour) || originalSlots.includes(hour);
                           const isSelected = slots.some(s => s.hour === hour);
                           const isNight = isNightHour(hour);
+                          const isBooked = !isAvailable && !originalSlots.includes(hour);
                           
                           return (
                             <Button
@@ -585,13 +658,30 @@ export default function EditBookingModal({
                               size="xs"
                               disabled={!isAvailable}
                               onClick={() => toggleSlot(hour)}
-                              style={{
-                                opacity: isAvailable ? 1 : 0.3,
-                                fontWeight: isSelected ? 700 : 400,
+                              styles={{
+                                root: {
+                                  opacity: isAvailable ? 1 : 0.3,
+                                  fontWeight: isSelected ? 700 : 400,
+                                  position: 'relative',
+                                },
                               }}
                             >
                               {formatTimeRange(hour).split(' - ')[0]}
                               {isNight && ' 🌙'}
+                              {isBooked && (
+                                <Badge
+                                  size="xs"
+                                  color="red"
+                                  style={{
+                                    position: 'absolute',
+                                    top: -5,
+                                    right: -5,
+                                    fontSize: 8,
+                                  }}
+                                >
+                                  ⚠️
+                                </Badge>
+                              )}
                             </Button>
                           );
                         })}
