@@ -8,13 +8,17 @@
 -- ========================================
 
 -- ========================================
--- STEP 1: Drop the problematic constraint
+-- STEP 1: Drop old constraints and add new ones
 -- ========================================
 
+-- Drop old constraints if they exist
 ALTER TABLE bookings 
 DROP CONSTRAINT IF EXISTS valid_total;
 
--- Add a more flexible constraint that makes business sense
+ALTER TABLE bookings 
+DROP CONSTRAINT IF EXISTS valid_payment_amounts;
+
+-- Add the flexible constraint
 ALTER TABLE bookings
 ADD CONSTRAINT valid_payment_amounts CHECK (
   advance_payment >= 0 AND
