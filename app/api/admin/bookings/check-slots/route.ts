@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withAdminAuth } from '@/lib/supabase/middleware';
+import { withAdminAuth } from '@/lib/supabase/api-auth';
 
 async function handler(req: NextRequest) {
   const { searchParams } = new URL(req.url);

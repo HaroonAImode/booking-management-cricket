@@ -56,7 +56,7 @@ export default function StatCard({
       radius="lg"
       style={{
         background: '#FFFBF0',
-        borderCoclickable ? 'pointer' : 'default',
+        cursor: clickable ? 'pointer' : 'default',
       }}
       onMouseEnter={(e) => {
         if (clickable || true) {
