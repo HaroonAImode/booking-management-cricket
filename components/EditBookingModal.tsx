@@ -159,6 +159,19 @@ export default function EditBookingModal({
 
       if (error) throw error;
 
+      // Check if booking is completed - should not be editable
+      if (data.status === 'completed') {
+        notifications.show({
+          title: '🔒 Cannot Edit Completed Booking',
+          message: 'Completed bookings cannot be edited. Please create a new booking instead.',
+          color: 'orange',
+          icon: <IconAlertCircle size={18} />,
+          autoClose: 5000,
+        });
+        onClose();
+        return;
+      }
+
       setBookingData(data);
       setCustomerName(data.customer.name);
       setCustomerPhone(data.customer.phone || '');
@@ -665,10 +678,16 @@ export default function EditBookingModal({
                       
                       <SimpleGrid cols={{ base: 3, sm: 4, md: 6 }} spacing="xs">
                         {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-                          const isAvailable = availableSlots.includes(hour) || originalSlots.includes(hour);
+                          // Check if slot is in the past for current date
+                          const now = new Date();
+                          const isToday = bookingDate && 
+                            bookingDate.toDateString() === now.toDateString();
+                          const isPastSlot = isToday && hour < now.getHours();
+                          
+                          const isAvailable = (availableSlots.includes(hour) || originalSlots.includes(hour)) && !isPastSlot;
                           const isSelected = slots.some(s => s.hour === hour);
                           const isNight = isNightHour(hour);
-                          const isBooked = !isAvailable && !originalSlots.includes(hour);
+                          const isBooked = !isAvailable && !originalSlots.includes(hour) && !isPastSlot;
                           
                           return (
                             <Button
@@ -688,7 +707,21 @@ export default function EditBookingModal({
                             >
                               {formatTimeRange(hour).split(' - ')[0]}
                               {isNight && ' 🌙'}
-                              {isBooked && (
+                              {isPastSlot && (
+                                <Badge
+                                  size="xs"
+                                  color="gray"
+                                  style={{
+                                    position: 'absolute',
+                                    top: -5,
+                                    right: -5,
+                                    fontSize: 8,
+                                  }}
+                                >
+                                  PAST
+                                </Badge>
+                              )}
+                              {isBooked && !isPastSlot && (
                                 <Badge
                                   size="xs"
                                   color="red"
