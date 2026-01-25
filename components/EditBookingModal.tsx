@@ -129,7 +129,7 @@ export default function EditBookingModal({
     if (bookingDate && settings) {
       checkAvailableSlots();
     }
-  }, [bookingDate]);
+  }, [bookingDate, settings]);
 
   const fetchBookingData = async () => {
     try {
