@@ -93,9 +93,9 @@ BEGIN
     remaining_payment_method = p_payment_method,
     remaining_payment_proof = COALESCE(p_payment_proof_path, remaining_payment_proof),
     remaining_payment_amount = COALESCE(remaining_payment_amount, 0) + p_payment_amount,
-    remaining_payment = new_remaining,
+    remaining_payment = v_booking.remaining_payment - p_payment_amount,
     status = CASE 
-      WHEN new_remaining <= 0 THEN 'completed'
+      WHEN (v_booking.remaining_payment - p_payment_amount) <= 0 THEN 'completed'
       ELSE status
     END,
     updated_at = NOW()
