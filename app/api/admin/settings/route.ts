@@ -16,8 +16,10 @@ async function getHandler(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get all settings
-    const { data: settings, error } = await supabase.rpc('get_system_settings');
+    // Get all settings as key-value pairs
+    const { data: settingsData, error } = await supabase
+      .from('system_settings')
+      .select('setting_key, setting_value');
 
     if (error) {
       console.error('Get settings error:', error);
@@ -27,9 +29,27 @@ async function getHandler(request: NextRequest) {
       );
     }
 
+    // Transform key-value pairs into object structure expected by frontend
+    const settings: any = {};
+    settingsData?.forEach((item: any) => {
+      settings[item.setting_key] = item.setting_value;
+    });
+
+    // Extract values from nested JSON structure
+    const bookingRates = settings.booking_rates || {};
+    const nightHours = settings.night_rate_hours || {};
+
+    // Map to expected structure
+    const transformedSettings = {
+      day_rate: bookingRates.day_rate || 1500,
+      night_rate: bookingRates.night_rate || 2000,
+      night_rate_start_hour: nightHours.start_hour || 17,
+      night_rate_end_hour: nightHours.end_hour || 7,
+    };
+
     return NextResponse.json({
       success: true,
-      settings: settings || {},
+      settings: transformedSettings,
     });
   } catch (error) {
     console.error('Settings API error:', error);
