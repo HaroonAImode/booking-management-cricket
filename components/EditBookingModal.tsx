@@ -523,6 +523,7 @@ export default function EditBookingModal({
             slot_hour: slot.hour,
             slot_time: slotTime,
             is_night_rate: slot.isNightRate,
+            hourly_rate: slot.rate, // Add the rate for this slot
           };
         });
 
