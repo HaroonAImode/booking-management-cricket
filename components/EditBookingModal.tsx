@@ -137,12 +137,6 @@ export default function EditBookingModal({
     }
   }, [settings, bookingData]);
 
-  useEffect(() => {
-    if (bookingData && settings && !slots.length) {
-      initializeSlots(bookingData.slots);
-    }
-  }, [settings, bookingData]);
-
   const fetchBookingData = async () => {
     try {
       setLoading(true);
@@ -197,17 +191,6 @@ export default function EditBookingModal({
     } catch (error) {
       console.error('Error fetching settings:', error);
     }
-  };
-
-  const initializeSlots = (bookingSlots: any[]) => {
-    if (!settings) return;
-    
-    const initialSlots: SlotData[] = bookingSlots.map((s: any) => ({
-      hour: s.slot_hour,
-      isNightRate: s.is_night_rate,
-      rate: s.is_night_rate ? settings.night_rate : settings.day_rate,
-    }));
-    setSlots(initialSlots);
   };
 
   const initializeSlots = (bookingSlots: any[]) => {
