@@ -489,9 +489,9 @@ export default function EditBookingModal({
         .from('bookings')
         .update({
           booking_date: bookingDate.toISOString().split('T')[0],
-          total_amount: finfinalAdvancePayment, // Keep original advance
+          total_amount: finalTotalAmount,
           total_hours: finalTotalHours,
-          advance_payment: advancePayment,
+          advance_payment: finalAdvancePayment, // Keep original advance
           remaining_payment: remainingPayment,
           advance_payment_method: paymentMethod,
           advance_payment_proof: advanceProofUrl,
