@@ -1,45 +1,4 @@
-
 'use client';
-
-// ...existing code...
-
-// In your JSX, fix the Box component:
-// Replace this:
-// <Box
-//   style={{
-//     background: '#fff',
-//     borderRadius: 12,
-//     boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
-//     padding: '8px 18px',
-//     margin: '8px 0',
-//
-//     leftSection={<IconCalendar size={16} />}
-//     style={{ ... }}
-//     ...
-//   }}
-//   ...
-// >
-// Instead, use:
-// <Box
-//   style={{
-//     background: '#fff',
-//     borderRadius: 12,
-//     boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
-//     padding: '8px 18px',
-//     margin: '8px 0',
-//     color: '#1A1A1A',
-//     border: '2px solid #1A1A1A',
-//     fontWeight: 700,
-//     borderRadius: 10,
-//     minWidth: 140,
-//   }}
-//   onClick={() => setShowDatePicker(true)}
-// >
-//   <IconCalendar size={16} style={{ marginRight: 8 }} />
-//   Select Any Date
-// </Box>
-
-// Remove the invalid leftSection prop and merge the style objects.
             ...existingSlot,
             is_available: isPast ? false : existingSlot.is_available,
           });
