@@ -88,6 +88,13 @@ export default function CalendarFirstBooking() {
   const proceedToForm = () => {
     if (canProceedToForm) {
       setActiveStep(1);
+      // On mobile, scroll to the booking form heading
+      setTimeout(() => {
+        const formSection = document.getElementById('booking-form-section');
+        if (formSection && window.innerWidth <= 768) {
+          formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     }
   };
 
