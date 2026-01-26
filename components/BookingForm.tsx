@@ -303,6 +303,33 @@ export default function BookingForm({
 
     setSubmitting(true);
 
+    // Duplicate booking prevention: check if any selected slot is already booked
+    try {
+      const duplicateCheckResponse = await fetch(
+        `/api/admin/bookings/check-slots?date=${formatDateForSQL(bookingDate)}`
+      );
+      const duplicateCheckData = await duplicateCheckResponse.json();
+      const bookedHours = duplicateCheckData.bookedSlots || [];
+      const hasDuplicate = selectedSlots.some(hour => bookedHours.includes(hour));
+      if (hasDuplicate) {
+        notifications.show({
+          title: 'Error',
+          message: 'One or more selected slots are already booked. Please choose different slots.',
+          color: 'red',
+        });
+        setSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to check for duplicate bookings.',
+        color: 'red',
+      });
+      setSubmitting(false);
+      return;
+    }
+
     try {
       let uploadData = null;
 

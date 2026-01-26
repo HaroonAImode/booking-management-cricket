@@ -158,6 +158,34 @@ export default function ManualBookingModal({
       return;
     }
 
+    // Duplicate booking prevention: check if any selected slot is already booked
+    try {
+      setLoading(true);
+      const duplicateCheckResponse = await fetch(
+        `/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`
+      );
+      const duplicateCheckData = await duplicateCheckResponse.json();
+      const bookedHours = duplicateCheckData.bookedSlots || [];
+      const hasDuplicate = selectedSlots.some(hour => bookedHours.includes(hour));
+      if (hasDuplicate) {
+        notifications.show({
+          title: 'Error',
+          message: 'One or more selected slots are already booked. Please choose different slots.',
+          color: 'red',
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to check for duplicate bookings.',
+        color: 'red',
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
