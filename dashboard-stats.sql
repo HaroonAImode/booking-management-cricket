@@ -28,9 +28,9 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT 
-    COALESCE(SUM(b.total_amount), 0) AS total_revenue,
-    COALESCE(SUM(b.advance_payment), 0) AS total_advance_received,
-    COALESCE(SUM(b.remaining_payment), 0) AS total_remaining_payment,
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.advance_payment + b.remaining_payment ELSE 0 END), 0) AS total_revenue,
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.advance_payment ELSE 0 END), 0) AS total_advance_received,
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.remaining_payment ELSE 0 END), 0) AS total_remaining_payment,
     COALESCE(SUM(CASE WHEN b.status = 'pending' THEN b.total_amount ELSE 0 END), 0) AS pending_revenue,
     COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.total_amount ELSE 0 END), 0) AS confirmed_revenue
   FROM bookings b;
@@ -101,13 +101,13 @@ BEGIN
   RETURN QUERY
   SELECT 
     COUNT(*)::INTEGER AS total_bookings,
-    COALESCE(SUM(b.total_amount), 0) AS total_revenue,
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.advance_payment + b.remaining_payment ELSE 0 END), 0) AS total_revenue,
     COALESCE(SUM(b.total_hours), 0)::INTEGER AS total_hours,
     COALESCE(AVG(b.total_amount), 0) AS average_booking_value,
     COUNT(*) FILTER (WHERE b.status = 'approved')::INTEGER AS approved_bookings,
     COUNT(*) FILTER (WHERE b.status = 'cancelled')::INTEGER AS cancelled_bookings
   FROM bookings b
-  WHERE b.created_at >= CURRENT_DATE - INTERVAL '7 days';
+  WHERE b.booking_date >= CURRENT_DATE - INTERVAL '7 days';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -351,3 +351,4 @@ COMMENT ON FUNCTION get_recent_bookings(INTEGER) IS 'Returns recent bookings for
 -- ========================================
 -- SETUP COMPLETE
 -- ========================================
+

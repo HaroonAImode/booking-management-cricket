@@ -164,11 +164,12 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       p_customer_notes: notes || null,
     });
 
+
     const result = typeof data === 'string' ? JSON.parse(data) : data;
 
-    if (!result.success) {
+    if (!result || !result.success) {
       return NextResponse.json(
-        { error: result.error_message || 'Failed to create booking' },
+        { error: (result && result.error_message) || error?.message || 'Failed to create booking' },
         { status: 400 }
       );
     }
