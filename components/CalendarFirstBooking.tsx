@@ -1,23 +1,4 @@
 'use client';
-            ...existingSlot,
-            is_available: isPast ? false : existingSlot.is_available,
-          });
-        } else {
-          // Create entry for missing hours
-          const isNight = hour >= 17 || hour < 7;
-          allSlots.push({
-            slot_hour: hour,
-            slot_time: `${hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}:00 ${hour < 12 ? 'AM' : 'PM'}`,
-            is_available: !isPast,
-            is_night_rate: isNight,
-            hourly_rate: isNight ? 2000 : 1500,
-            current_status: isPast ? 'cancelled' : 'available',
-          } as SlotInfo);
-        }
-      }
-      
-      setTodaySlots(allSlots);
-    }
     setTodayLoading(false);
   }, [quickViewDate]);
 
