@@ -1,50 +1,45 @@
+
 'use client';
 
-/**
-                <Paper
-                  p={{ base: 'md', sm: 'xl' }}
-                  withBorder
-                  radius="xl"
-                  style={{
-                    background: 'linear-gradient(135deg, #F5B800 0%, #FFC933 100%)',
-                    border: '2.5px solid #1A1A1A',
-                    boxShadow: '0 8px 32px 0 rgba(245, 184, 0, 0.18)',
-                    marginTop: 8,
-                  }}
-                >
-                  <Stack gap="xs" align="center" style={{ width: '100%' }}>
-                    <Group gap={8} align="center" style={{ width: '100%' }}>
-                      <IconCheck size={22} color="#1A1A1A" />
-                      <Title order={2} style={{ fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', letterSpacing: 0.5 }} c="#1A1A1A" fw={900}>
-                        ⚡ TODAY'S AVAILABILITY
-                      </Title>
-                    </Group>
-                    <Box
-                      style={{
-                        background: '#fff',
-                        borderRadius: 12,
-                        boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
-                        padding: '8px 18px',
-                        margin: '8px 0',
+// ...existing code...
 
-                        leftSection={<IconCalendar size={16} />}
-                        style={{
-                          background: '#fff',
-                          color: '#1A1A1A',
-                          border: '2px solid #1A1A1A',
-                          fontWeight: 700,
-                          borderRadius: 10,
-                          minWidth: 140,
-                        }}
-                        onClick={() => setShowDatePicker(true)}
-                      >
-                        Select Any Date
-                      </Button>
-                    </Group>
-                    <Text size="xs" c="#2A2A2A" fw={500} style={{ opacity: 0.8, marginTop: 2 }}>
-                      🔄 Auto-updates every minute
-                    </Text>
-                  </Stack>
+// In your JSX, fix the Box component:
+// Replace this:
+// <Box
+//   style={{
+//     background: '#fff',
+//     borderRadius: 12,
+//     boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
+//     padding: '8px 18px',
+//     margin: '8px 0',
+//
+//     leftSection={<IconCalendar size={16} />}
+//     style={{ ... }}
+//     ...
+//   }}
+//   ...
+// >
+// Instead, use:
+// <Box
+//   style={{
+//     background: '#fff',
+//     borderRadius: 12,
+//     boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
+//     padding: '8px 18px',
+//     margin: '8px 0',
+//     color: '#1A1A1A',
+//     border: '2px solid #1A1A1A',
+//     fontWeight: 700,
+//     borderRadius: 10,
+//     minWidth: 140,
+//   }}
+//   onClick={() => setShowDatePicker(true)}
+// >
+//   <IconCalendar size={16} style={{ marginRight: 8 }} />
+//   Select Any Date
+// </Box>
+
+// Remove the invalid leftSection prop and merge the style objects.
             ...existingSlot,
             is_available: isPast ? false : existingSlot.is_available,
           });
