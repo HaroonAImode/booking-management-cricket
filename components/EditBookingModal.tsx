@@ -206,9 +206,15 @@ export default function EditBookingModal({
     try {
       const response = await fetch('/api/admin/settings');
       const result = await response.json();
-      
       if (result.success && result.settings) {
-        setSettings(result.settings);
+        // Transform nested API structure to flat structure expected by the component
+        const api = result.settings;
+        setSettings({
+          day_rate: api.booking_rates?.day_rate ?? 1500,
+          night_rate: api.booking_rates?.night_rate ?? 2000,
+          night_rate_start_hour: api.night_rate_hours?.start_hour ?? 17,
+          night_rate_end_hour: api.night_rate_hours?.end_hour ?? 7,
+        });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -906,7 +912,7 @@ export default function EditBookingModal({
 
                 <Stack gap="xs">
                   <Text size="sm" fw={600}>Current Advance Proof:</Text>
-                  {bookingData.advance_payment_proof ? (
+                  {bookingData.advance_payment_proof && bookingData.advance_payment_proof !== 'manual-booking-no-proof' ? (
                     <Image
                       src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/payment-proofs/${bookingData.advance_payment_proof}`}
                       alt="Current advance proof"

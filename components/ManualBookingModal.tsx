@@ -416,6 +416,16 @@ export default function ManualBookingModal({
               setFormData({ ...formData, autoApprove: e.currentTarget.checked })
             }
             size="sm"
+            styles={{
+              label: {
+                marginLeft: 8,
+                '@media (max-width: 600px)': {
+                  display: 'block',
+                  marginLeft: 0,
+                  marginTop: 4,
+                },
+              },
+            }}
           />
 
           {/* Actions */}
