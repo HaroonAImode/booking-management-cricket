@@ -31,16 +31,39 @@ export default function CalendarFirstBooking() {
   // Helper: can proceed if at least one slot is selected
   const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
 
-  // --- Restore slot loading logic ---
+  // --- Fetch real slot status from backend ---
   useEffect(() => {
-    // Simulate 24 slots for today (replace with real API call)
-    const now = new Date();
-    const slots = Array.from({ length: 24 }, (_, i) => ({
-      slot_hour: i,
-      is_available: i >= now.getHours(),
-      current_status: i % 5 === 0 ? 'booked' : (i % 7 === 0 ? 'pending' : 'available'),
-    }));
-    setTodaySlots(slots);
+    setSlotsLoading(true);
+    setSlotsError(null);
+    const dateStr = quickViewDate.toISOString().split('T')[0];
+    fetch(`/api/admin/bookings/check-slots?date=${dateStr}`)
+      .then(res => res.json())
+      .then(data => {
+        const availableHours = data.availableSlots || [];
+        const bookedHours = data.bookedSlots || [];
+        const now = new Date();
+        const isToday = quickViewDate.toDateString() === now.toDateString();
+        const currentHour = isToday ? now.getHours() : -1;
+        const slots = Array.from({ length: 24 }, (_, hour) => {
+          const isPast = isToday && hour <= currentHour;
+          const isAvailable = availableHours.includes(hour) && !isPast;
+          const isBooked = bookedHours.includes(hour);
+          let status = 'available';
+          if (isBooked) status = 'booked';
+          else if (!isAvailable) status = isPast ? 'past' : 'pending';
+          return {
+            slot_hour: hour,
+            is_available: isAvailable,
+            current_status: status,
+          };
+        });
+        setTodaySlots(slots);
+        setSlotsLoading(false);
+      })
+      .catch(err => {
+        setSlotsError('Failed to load slots');
+        setSlotsLoading(false);
+      });
   }, [quickViewDate]);
 
   // --- Slot selection handler ---

@@ -77,15 +77,20 @@ export default function ManualBookingModal({
     if (!formData.bookingDate) return;
     setSlotsLoading(true);
     setSlotsError(null);
-    fetch(`/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`)
+    // If editing, pass excludeBookingId
+    const url = `/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`;
+    fetch(url)
       .then(res => res.json())
       .then(data => {
-        // API returns { availableSlots: number[], bookedSlots: number[] }
         const availableHours: number[] = data.availableSlots || [];
         const bookedHours: number[] = data.bookedSlots || [];
         // Build SlotInfo[] for all 24 hours
+        const now = new Date();
+        const isToday = formData.bookingDate.toDateString() === now.toDateString();
+        const currentHour = isToday ? now.getHours() : -1;
         const slots: SlotInfo[] = Array.from({ length: 24 }, (_, hour) => {
-          const isAvailable = availableHours.includes(hour);
+          const isPast = isToday && hour <= currentHour;
+          const isAvailable = availableHours.includes(hour) && !isPast;
           const isBooked = bookedHours.includes(hour);
           return {
             slot_hour: hour,
