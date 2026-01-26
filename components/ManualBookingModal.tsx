@@ -80,7 +80,23 @@ export default function ManualBookingModal({
     fetch(`/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`)
       .then(res => res.json())
       .then(data => {
-        setAvailableSlots(data.slots || []);
+        // API returns { availableSlots: number[], bookedSlots: number[] }
+        const availableHours: number[] = data.availableSlots || [];
+        const bookedHours: number[] = data.bookedSlots || [];
+        // Build SlotInfo[] for all 24 hours
+        const slots: SlotInfo[] = Array.from({ length: 24 }, (_, hour) => {
+          const isAvailable = availableHours.includes(hour);
+          const isBooked = bookedHours.includes(hour);
+          return {
+            slot_hour: hour,
+            slot_time: `${String(hour).padStart(2, '0')}:00:00`,
+            is_available: isAvailable,
+            current_status: isBooked ? 'booked' : isAvailable ? 'available' : 'booked',
+            hourly_rate: isNightHour(hour) ? nightRate : dayRate,
+            is_night_rate: isNightHour(hour),
+          };
+        });
+        setAvailableSlots(slots);
         setSlotsLoading(false);
       })
       .catch(err => {
