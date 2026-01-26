@@ -11,6 +11,7 @@
 -- ========================================
 
 -- Drop the existing function first (required because return type changed)
+
 DROP FUNCTION IF EXISTS get_calendar_bookings(DATE, DATE, TEXT);
 
 CREATE OR REPLACE FUNCTION get_calendar_bookings(
@@ -25,10 +26,7 @@ RETURNS TABLE (
   customer_name TEXT,
   customer_phone TEXT,
   booking_date DATE,
-  slot_hour INTEGER,
-  slot_time TIME,
-  is_night_rate BOOLEAN,
-  hourly_rate NUMERIC,
+  slot_hours INTEGER[],
   status TEXT,
   total_hours INTEGER,
   total_amount NUMERIC,
@@ -49,10 +47,7 @@ BEGIN
     c.name AS customer_name,
     c.phone AS customer_phone,
     bs.slot_date AS booking_date,
-    bs.slot_hour,
-    bs.slot_time,
-    bs.is_night_rate,
-    bs.hourly_rate,
+    array_agg(bs.slot_hour ORDER BY bs.slot_hour) AS slot_hours,
     b.status,
     b.total_hours,
     b.total_amount,
@@ -70,7 +65,8 @@ BEGIN
     AND bs.slot_date <= p_end_date
     AND (p_status IS NULL OR b.status = p_status)
     AND b.status != 'cancelled'
-  ORDER BY bs.slot_date, bs.slot_hour;
+  GROUP BY b.id, b.booking_number, c.id, c.name, c.phone, bs.slot_date, b.status, b.total_hours, b.total_amount, b.advance_payment, b.remaining_payment, b.advance_payment_method, b.created_at, b.pending_expires_at, b.customer_notes, b.admin_notes
+  ORDER BY bs.slot_date, min(bs.slot_hour);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -151,3 +147,4 @@ COMMENT ON FUNCTION get_booking_details(UUID) IS 'Returns complete booking detai
 -- Run these to test the functions work correctly:
 -- SELECT * FROM get_calendar_bookings(CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', NULL);
 -- SELECT get_booking_details('YOUR_BOOKING_ID_HERE'::UUID);
+

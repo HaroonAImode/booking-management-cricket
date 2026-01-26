@@ -37,29 +37,13 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-    // Transform to FullCalendar event format
-    // Group slots by booking_id to create merged time ranges
-    const bookingsMap = new Map();
-    bookings?.forEach((booking: any) => {
-      if (!bookingsMap.has(booking.booking_id)) {
-        bookingsMap.set(booking.booking_id, {
-          ...booking,
-          slots: [booking.slot_hour]
-        });
-      } else {
-        bookingsMap.get(booking.booking_id).slots.push(booking.slot_hour);
-      }
-    });
 
-    const events = Array.from(bookingsMap.values()).flatMap((booking: any) => {
-      // Get first and last slot for the event time range
-      const sortedSlots = [...booking.slots].sort((a, b) => a - b);
+    // Use new slot_hours array from SQL, no grouping needed
+    const events = (bookings || []).map((booking: any) => {
+      const sortedSlots = [...booking.slot_hours].sort((a, b) => a - b);
       const firstSlot = sortedSlots[0];
       const lastSlot = sortedSlots[sortedSlots.length - 1];
-      
-      // Format slot ranges for title
-      const slotRanges = formatSlotRanges(booking.slots);
-      
+      const slotRanges = formatSlotRanges(sortedSlots);
       return {
         id: booking.booking_id,
         bookingId: booking.booking_id,
@@ -77,15 +61,13 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
           totalAmount: booking.total_amount,
           advancePayment: booking.advance_payment,
           remainingPayment: booking.remaining_payment,
-          isNightRate: booking.is_night_rate,
-          hourlyRate: booking.hourly_rate,
           createdAt: booking.created_at,
           pendingExpiresAt: booking.pending_expires_at,
           customerNotes: booking.customer_notes,
           adminNotes: booking.admin_notes,
         },
       };
-    }) || [];
+    });
 
     return NextResponse.json({
       success: true,
