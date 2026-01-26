@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Modal,
   Stack,
@@ -20,11 +20,16 @@ import {
   Badge,
   Paper,
   Text,
+  FileInput,
+  Alert,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { formatTimeDisplay, formatTimeRange } from '@/lib/supabase/bookings';
+import SlotSelector from './SlotSelector';
+import { uploadPaymentProof } from '@/lib/supabase/storage';
+import { SlotInfo } from '@/types';
 
 interface ManualBookingModalProps {
   opened: boolean;
@@ -53,8 +58,12 @@ export default function ManualBookingModal({
     notes: '',
     autoApprove: true,
   });
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [selectedHour, setSelectedHour] = useState<number>(9);
+  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<SlotInfo[] | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
 
   const dayRate = 1500;
   const nightRate = 2000;
@@ -63,32 +72,30 @@ export default function ManualBookingModal({
     return hour >= 17 || hour <= 6;
   };
 
-  const addSlot = () => {
-    if (slots.find(s => s.hour === selectedHour)) {
-      notifications.show({
-        title: 'Error',
-        message: 'This hour is already added',
-        color: 'red',
+  // Fetch available slots when bookingDate changes
+  useEffect(() => {
+    if (!formData.bookingDate) return;
+    setSlotsLoading(true);
+    setSlotsError(null);
+    fetch(`/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableSlots(data.slots || []);
+        setSlotsLoading(false);
+      })
+      .catch(err => {
+        setSlotsError('Failed to load slots');
+        setSlotsLoading(false);
       });
-      return;
-    }
+  }, [formData.bookingDate]);
 
-    const isNight = isNightHour(selectedHour);
-    const newSlot: Slot = {
-      hour: selectedHour,
-      isNightRate: isNight,
-      rate: isNight ? nightRate : dayRate,
-    };
-
-    setSlots([...slots, newSlot].sort((a, b) => a.hour - b.hour));
-  };
-
-  const removeSlot = (hour: number) => {
-    setSlots(slots.filter(s => s.hour !== hour));
-  };
-
+  // Calculate total from selected slots
   const calculateTotal = () => {
-    return slots.reduce((sum, slot) => sum + slot.rate, 0);
+    if (!availableSlots) return 0;
+    return selectedSlots.reduce((sum, hour) => {
+      const slot = availableSlots.find(s => s.slot_hour === hour);
+      return sum + (slot ? slot.hourly_rate : 0);
+    }, 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,17 +110,56 @@ export default function ManualBookingModal({
       return;
     }
 
-    if (slots.length === 0) {
+    if (selectedSlots.length === 0) {
       notifications.show({
         title: 'Error',
-        message: 'Please add at least one slot',
+        message: 'Please select at least one slot',
         color: 'red',
+      });
+      return;
+    }
+
+    // Check for non-sequential slots
+    const sorted = [...selectedSlots].sort((a, b) => a - b);
+    let isSequential = true;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] !== sorted[i - 1] + 1) {
+        isSequential = false;
+        break;
+      }
+    }
+    if (!isSequential) {
+      notifications.show({
+        title: 'Warning',
+        message: 'Selected slots are not in sequence. Please select consecutive hours.',
+        color: 'yellow',
       });
       return;
     }
 
     try {
       setLoading(true);
+
+      // Handle payment proof upload if required
+      let paymentProofUrlToSend = 'manual-booking-no-proof';
+      if (formData.advancePaymentMethod !== 'cash' && paymentProofFile) {
+        const fakeBookingId = crypto.randomUUID(); // Use a temp ID for path
+        const uploadResult = await uploadPaymentProof(
+          paymentProofFile,
+          fakeBookingId,
+          formData.bookingDate.toISOString().split('T')[0]
+        );
+        if (uploadResult.error) {
+          notifications.show({
+            title: 'Error',
+            message: uploadResult.error,
+            color: 'red',
+          });
+          setLoading(false);
+          return;
+        }
+        paymentProofUrlToSend = uploadResult.data || 'manual-booking-no-proof';
+      }
 
       const response = await fetch('/api/admin/bookings', {
         method: 'POST',
@@ -122,10 +168,18 @@ export default function ManualBookingModal({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone || null,
           bookingDate: formData.bookingDate.toISOString().split('T')[0],
-          slots,
+          slots: selectedSlots.map(hour => {
+            const slot = availableSlots?.find(s => s.slot_hour === hour);
+            return {
+              hour,
+              isNightRate: slot?.is_night_rate || false,
+              rate: slot?.hourly_rate || 0,
+            };
+          }),
           totalAmount: calculateTotal(),
           advancePayment: formData.advancePayment,
           advancePaymentMethod: formData.advancePaymentMethod,
+          advancePaymentProof: paymentProofUrlToSend,
           notes: formData.notes || null,
           autoApprove: formData.autoApprove,
         }),
@@ -171,8 +225,7 @@ export default function ManualBookingModal({
       notes: '',
       autoApprove: true,
     });
-    setSlots([]);
-    setSelectedHour(9);
+    setSelectedSlots([]);
   };
 
   const totalAmount = calculateTotal();
@@ -239,56 +292,20 @@ export default function ManualBookingModal({
           {/* Slots Selection */}
           <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
             <Text fw={600} mb="sm" size="sm">Select Time Slots</Text>
-            <Stack gap="sm">
-              <Group grow>
-                <Select
-                  label="Hour"
-                  placeholder="Select hour"
-                  data={Array.from({ length: 24 }, (_, i) => ({
-                    value: String(i),
-                    label: `${formatTimeDisplay(i)} ${isNightHour(i) ? '(Night)' : '(Day)'}`,
-                  }))}
-                  value={String(selectedHour)}
-                  onChange={(value) => setSelectedHour(parseInt(value || '9'))}
-                  size="sm"
-                />
-                <Button
-                  leftSection={<IconPlus size={16} />}
-                  onClick={addSlot}
-                  size="sm"
-                  mt={24}
-                >
-                  Add Slot
-                </Button>
-              </Group>
-
-            {slots.length > 0 && (
-              <Stack gap="xs">
-                {slots.map((slot) => (
-                  <Group key={slot.hour} justify="space-between" wrap="nowrap">
-                    <Badge
-                      size="lg"
-                      color={slot.isNightRate ? 'indigo' : 'yellow'}
-                    >
-                      {formatTimeRange(slot.hour)}
-                      {slot.isNightRate && ' 🌙'}
-                    </Badge>
-                    <Text size="sm" fw={500}>
-                      Rs {slot.rate}
-                    </Text>
-                    <Button
-                      size="xs"
-                      color="red"
-                      variant="light"
-                      onClick={() => removeSlot(slot.hour)}
-                    >
-                      <IconTrash size={16} />
-                    </Button>
-                  </Group>
-                ))}
-              </Stack>
-            )}
-            </Stack>
+            <SlotSelector
+              selectedDate={formData.bookingDate}
+              selectedSlots={selectedSlots}
+              onSlotToggle={(hour) => {
+                setSelectedSlots((prev) =>
+                  prev.includes(hour)
+                    ? prev.filter((h) => h !== hour)
+                    : [...prev, hour]
+                );
+              }}
+              availableSlots={availableSlots}
+              loading={slotsLoading}
+              error={slotsError}
+            />
           </Paper>
 
           {/* Payment Details */}
@@ -325,6 +342,27 @@ export default function ManualBookingModal({
                 />
               </Grid.Col>
             </Grid>
+
+            {/* Payment Proof Upload */}
+            <FileInput
+              label={formData.advancePaymentMethod === 'cash' ? 'Payment Proof Screenshot (Optional)' : 'Payment Proof Screenshot'}
+              placeholder="Upload payment screenshot"
+              accept="image/png,image/jpeg,image/jpg"
+              value={paymentProofFile}
+              onChange={setPaymentProofFile}
+              required={formData.advancePaymentMethod !== 'cash'}
+              size="sm"
+            />
+            {formData.advancePaymentMethod !== 'cash' && (
+              <Alert color="yellow" mt="xs">
+                ⚠️ Please upload a clear screenshot of your payment receipt. Accepted formats: PNG, JPG, JPEG (Max 5MB)
+              </Alert>
+            )}
+            {formData.advancePaymentMethod === 'cash' && (
+              <Alert color="green" mt="xs">
+                ℹ️ Cash payment will be collected at the venue before play time.
+              </Alert>
+            )}
 
             <Stack gap="xs" mt="sm">
               <Group justify="space-between">
@@ -372,7 +410,7 @@ export default function ManualBookingModal({
             <Button 
               type="submit" 
               loading={loading} 
-              disabled={slots.length === 0}
+              disabled={selectedSlots.length === 0}
               size="sm"
             >
               Create Booking
