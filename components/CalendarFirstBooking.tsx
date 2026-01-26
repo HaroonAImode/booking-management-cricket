@@ -6,6 +6,9 @@ import { IconCheck, IconInfoCircle, IconAlertCircle, IconArrowLeft } from "@tabl
 import BookingForm from "./BookingForm";
 
 // Add any other imports/types you need
+import { Alert, SimpleGrid } from "@mantine/core";
+import { IconArrowRight, IconCalendar } from "@tabler/icons-react";
+import { DatePicker } from "@mantine/dates";
 
 export default function CalendarFirstBooking() {
   // All your state and hooks here
@@ -20,6 +23,13 @@ export default function CalendarFirstBooking() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState(0);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Helper: always use array for selected slots
+  const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
+
+  // Helper: can proceed if at least one slot is selected
+  const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
 
   // All your logic, hooks, and functions go here (move from above)
   // ...
