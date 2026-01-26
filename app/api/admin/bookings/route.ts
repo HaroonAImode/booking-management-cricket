@@ -168,6 +168,7 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     const result = typeof data === 'string' ? JSON.parse(data) : data;
 
     if (!result || !result.success) {
+      console.error('Booking creation failed:', { result, error, body });
       return NextResponse.json(
         { error: (result && result.error_message) || error?.message || 'Failed to create booking' },
         { status: 400 }
