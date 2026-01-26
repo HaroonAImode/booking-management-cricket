@@ -159,7 +159,7 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       p_advance_payment: advancePayment || 0,
       p_advance_payment_method: advancePaymentMethod || 'cash',
       p_advance_payment_proof: 'manual-booking-no-proof',
-      p_slots: JSON.stringify(formattedSlots),
+      p_slots: formattedSlots, // Pass as array, not string
       p_customer_phone: customerPhone || null,
       p_customer_notes: notes || null,
     });
