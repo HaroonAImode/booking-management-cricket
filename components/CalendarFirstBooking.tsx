@@ -261,7 +261,7 @@
     <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
       <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
         <Stack gap="xl">
-          {/* Header */}
+
           <Paper
             p={{ base: 'lg', sm: 'xl' }}
             radius="lg"
