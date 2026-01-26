@@ -26,74 +26,7 @@
                         boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
                         padding: '8px 18px',
                         margin: '8px 0',
-                        display: 'inline-block',
-                        fontWeight: 700,
-                        fontSize: 'clamp(1rem, 4vw, 1.15rem)',
-                        color: '#1A1A1A',
-                        letterSpacing: 0.2,
-                        border: '1.5px solid #F5B800',
-                        minWidth: 0,
-                        textAlign: 'center',
-                        maxWidth: '100%',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </Box>
-                    <Group gap={8} justify="center" style={{ width: '100%', flexWrap: 'wrap', marginTop: 4 }}>
-                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toDateString() !== new Date().toDateString() && (
-                        <Button
-                          size="compact-md"
-                          variant="outline"
-                          style={{
-                            background: '#fff',
-                            color: '#1A1A1A',
-                            border: '2px solid #1A1A1A',
-                            fontWeight: 700,
-                            borderRadius: 10,
-                            minWidth: 110,
-                          }}
-                          onClick={() => {
-                            const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
-                            const prevDay = new Date(currentDate);
-                            prevDay.setDate(prevDay.getDate() - 1);
-                            if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
-                              setQuickViewDate(prevDay);
-                            }
-                          }}
-                        >
-                          ← Previous Day
-                        </Button>
-                      )}
-                      <Button
-                        size="compact-md"
-                        variant="filled"
-                        style={{
-                          background: '#1A1A1A',
-                          color: '#F5B800',
-                          fontWeight: 700,
-                          borderRadius: 10,
-                          minWidth: 110,
-                        }}
-                        onClick={() => {
-                          const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
-                          const nextDay = new Date(currentDate);
-                          nextDay.setDate(nextDay.getDate() + 1);
-                          setQuickViewDate(nextDay);
-                        }}
-                      >
-                        Next Day →
-                      </Button>
-                      <Button
-                        size="compact-md"
-                        variant="outline"
+
                         leftSection={<IconCalendar size={16} />}
                         style={{
                           background: '#fff',
