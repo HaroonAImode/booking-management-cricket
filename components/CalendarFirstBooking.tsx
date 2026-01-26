@@ -14,7 +14,7 @@ export default function CalendarFirstBooking() {
   // All your state and hooks here
   // Example:
   const [todayLoading, setTodayLoading] = useState(false);
-  const [quickViewDate, setQuickViewDate] = useState<Date | null>(null);
+  const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
@@ -31,8 +31,47 @@ export default function CalendarFirstBooking() {
   // Helper: can proceed if at least one slot is selected
   const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
 
-  // All your logic, hooks, and functions go here (move from above)
-  // ...
+  // --- Restore slot loading logic ---
+  useEffect(() => {
+    // Simulate 24 slots for today (replace with real API call)
+    const now = new Date();
+    const slots = Array.from({ length: 24 }, (_, i) => ({
+      slot_hour: i,
+      is_available: i >= now.getHours(),
+      current_status: i % 5 === 0 ? 'booked' : (i % 7 === 0 ? 'pending' : 'available'),
+    }));
+    setTodaySlots(slots);
+  }, [quickViewDate]);
+
+  // --- Slot selection handler ---
+  const handleSlotToggle = (hour: number) => {
+    setSelectedSlots((prev) => {
+      if (prev.includes(hour)) {
+        return prev.filter((h) => h !== hour);
+      } else {
+        // Only allow consecutive selection
+        const newSelection = [...prev, hour].sort((a, b) => a - b);
+        for (let i = 1; i < newSelection.length; i++) {
+          if (newSelection[i] - newSelection[i - 1] !== 1) {
+            return prev;
+          }
+        }
+        return newSelection;
+      }
+    });
+  };
+
+  // --- Proceed to booking form ---
+  const proceedToForm = () => {
+    if (canProceedToForm) {
+      setActiveStep(1);
+    }
+  };
+
+  // --- Go back to slot selection ---
+  const goBackToCalendar = () => {
+    setActiveStep(0);
+  };
 
   // At the end, return your JSX
   return (
@@ -79,7 +118,7 @@ export default function CalendarFirstBooking() {
                   ? 'View availability & select your preferred time slots'
                   : 'Complete your booking details'}
               </Text>
-              <Group gap={{ base: 'xs', sm: 'md' }} justify="center" style={{ flexWrap: 'wrap' }}>
+              <Group gap="md" justify="center" style={{ flexWrap: 'wrap' }}>
                 <Text size="sm" c="#D1D1D1" ta="center" style={{ whiteSpace: 'nowrap' }}>
                   💰 Day Rate (7 AM - 5 PM): <Text component="span" fw={700} c="#F5B800">Rs 1,500/hr</Text>
                 </Text>
@@ -118,13 +157,13 @@ export default function CalendarFirstBooking() {
                       </Group>
                       <Group gap="xs" wrap="wrap" justify="flex-end" style={{ width: '100%' }}>
                         {/* Show Previous Day button only if viewing a future date */}
-                        {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toDateString() !== new Date().toDateString() && (
+                        {quickViewDate.toDateString() !== new Date().toDateString() && (
                           <Button
                             size="sm"
                             variant="filled"
                             style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                             onClick={() => {
-                              const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                              const currentDate = quickViewDate;
                               const prevDay = new Date(currentDate);
                               prevDay.setDate(prevDay.getDate() - 1);
                               // Don't go before today
@@ -142,7 +181,7 @@ export default function CalendarFirstBooking() {
                           variant="filled"
                           style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
                           onClick={() => {
-                            const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                            const currentDate = quickViewDate;
                             const nextDay = new Date(currentDate);
                             nextDay.setDate(nextDay.getDate() + 1);
                             setQuickViewDate(nextDay);
@@ -164,7 +203,7 @@ export default function CalendarFirstBooking() {
                     
                     <Group justify="space-between" align="center">
                       <Text size="sm" c="#1A1A1A" fw={600}>
-                        {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
+                        {quickViewDate.toLocaleDateString('en-US', {
                           weekday: 'long',
                           month: 'long',
                           day: 'numeric',
@@ -227,8 +266,7 @@ export default function CalendarFirstBooking() {
                             onClick={() => {
                               if (isAvailable) {
                                 // Set the date first
-                                const dateToSet = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
-                                setSelectedDate(dateToSet);
+                                setSelectedDate(quickViewDate);
                                 
                                 // Small delay to ensure state updates, then toggle slot
                                 setTimeout(() => {
@@ -355,10 +393,8 @@ export default function CalendarFirstBooking() {
                               <DatePicker
                                 value={quickViewDate}
                                 onChange={(date) => {
-                                  if (date) {
-                                    setQuickViewDate(new Date(date));
-                                    setShowDatePicker(false);
-                                  }
+                                  setQuickViewDate(date ? new Date(date) : new Date());
+                                  setShowDatePicker(false);
                                 }}
                                 minDate={new Date()}
                                 size="lg"
@@ -502,7 +538,7 @@ export default function CalendarFirstBooking() {
 
               {/* Pass data to original BookingForm */}
               <BookingForm
-                preSelectedDate={selectedDate ? new Date(selectedDate) : null}
+                preSelectedDate={selectedDate ? new Date(selectedDate) : new Date()}
                 preSelectedSlots={[...safeSelectedSlots]}
                 hideCalendar={true}
               />
