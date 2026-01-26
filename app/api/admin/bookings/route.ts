@@ -165,12 +165,14 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     });
 
 
-    const result = typeof data === 'string' ? JSON.parse(data) : data;
+    let bookingResult = data;
+    if (typeof bookingResult === 'string') bookingResult = JSON.parse(bookingResult);
+    if (Array.isArray(bookingResult)) bookingResult = bookingResult[0];
 
-    if (!result || !result.success) {
-      console.error('Booking creation failed:', { result, error, body });
+    if (!bookingResult || !bookingResult.success) {
+      console.error('Booking creation failed:', { result: bookingResult, error, body });
       return NextResponse.json(
-        { error: (result && result.error_message) || error?.message || 'Failed to create booking' },
+        { error: (bookingResult && bookingResult.error_message) || error?.message || 'Failed to create booking' },
         { status: 400 }
       );
     }
@@ -178,15 +180,15 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
     // Auto-approve if requested
     if (autoApprove) {
       await supabase.rpc('approve_booking', {
-        p_booking_id: result.booking_id,
+        p_booking_id: bookingResult.booking_id,
         p_admin_notes: `Manual booking created by ${adminProfile.full_name}`,
       });
     }
 
     return NextResponse.json({
       success: true,
-      bookingId: result.booking_id,
-      bookingNumber: result.booking_number,
+      bookingId: bookingResult.booking_id,
+      bookingNumber: bookingResult.booking_number,
       message: `Booking created successfully${autoApprove ? ' and auto-approved' : ''}`,
       createdBy: adminProfile.full_name,
     });
