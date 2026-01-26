@@ -1,3 +1,7 @@
+/* Highlight completed booking rows in admin table */
+.completed-row {
+  background: #e6f2ff !important;
+}
 /**
  * Global Styles
  * 

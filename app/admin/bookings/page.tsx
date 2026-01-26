@@ -674,7 +674,10 @@ export default function AdminBookingsPage() {
               </Table.Thead>
               <Table.Tbody>
                 {bookings.map((booking) => (
-                  <Table.Tr key={booking.id}>
+                  <Table.Tr
+                    key={booking.id}
+                    className={booking.status === 'completed' ? 'completed-row' : ''}
+                  >
                     <Table.Td>
                       <Text size="sm" fw={500}>
                         {booking.booking_number}
@@ -775,14 +778,12 @@ export default function AdminBookingsPage() {
                     </Table.Td>
                     <Table.Td>
                       <Badge
-                        color={
-                          booking.status === 'pending' ? 'orange' :
-                          booking.status === 'approved' ? 'green' :
-                          booking.status === 'completed' ? 'blue' : 'red'
-                        }
+                        color={getStatusColor(booking.status)}
                         variant="light"
+                        size="md"
+                        style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
                       >
-                        {booking.status}
+                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                       </Badge>
                       {booking.remaining_payment > 0 && booking.status === 'approved' && (
                         <Text size="xs" c="red" fw={500} mt={4}>

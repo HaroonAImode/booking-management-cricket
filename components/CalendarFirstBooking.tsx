@@ -1,83 +1,117 @@
 'use client';
 
 /**
- * Calendar First Booking Page
- * NEW FLOW: Calendar → Slot Selection → Customer Form
- * 
- * Step 1: Show calendar with availability
- * Step 2: Customer selects date and slots
- * Step 3: Show booking form after slot selection
- */
-
-import { useState, useEffect, useCallback } from 'react';
-import {
-  Container,
-  Paper,
-  Stack,
-  Title,
-  Text,
-  Button,
-  Group,
-  Badge,
-  Box,
-  Alert,
-  SimpleGrid,
-  Stepper,
-} from '@mantine/core';
-import { DatePickerInput, DatePicker } from '@mantine/dates';
-import {
-  IconCalendar,
-  IconClock,
-  IconUser,
-  IconArrowRight,
-  IconArrowLeft,
-  IconInfoCircle,
-  IconCheck,
-  IconAlertCircle,
-} from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import BookingForm from '@/components/BookingForm';
-import SlotSelector from '@/components/SlotSelector';
-import { getAvailableSlots, formatDateForSQL } from '@/lib/supabase/bookings';
-import { SlotInfo } from '@/types';
-
-export default function CalendarFirstBooking() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<SlotInfo[] | null>(null);
-  const [todaySlots, setTodaySlots] = useState<SlotInfo[] | null>(null);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [slotsError, setSlotsError] = useState<string | null>(null);
-  const [todayLoading, setTodayLoading] = useState(true);
-  const [quickViewDate, setQuickViewDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-
-  // Ensure selectedSlots is always an array for safety
-  const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
-
-  const loadTodaySlots = useCallback(async (viewDate?: Date) => {
-    setTodayLoading(true);
-    const dateToView = viewDate || quickViewDate;
-    // Ensure dateToView is a Date object
-    const dateObj = dateToView instanceof Date ? dateToView : new Date(dateToView);
-    const today = new Date();
-    const dateStr = formatDateForSQL(dateObj);
-    const { data, error } = await getAvailableSlots(dateStr);
-
-    if (!error) {
-      // Generate all 24 slots with proper status
-      const allSlots: SlotInfo[] = [];
-      const currentHour = today.getHours();
-      const isToday = dateObj.toDateString() === today.toDateString();
-
-      for (let hour = 0; hour < 24; hour++) {
-        const existingSlot = data?.find(s => s.slot_hour === hour);
-        const isPast = isToday && hour <= currentHour;
-        
-        if (existingSlot) {
-          allSlots.push({
+                <Paper
+                  p={{ base: 'md', sm: 'xl' }}
+                  withBorder
+                  radius="xl"
+                  style={{
+                    background: 'linear-gradient(135deg, #F5B800 0%, #FFC933 100%)',
+                    border: '2.5px solid #1A1A1A',
+                    boxShadow: '0 8px 32px 0 rgba(245, 184, 0, 0.18)',
+                    marginTop: 8,
+                  }}
+                >
+                  <Stack gap="xs" align="center" style={{ width: '100%' }}>
+                    <Group gap={8} align="center" style={{ width: '100%' }}>
+                      <IconCheck size={22} color="#1A1A1A" />
+                      <Title order={2} style={{ fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', letterSpacing: 0.5 }} c="#1A1A1A" fw={900}>
+                        ⚡ TODAY'S AVAILABILITY
+                      </Title>
+                    </Group>
+                    <Box
+                      style={{
+                        background: '#fff',
+                        borderRadius: 12,
+                        boxShadow: '0 2px 8px rgba(31,31,31,0.07)',
+                        padding: '8px 18px',
+                        margin: '8px 0',
+                        display: 'inline-block',
+                        fontWeight: 700,
+                        fontSize: 'clamp(1rem, 4vw, 1.15rem)',
+                        color: '#1A1A1A',
+                        letterSpacing: 0.2,
+                        border: '1.5px solid #F5B800',
+                        minWidth: 0,
+                        textAlign: 'center',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </Box>
+                    <Group gap={8} justify="center" style={{ width: '100%', flexWrap: 'wrap', marginTop: 4 }}>
+                      {(quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate)).toDateString() !== new Date().toDateString() && (
+                        <Button
+                          size="compact-md"
+                          variant="outline"
+                          style={{
+                            background: '#fff',
+                            color: '#1A1A1A',
+                            border: '2px solid #1A1A1A',
+                            fontWeight: 700,
+                            borderRadius: 10,
+                            minWidth: 110,
+                          }}
+                          onClick={() => {
+                            const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                            const prevDay = new Date(currentDate);
+                            prevDay.setDate(prevDay.getDate() - 1);
+                            if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
+                              setQuickViewDate(prevDay);
+                            }
+                          }}
+                        >
+                          ← Previous Day
+                        </Button>
+                      )}
+                      <Button
+                        size="compact-md"
+                        variant="filled"
+                        style={{
+                          background: '#1A1A1A',
+                          color: '#F5B800',
+                          fontWeight: 700,
+                          borderRadius: 10,
+                          minWidth: 110,
+                        }}
+                        onClick={() => {
+                          const currentDate = quickViewDate instanceof Date ? quickViewDate : new Date(quickViewDate);
+                          const nextDay = new Date(currentDate);
+                          nextDay.setDate(nextDay.getDate() + 1);
+                          setQuickViewDate(nextDay);
+                        }}
+                      >
+                        Next Day →
+                      </Button>
+                      <Button
+                        size="compact-md"
+                        variant="outline"
+                        leftSection={<IconCalendar size={16} />}
+                        style={{
+                          background: '#fff',
+                          color: '#1A1A1A',
+                          border: '2px solid #1A1A1A',
+                          fontWeight: 700,
+                          borderRadius: 10,
+                          minWidth: 140,
+                        }}
+                        onClick={() => setShowDatePicker(true)}
+                      >
+                        Select Any Date
+                      </Button>
+                    </Group>
+                    <Text size="xs" c="#2A2A2A" fw={500} style={{ opacity: 0.8, marginTop: 2 }}>
+                      🔄 Auto-updates every minute
+                    </Text>
+                  </Stack>
             ...existingSlot,
             is_available: isPast ? false : existingSlot.is_available,
           });
