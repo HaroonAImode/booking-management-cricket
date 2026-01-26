@@ -120,12 +120,19 @@ export default function EditBookingModal({
   const [checkingSlots, setCheckingSlots] = useState(false);
   const [slotsModified, setSlotsModified] = useState(false);
 
+  // Ensure settings are loaded before anything else
   useEffect(() => {
     if (opened && bookingId) {
       fetchSettings();
-      fetchBookingData();
     }
   }, [opened, bookingId]);
+
+  // Only fetch booking data after settings are loaded
+  useEffect(() => {
+    if (opened && bookingId && settings) {
+      fetchBookingData();
+    }
+  }, [opened, bookingId, settings]);
 
   useEffect(() => {
     if (bookingDate && settings) {
@@ -209,13 +216,30 @@ export default function EditBookingModal({
   };
 
   const initializeSlots = (bookingSlots: any[]) => {
-    if (!settings) return;
-    
-    const initialSlots: SlotData[] = bookingSlots.map((s: any) => ({
-      hour: s.slot_hour,
-      isNightRate: s.is_night_rate,
-      rate: s.is_night_rate ? settings.night_rate : settings.day_rate,
-    }));
+    if (!settings) {
+      notifications.show({
+        title: '❌ Error',
+        message: 'Settings not loaded. Please try again.',
+        color: 'red',
+      });
+      return;
+    }
+    const initialSlots: SlotData[] = bookingSlots.map((s: any) => {
+      const rate = s.is_night_rate ? settings.night_rate : settings.day_rate;
+      if (typeof rate !== 'number' || isNaN(rate)) {
+        notifications.show({
+          title: '❌ Error',
+          message: 'Invalid slot rate from settings. Please check admin settings.',
+          color: 'red',
+        });
+        return null;
+      }
+      return {
+        hour: s.slot_hour,
+        isNightRate: s.is_night_rate,
+        rate,
+      };
+    }).filter(Boolean) as SlotData[];
     setSlots(initialSlots);
   };
 
@@ -271,15 +295,19 @@ export default function EditBookingModal({
   };
 
   const toggleSlot = (hour: number) => {
-    if (!settings) return;
-    
+    if (!settings) {
+      notifications.show({
+        title: '❌ Error',
+        message: 'Settings not loaded. Please wait or try again.',
+        color: 'red',
+      });
+      return;
+    }
     // Check if slot is already selected
     const existingSlot = slots.find(s => s.hour === hour);
-    
     if (existingSlot) {
       // Remove slot
       const newSlots = slots.filter(s => s.hour !== hour);
-      
       // Check if removing this slot breaks consecutiveness
       if (newSlots.length > 0) {
         const newSlotHours = newSlots.map(s => s.hour);
@@ -294,23 +322,28 @@ export default function EditBookingModal({
           return;
         }
       }
-      
       setSlots(newSlots);
       setSlotsModified(true);
       return;
     }
-
     // Add new slot
     const isNight = isNightHour(hour);
+    const rate = isNight ? settings.night_rate : settings.day_rate;
+    if (typeof rate !== 'number' || isNaN(rate)) {
+      notifications.show({
+        title: '❌ Error',
+        message: 'Invalid slot rate from settings. Please check admin settings.',
+        color: 'red',
+      });
+      return;
+    }
     const newSlot: SlotData = {
       hour: hour,
       isNightRate: isNight,
-      rate: isNight ? settings.night_rate : settings.day_rate,
+      rate,
     };
-
     const newSlots = [...slots, newSlot].sort((a, b) => a.hour - b.hour);
     const newSlotHours = newSlots.map(s => s.hour);
-    
     // Validate consecutive slots
     if (!validateConsecutiveSlots(newSlotHours)) {
       notifications.show({
@@ -322,7 +355,6 @@ export default function EditBookingModal({
       });
       return;
     }
-
     setSlots(newSlots);
     setSlotsModified(true);
   };
@@ -634,16 +666,17 @@ export default function EditBookingModal({
                   leftSection={<IconCalendar size={16} />}
                   value={bookingDate}
                   onChange={(date) => {
+                    // Defensive: Mantine may pass string or Date, always convert to Date or null
+                    let dateObj: Date | null = null;
+                    if (date && typeof date === 'object' && 'getTime' in date) dateObj = date as Date;
+                    else if (typeof date === 'string') dateObj = new Date(date);
                     const previousDate = bookingDate ? new Date(bookingDate).toISOString().split('T')[0] : null;
-                    const newDate = date ? new Date(date).toISOString().split('T')[0] : null;
-                    
-                    setBookingDate(date);
-                    
+                    const newDate = dateObj ? dateObj.toISOString().split('T')[0] : null;
+                    setBookingDate(dateObj);
                     // If date actually changed (not just same date selected), clear slots and require new selection
-                    if (date && previousDate !== newDate) {
+                    if (dateObj && previousDate !== newDate) {
                       setSlots([]);
                       setSlotsModified(true); // Force user to select new slots for new date
-                      
                       notifications.show({
                         title: '📅 Date Changed',
                         message: 'Please select time slots for the new date.',
