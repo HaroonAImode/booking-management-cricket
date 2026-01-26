@@ -1,202 +1,34 @@
-'use client';
-    setTodayLoading(false);
-  }, [quickViewDate]);
+"use client";
 
-  const loadAvailableSlots = useCallback(async () => {
-    if (!selectedDate) return;
+import React, { useState, useEffect, useCallback } from "react";
+import { Box, Container, Stack, Paper, Badge, Title, Text, Group, Button } from "@mantine/core";
+import { IconCheck, IconInfoCircle, IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
+import BookingForm from "./BookingForm";
 
-    setSlotsLoading(true);
-    setSlotsError(null);
+// Add any other imports/types you need
 
-    const dateStr = formatDateForSQL(selectedDate);
-    const { data, error } = await getAvailableSlots(dateStr);
+export default function CalendarFirstBooking() {
+  // All your state and hooks here
+  // Example:
+  const [todayLoading, setTodayLoading] = useState(false);
+  const [quickViewDate, setQuickViewDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]); // Replace any with your slot type
+  const [todaySlots, setTodaySlots] = useState<any[]>([]); // Replace any with your slot type
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [activeStep, setActiveStep] = useState(0);
 
-    if (error) {
-      setSlotsError(error);
-      setAvailableSlots(null);
-      notifications.show({
-        title: '❌ Error Loading Slots',
-        message: error,
-        color: 'red',
-        autoClose: 5000,
-      });
-    } else {
-      setAvailableSlots(data);
-    }
+  // All your logic, hooks, and functions go here (move from above)
+  // ...
 
-    setSlotsLoading(false);
-  }, [selectedDate]);
-
-  // Load today's slots on component mount and when quickViewDate changes
-  useEffect(() => {
-    loadTodaySlots();
-  }, [loadTodaySlots]);
-
-  // Auto-refresh slots every 60 seconds to keep data fresh
-  useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      loadTodaySlots();
-      if (selectedDate) {
-        loadAvailableSlots();
-      }
-      setLastRefreshed(new Date());
-    }, 60000); // 60 seconds = 1 minute
-
-    return () => clearInterval(refreshInterval);
-  }, [loadTodaySlots, loadAvailableSlots, selectedDate]);
-
-  // Refresh when page becomes visible (user returns to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page is now visible, refresh slots
-        loadTodaySlots();
-        if (selectedDate) {
-          loadAvailableSlots();
-        }
-        setLastRefreshed(new Date());
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [loadTodaySlots, loadAvailableSlots, selectedDate]);
-
-  // Load slots when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      loadAvailableSlots();
-      setSelectedSlots([]); // Reset selected slots when date changes
-    } else {
-      setAvailableSlots(null);
-      setSelectedSlots([]);
-    }
-  }, [selectedDate, loadAvailableSlots]);
-
-  const handleSlotToggle = (hour: number) => {
-    const slotsToCheck = selectedDate ? availableSlots : todaySlots;
-    const slotInfo = slotsToCheck?.find(s => s.slot_hour === hour);
-    
-    // More thorough availability check
-    if (!slotInfo) {
-      notifications.show({
-        title: '⚠️ Slot Data Unavailable',
-        message: 'Unable to verify slot status. Please refresh the page.',
-        color: 'orange',
-        autoClose: 3000,
-        icon: <IconInfoCircle size={18} />,
-      });
-      return;
-    }
-
-    // Check if slot is actually available
-    if (!slotInfo.is_available || slotInfo.current_status !== 'available') {
-      const statusMessage = slotInfo.current_status === 'booked' 
-        ? 'This slot is already booked by another customer.'
-        : slotInfo.current_status === 'pending'
-        ? 'This slot has a pending booking.'
-        : 'This slot is not available for booking.';
-
-      notifications.show({
-        title: '⚠️ Slot Not Available',
-        message: statusMessage,
-        color: 'orange',
-        autoClose: 4000,
-        icon: <IconInfoCircle size={18} />,
-      });
-      
-      // Refresh slots to get latest data
-      if (selectedDate) {
-        loadAvailableSlots();
-      } else {
-        loadTodaySlots();
-      }
-      return;
-    }
-
-    setSelectedSlots((prev) => {
-      // Ensure prev is an array
-      const safePrev = Array.isArray(prev) ? prev : [];
-      // If deselecting, just remove it
-      if (safePrev.includes(hour)) {
-        return safePrev.filter((h) => h !== hour);
-      }
-
-      // If selecting, check if it's consecutive with existing selections
-      const newSelection = [...safePrev, hour].sort((a, b) => a - b);
-      
-      // Check if all slots are consecutive
-      if (newSelection.length > 1) {
-        for (let i = 1; i < newSelection.length; i++) {
-          if (newSelection[i] - newSelection[i - 1] !== 1) {
-            // Not consecutive!
-            notifications.show({
-              title: '⚠️ Select Consecutive Slots Only',
-              message: 'You must select continuous time slots (e.g., 4 PM, 5 PM, 6 PM). For different times, create separate bookings.',
-              color: 'orange',
-              autoClose: 5000,
-              icon: <IconInfoCircle size={18} />,
-            });
-            return safePrev; // Don't add the slot
-          }
-        }
-      }
-
-      return newSelection;
-    });
-  };
-
-  const canProceedToForm = selectedDate && safeSelectedSlots.length > 0;
-
-  const validateConsecutiveSlots = (): boolean => {
-    if (safeSelectedSlots.length <= 1) return true;
-    
-    const sorted = [...safeSelectedSlots].sort((a, b) => a - b);
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i] - sorted[i - 1] !== 1) {
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const proceedToForm = () => {
-    if (!canProceedToForm) return;
-
-    // Final validation check
-    if (!validateConsecutiveSlots()) {
-      notifications.show({
-        title: '⚠️ Invalid Time Selection',
-        message: 'Your selected time slots are not consecutive. Please select continuous hours only (e.g., 4 PM, 5 PM, 6 PM).',
-        color: 'red',
-        autoClose: 6000,
-        icon: <IconAlertCircle size={18} />,
-      });
-      return;
-    }
-
-    setActiveStep(1);
-    // Scroll to the booking form section after a brief delay to let it render
-    setTimeout(() => {
-      const formSection = document.getElementById('booking-form-section');
-      if (formSection) {
-        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }, 100);
-  };
-
-  const goBackToCalendar = () => {
-    setActiveStep(0);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
+  // At the end, return your JSX
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh' }}>
       <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
         <Stack gap="xl">
-
           <Paper
             p={{ base: 'lg', sm: 'xl' }}
             radius="lg"
