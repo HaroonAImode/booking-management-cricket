@@ -36,6 +36,7 @@ import {
   Paper,
   Tooltip,
   ScrollArea,
+  Modal,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -100,6 +101,10 @@ interface Booking {
 }
 
 export default function AdminBookingsPage() {
+    // Export modal state
+    const [exportModalOpened, setExportModalOpened] = useState(false);
+    // Mantine DatesRangeValue<Date> is [Date | null, Date | null]
+    const [exportDateRange, setExportDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -401,48 +406,102 @@ export default function AdminBookingsPage() {
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation for more columns
-    
-    doc.setFontSize(18);
-    doc.text('Cricket Booking Report', 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    // Accept optional date range
+    const exportToPDF = (dateRange?: [Date | null, Date | null] | null) => {
+      const doc = new jsPDF('l', 'mm', 'a4');
+      doc.setFontSize(18);
+      doc.text('Cricket Booking Report', 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
 
-    const tableData = bookings.map(b => {
-      const { cash, online } = getPaymentBreakdown(b);
-      // Use actual paid: advance_payment + remaining_payment_amount (not remaining_payment)
-      const totalPaid = b.advance_payment + (b.remaining_payment_amount || 0);
-      return [
-        b.booking_number,
-        b.customer.name,
-        b.customer.phone,
-        new Date(b.booking_date).toLocaleDateString(),
-        `${b.total_hours}h`,
-        `Rs ${b.total_amount.toLocaleString()}`,
-        `Rs ${totalPaid.toLocaleString()}`,
-        `Rs ${cash.toLocaleString()}`,
-        `Rs ${online.toLocaleString()}`,
-        b.status,
-      ];
-    });
+      // Filter bookings by date range if provided
+      let filteredBookings = bookings;
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const from = dateRange[0];
+        const to = dateRange[1];
+        filteredBookings = bookings.filter(b => {
+          const d = new Date(b.booking_date);
+          return d >= from && d <= to;
+        });
+      }
 
-    autoTable(doc, {
-      head: [['Booking #', 'Customer', 'Phone', 'Date', 'Hours', 'Total', 'Paid', 'Cash', 'Online', 'Status']],
-      body: tableData,
-      startY: 35,
-      styles: { fontSize: 7 },
-      headStyles: { fillColor: [34, 139, 230] },
-    });
+      // --- Statistics Section ---
+      const totalRevenue = filteredBookings.reduce((sum, b) => sum + b.advance_payment + (b.remaining_payment_amount || 0), 0);
+      const totalBookings = filteredBookings.length;
+      const monthMap = new Map<string, { bookings: number; revenue: number }>();
+      filteredBookings.forEach((b: Booking) => {
+        const month = new Date(b.booking_date).toLocaleString('default', { month: 'long', year: 'numeric' });
+        if (!monthMap.has(month)) monthMap.set(month, { bookings: 0, revenue: 0 });
+        const entry = monthMap.get(month)!;
+        entry.bookings += 1;
+        entry.revenue += b.advance_payment + (b.remaining_payment_amount || 0);
+      });
+      let statY = 38;
+      doc.setFontSize(10);
+      doc.text(`Total Bookings: ${totalBookings}`, 14, statY);
+      doc.text(`Total Revenue: Rs ${totalRevenue.toLocaleString()}`, 70, statY);
+      statY += 6;
+      doc.text('Month-wise Summary:', 14, statY);
+      let monthY = statY + 6;
+      monthMap.forEach((v, k) => {
+        doc.text(`${k}: ${v.bookings} bookings, Rs ${v.revenue.toLocaleString()}`, 18, monthY);
+        monthY += 6;
+      });
 
-    doc.save(`bookings-${new Date().toISOString().split('T')[0]}.pdf`);
-    notifications.show({
-      title: '✅ Export Successful',
-      message: 'PDF report has been downloaded',
-      color: 'green',
-      autoClose: 3000,
-      icon: <IconFileTypePdf size={18} />,
-    });
-  };
+      // --- Group bookings by status ---
+      const statusOrder = ['completed', 'approved', 'pending'];
+      const grouped: Record<string, Booking[]> = { completed: [], approved: [], pending: [] };
+      filteredBookings.forEach((b: Booking) => {
+        if (grouped[b.status]) grouped[b.status].push(b);
+      });
+
+      let tableY = monthY + 4;
+      statusOrder.forEach((status: string) => {
+        if (grouped[status].length === 0) return;
+        doc.setFontSize(12);
+        doc.text(status.charAt(0).toUpperCase() + status.slice(1), 14, tableY);
+        tableY += 4;
+        const tableData = grouped[status].map((b: Booking) => {
+          const { cash, online } = getPaymentBreakdown(b);
+          const totalPaid = b.advance_payment + (b.remaining_payment_amount || 0);
+          const slotHours = b.slots.map((s: any) => s.slot_hour);
+          const slotRange = formatSlotRanges(slotHours);
+          return [
+            b.booking_number,
+            b.customer.name,
+            b.customer.phone,
+            new Date(b.booking_date).toLocaleDateString(),
+            slotRange,
+            `Rs ${b.total_amount.toLocaleString()}`,
+            `Rs ${totalPaid.toLocaleString()}`,
+            `Rs ${cash.toLocaleString()}`,
+            `Rs ${online.toLocaleString()}`,
+            b.status,
+          ];
+        });
+        autoTable(doc, {
+          head: [['Booking #', 'Customer', 'Phone', 'Date', 'Time', 'Total', 'Paid', 'Cash', 'Online', 'Status']],
+          body: tableData,
+          startY: tableY,
+          styles: { fontSize: 7 },
+          headStyles: { fillColor: [34, 139, 230] },
+          columnStyles: {
+            5: { fillColor: [220, 255, 220] }, // Highlight 'Total' column (light green)
+          },
+        });
+        // @ts-ignore
+        tableY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 8 : tableY + 40;
+      });
+
+      doc.save(`bookings-${new Date().toISOString().split('T')[0]}.pdf`);
+      notifications.show({
+        title: '✅ Export Successful',
+        message: 'PDF report has been downloaded',
+        color: 'green',
+        autoClose: 3000,
+        icon: <IconFileTypePdf size={18} />,
+      });
+    };
 
   const exportToExcel = () => {
     const data = bookings.map(b => {
@@ -557,7 +616,7 @@ export default function AdminBookingsPage() {
                 <Menu.Dropdown>
                   <Menu.Item
                     leftSection={<IconFileTypePdf size={16} />}
-                    onClick={exportToPDF}
+                    onClick={() => setExportModalOpened(true)}
                   >
                     Export as PDF
                   </Menu.Item>
@@ -569,6 +628,40 @@ export default function AdminBookingsPage() {
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
+
+              {/* Export Options Modal */}
+              <Modal
+                opened={exportModalOpened}
+                onClose={() => setExportModalOpened(false)}
+                title="Export PDF Options"
+                centered
+                size="xs"
+              >
+                <Stack>
+                  <Button fullWidth onClick={() => { setExportModalOpened(false); exportToPDF(); }}>
+                    Export All Data
+                  </Button>
+                  <DatePickerInput
+                    type="range"
+                    label="Select Timeline"
+                    value={exportDateRange}
+                    onChange={(value) => setExportDateRange(value as [Date | null, Date | null])}
+                    mx="auto"
+                    maw={220}
+                  />
+                  <Button
+                    fullWidth
+                    mt="sm"
+                    onClick={() => {
+                      setExportModalOpened(false);
+                      exportToPDF(exportDateRange);
+                    }}
+                    disabled={!exportDateRange[0] || !exportDateRange[1]}
+                  >
+                    Export Selected Timeline
+                  </Button>
+                </Stack>
+              </Modal>
             </Group>
           </Group>
         </Stack>
@@ -620,7 +713,7 @@ export default function AdminBookingsPage() {
                 placeholder="From Date"
                 leftSection={<IconCalendarEvent size={16} />}
                 value={dateFrom}
-                onChange={setDateFrom}
+                onChange={(value) => setDateFrom(value && typeof value !== 'string' ? value : null)}
                 clearable
                 style={{ flex: '1 1 140px', minWidth: 140 }}
                 size="sm"
@@ -630,7 +723,7 @@ export default function AdminBookingsPage() {
                 placeholder="To Date"
                 leftSection={<IconCalendarEvent size={16} />}
                 value={dateTo}
-                onChange={setDateTo}
+                onChange={(value) => setDateTo(value && typeof value !== 'string' ? value : null)}
                 clearable
                 style={{ flex: '1 1 140px', minWidth: 140 }}
                 size="sm"
@@ -1032,4 +1125,4 @@ export default function AdminBookingsPage() {
       )}
     </Container>
   );
-}
+

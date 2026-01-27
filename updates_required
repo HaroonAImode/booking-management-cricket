@@ -1,0 +1,85 @@
+- check pasted image1 
+as when we are completing remaining payment from admin id or ground manager id then it will include the total remaining amount as auto calculated ( advance - total amount ) so alos proper remaing tag as currentyl appearing will appear also another field will appear which says enter remaing amount and firstly it will show the total remaining amount but admin id and ground manager should also be able to type amount whatever that want but should not be more than total remining amount i hope you understadn this , we are adding this because sometime we give discount to any booking so currently it accpet only toal remaing amount but after adding this feature we would be able to enter amount after giving dicout whatever we want 
+
+
+
+- also in calendar page am seeing calanedar like this on mobile screen as in pasted image 2 :
+i want another button like which says change view and upen clicking that would load proper calendar like view hope you understand this thing what am trying to say as we are seeing in deskop view like propee calender and also adjust that professiaonlly like for mobile view properly should look good and user frieendly
+
+
+- check pasted image 3 :
+currently in dasbaord page bellow there are table of recent slot and in that  we are seeing like for hours as 2h , 3h , 1h but we dont want like that instead we want proper timings like from 3am - 5 am like proper timings 
+
+- alos in dasbaord where there are recent bookings alos add a proper button which says see all bookings and when admin click on that it will take him to bookings page 
+
+
+check pasted image 4 :
+we can see like a table which says proofs and its good but i want proper two new columns which are cash and online so in these both tables we should properly see payments like how much cash for this booking and how much online for this booking online will include like easypaisa, sadapay etc online transfers and cash will include cash , and for both like if for any booking either cash or online it should properly show little small tags on that amount like cash , sadapay, easyapisa hoep you understand this part aswell
+so please also update this professiaonlly and perfectly and in a top notch way and also update the pdf report that get downloaded accordingly shoud also show these things in pdf 
+
+
+
+- also the notification things in that read all is workable but still we see the notification and total notification means button clickable but not reading notifications so also correct this 
+
+- check pasted image 5:
+it is currently showing total revenue i dont know how this is getting calculated but i want it liek it will show amount : total revenue = advance payment + completed booking payment hope you understand this thing like advance payment and remaing payment that get paid only (in short it will not show remaining payment ) 
+so alos update this perfectly dont and should be proper and fair working 
+
+
+- check pasted image 6:
+you can see pending approval as in deshboard i want this button to be clickable like when click this pending approval then this should show pending approval bookings on booking page or add a proper button on this aswell
+
+
+- currently when am deleteing any booking as a admin then like it shows a popup form where admin has to type DELETE that is good but dont want this thing when admin choose delete then it should show a popup like message to confirm delete this booking then it will delete this booking and also currently when delelting then it is showing error so please update this and it should be working 
+
+
+
+- check pasted image 7:
+ currently when admin editing any booking then date and other things get changed but admin cant see any option to also change time so all add that option and when choose that option then proper show available slot with proper dates filter option like can click next date or next etc and form should also get updated whatever date admin selelct and time then can click save changes etc 
+so please also make this functional and proper workable 
+
+
+- in booking page for admin and ground manager add proper filter to select dates like date filter from this to this and upon clicking that ti should show proper bookings for those dates and so please also update that thing aswell
+
+- also in booking page add new column at the end of table which says total amount and it should show total amount according to advance + remainign added( remaining not the one which auto get calculated should be the one which was added while filling remaing payment adding form hope you understand this thing as well)
+so please also update that thing and also update the pdf report 
+
+
+
+- also when admin is dooing mannual booking then error appearing when clicking booked and also the UI on mobiel screen for mannaul booking form is not little good check pasted image 8
+
+
+
+so please update all these changes perfectly and professioanlly and also give sql queries that needs to be added or queries needs to run in sql editor in supabase
+
+
+
+
+
+
+
+
+
+
+currnetly i see in the pdf report that get downloaded :
+in hours column it is only showing like 2h, 3h, 1h
+so i dont want that instead it should show proper hour timeline
+like 2: 00 PM to 4:00PM
+like this proper not sepearete for each hours
+just 1 timeline
+
+and also highlight the total column like it that whole column will be hightleted to any color please choose any good color
+
+and also i want the data to be proper like
+first report should show statistics like total revenue , amount etc total bookings and also month wise total booking and total revenue
+like januray , febuary , march etc like that way
+
+and also currently i see it just simply showing whole table or bookings like completed , pending , approved mixed
+
+so i dont want like that istead
+first completed then heading of approved then all bookings of that then pending heading and all bookings table which are pending
+
+also add a option like when admin or ground manager click export then click export as pdf then it should show options like all data, selelct timeline , etc
+should be proper UI and also user friendly UI for mobile screen also
+
+and then push to repo
