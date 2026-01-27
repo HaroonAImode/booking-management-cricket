@@ -321,14 +321,7 @@ export default function AdminBookingsPage() {
     try {
       const response = await fetch(`/api/admin/bookings/${bookingId}`, {
         method: 'DELETE',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        notifications.show({
-          title: '✅ Booking Deleted',
-          message: `Booking #${bookingNumber} has been permanently deleted`,
+      }
           color: 'green',
           autoClose: 4000,
           icon: <IconTrash size={18} />,
