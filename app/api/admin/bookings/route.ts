@@ -121,7 +121,7 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
 
     const supabase = await createClient();
     const body = await request.json();
-    
+
     const {
       customerName,
       customerPhone,
@@ -143,6 +143,41 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
+    // 1. Check if customer with this phone exists
+    let customerId = null;
+    let existingCustomerName = null;
+    const { data: existingCustomer, error: customerLookupError } = await supabase
+      .from('customers')
+      .select('id, name')
+      .eq('phone', customerPhone)
+      .maybeSingle();
+
+    if (customerLookupError) {
+      return NextResponse.json(
+        { error: 'Failed to check existing customer' },
+        { status: 500 }
+      );
+    }
+
+    if (existingCustomer && existingCustomer.id) {
+      customerId = existingCustomer.id;
+      existingCustomerName = existingCustomer.name;
+    } else {
+      // Create new customer
+      const { data: newCustomer, error: createCustomerError } = await supabase
+        .from('customers')
+        .insert([{ name: customerName, phone: customerPhone }])
+        .select('id')
+        .single();
+      if (createCustomerError || !newCustomer) {
+        return NextResponse.json(
+          { error: 'Failed to create new customer' },
+          { status: 500 }
+        );
+      }
+      customerId = newCustomer.id;
+    }
+
     // Format slots for RPC function
     const formattedSlots = slots.map((slot: any) => ({
       slot_hour: slot.hour,
@@ -151,9 +186,9 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       hourly_rate: slot.rate,
     }));
 
-    // Call create booking function
+    // Call create booking function (pass customer name as the original name for this booking, not to update customer)
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
-      p_customer_name: customerName,
+      p_customer_name: existingCustomerName || customerName,
       p_booking_date: bookingDate,
       p_total_hours: slots.length,
       p_total_amount: totalAmount,
@@ -164,7 +199,6 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       p_customer_phone: customerPhone || null,
       p_customer_notes: notes || null,
     });
-
 
     let bookingResult = data;
     if (typeof bookingResult === 'string') bookingResult = JSON.parse(bookingResult);
