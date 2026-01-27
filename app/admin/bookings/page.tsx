@@ -99,7 +99,6 @@ interface Booking {
     is_night_rate: boolean;
   }>;
 }
-
 export default function AdminBookingsPage() {
     // Export modal state
     const [exportModalOpened, setExportModalOpened] = useState(false);
