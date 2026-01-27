@@ -143,40 +143,21 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-    // 1. Check if customer with this phone exists
-    let customerId = null;
-    let existingCustomerName = null;
-    const { data: existingCustomer, error: customerLookupError } = await supabase
-      .from('customers')
-      .select('id, name')
-      .eq('phone', customerPhone)
-      .maybeSingle();
 
-    if (customerLookupError) {
+    // Always create a new customer for every booking, even if name/phone matches existing records
+    let customerId = null;
+    const { data: newCustomer, error: createCustomerError } = await supabase
+      .from('customers')
+      .insert([{ name: customerName, phone: customerPhone }])
+      .select('id')
+      .single();
+    if (createCustomerError || !newCustomer) {
       return NextResponse.json(
-        { error: 'Failed to check existing customer' },
+        { error: 'Failed to create new customer' },
         { status: 500 }
       );
     }
-
-    if (existingCustomer && existingCustomer.id) {
-      customerId = existingCustomer.id;
-      existingCustomerName = existingCustomer.name;
-    } else {
-      // Create new customer
-      const { data: newCustomer, error: createCustomerError } = await supabase
-        .from('customers')
-        .insert([{ name: customerName, phone: customerPhone }])
-        .select('id')
-        .single();
-      if (createCustomerError || !newCustomer) {
-        return NextResponse.json(
-          { error: 'Failed to create new customer' },
-          { status: 500 }
-        );
-      }
-      customerId = newCustomer.id;
-    }
+    customerId = newCustomer.id;
 
     // Format slots for RPC function
     const formattedSlots = slots.map((slot: any) => ({
