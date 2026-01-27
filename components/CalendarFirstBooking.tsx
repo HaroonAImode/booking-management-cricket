@@ -175,8 +175,30 @@ export default function CalendarFirstBooking() {
                     borderColor: '#1A1A1A',
                     borderWidth: '3px',
                     boxShadow: '0 8px 24px rgba(245, 184, 0, 0.3)',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
+                  {/* Loader overlay for slot grid */}
+                  {slotsLoading && (
+                    <Box style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255, 249, 230, 0.85)',
+                      zIndex: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Group gap="md" align="center">
+                        <Loader color="#F5B800" size="xl" />
+                        <Text fw={700} c="#1A1A1A" size="lg">Loading slots...</Text>
+                      </Group>
+                    </Box>
+                  )}
                   <Stack gap="md">
                     <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
                       <Group gap="xs" style={{ flexGrow: 1 }}>
@@ -189,10 +211,12 @@ export default function CalendarFirstBooking() {
                         {/* Show Previous Day button only if viewing a future date */}
                         {quickViewDate.toDateString() !== new Date().toDateString() && (
                           <Button
-                            size="sm"
+                            size="md"
+                            radius="xl"
                             variant="filled"
-                            style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
+                            style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700, boxShadow: '0 2px 8px #1A1A1A22', fontSize: '1rem', padding: '0 18px' }}
                             onClick={() => {
+                              setSlotsLoading(true);
                               const currentDate = quickViewDate;
                               const prevDay = new Date(currentDate);
                               prevDay.setDate(prevDay.getDate() - 1);
@@ -207,10 +231,12 @@ export default function CalendarFirstBooking() {
                           </Button>
                         )}
                         <Button
-                          size="sm"
+                          size="md"
+                          radius="xl"
                           variant="filled"
-                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
+                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700, boxShadow: '0 2px 8px #1A1A1A22', fontSize: '1rem', padding: '0 18px' }}
                           onClick={() => {
+                            setSlotsLoading(true);
                             const currentDate = quickViewDate;
                             const nextDay = new Date(currentDate);
                             nextDay.setDate(nextDay.getDate() + 1);
@@ -220,31 +246,43 @@ export default function CalendarFirstBooking() {
                           Next Day →
                         </Button>
                         <Button
-                          size="sm"
+                          size="md"
+                          radius="xl"
                           variant="filled"
-                          leftSection={<IconCalendar size={16} />}
-                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700 }}
+                          leftSection={<IconCalendar size={18} />}
+                          style={{ background: '#1A1A1A', color: '#F5B800', fontWeight: 700, boxShadow: '0 2px 8px #1A1A1A22', fontSize: '1rem', padding: '0 18px' }}
                           onClick={() => setShowDatePicker(true)}
                         >
                           Select Any Date
                         </Button>
                       </Group>
                     </Group>
-                    
-                    <Group justify="space-between" align="center">
-                      <Text size="sm" c="#1A1A1A" fw={600}>
+                    {/* Premium date pill */}
+                    <Group justify="center" align="center" mt="xs">
+                      <Box style={{
+                        background: '#1A1A1A',
+                        color: '#F5B800',
+                        borderRadius: '32px',
+                        padding: '8px 28px',
+                        fontWeight: 700,
+                        fontSize: '1.15rem',
+                        boxShadow: '0 2px 8px #1A1A1A22',
+                        letterSpacing: '0.5px',
+                        border: '2px solid #F5B800',
+                        minWidth: 'fit-content',
+                        textAlign: 'center',
+                      }}>
                         {quickViewDate.toLocaleDateString('en-US', {
                           weekday: 'long',
                           month: 'long',
                           day: 'numeric',
                           year: 'numeric'
                         })}
-                      </Text>
-                      <Text size="xs" c="#2A2A2A" fw={500} style={{ opacity: 0.8 }}>
+                      </Box>
+                      <Text size="xs" c="#2A2A2A" fw={500} style={{ opacity: 0.8, marginLeft: 12 }}>
                         🔄 Auto-updates every minute
                       </Text>
                     </Group>
-
                     {/* Status Legend - Moved to Top */}
                     <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
                       <Badge size="md" style={{ background: '#1A1A1A', color: 'white', padding: '8px 12px' }}>✓ Available</Badge>
@@ -252,123 +290,120 @@ export default function CalendarFirstBooking() {
                       <Badge size="md" style={{ background: '#F59E0B', color: 'white', padding: '8px 12px' }}>⏳ Pending</Badge>
                       <Badge size="md" style={{ background: '#DC2626', color: 'white', padding: '8px 12px' }}>⏱️ Past</Badge>
                     </Group>
-
                     {/* All 24 Slots Grid */}
-                    <SimpleGrid cols={{ base: 3, xs: 4, sm: 6, md: 8 }} spacing={{ base: 'xs', sm: 'sm' }}>
-                      {todaySlots.map((slot) => {
-                        const isPast = !slot.is_available && slot.slot_hour <= new Date().getHours();
-                        const isBooked = slot.current_status === 'booked';
-                        const isPending = slot.current_status === 'pending';
-                        const isAvailable = slot.is_available && !isPast;
+                    <Box style={{ transition: 'opacity 0.3s', opacity: slotsLoading ? 0.3 : 1 }}>
+                      <SimpleGrid cols={{ base: 3, xs: 4, sm: 6, md: 8 }} spacing={{ base: 'xs', sm: 'sm' }}>
+                        {todaySlots.map((slot) => {
+                          const isPast = !slot.is_available && slot.slot_hour <= new Date().getHours();
+                          const isBooked = slot.current_status === 'booked';
+                          const isPending = slot.current_status === 'pending';
+                          const isAvailable = slot.is_available && !isPast;
 
-                        return (
-                          <Paper
-                            key={slot.slot_hour}
-                            p="md"
-                            radius="md"
-                            style={{
-                              cursor: isAvailable ? 'pointer' : 'not-allowed',
-                              opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
-                              background: safeSelectedSlots.includes(slot.slot_hour) && isAvailable
-                                ? '#F5B800'
-                                : isAvailable 
-                                ? '#1A1A1A' 
-                                : isPast 
-                                ? '#DC2626' 
-                                : isBooked 
-                                ? '#6B7280' 
-                                : '#F59E0B',
-                              color: safeSelectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
-                              minHeight: '75px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                              border: safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
-                                ? '3px solid #1A1A1A' 
-                                : isAvailable 
-                                ? '2px solid #F5B800' 
-                                : 'none',
-                              transition: 'all 0.2s ease',
-                              transform: safeSelectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
-                            }}
-                            onClick={() => {
-                              if (isAvailable) {
-                                // Set the date first
-                                setSelectedDate(quickViewDate);
-                                
-                                // Small delay to ensure state updates, then toggle slot
-                                setTimeout(() => {
-                                  handleSlotToggle(slot.slot_hour);
-                                }, 100);
-                              }
-                            }}
-                            onMouseEnter={(e) => {
-                              if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
-                                e.currentTarget.style.transform = 'scale(1.05)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.boxShadow = 'none';
-                              }
-                            }}
-                          >
-                            <Text 
-                              fw={700} 
-                              style={{ 
-                                fontSize: 'clamp(12px, 3vw, 15px)',
-                                lineHeight: 1.1,
-                                textAlign: 'center',
-                                letterSpacing: '-0.5px',
+                          return (
+                            <Paper
+                              key={slot.slot_hour}
+                              p="md"
+                              radius="md"
+                              style={{
+                                cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
+                                background: safeSelectedSlots.includes(slot.slot_hour) && isAvailable
+                                  ? '#F5B800'
+                                  : isAvailable 
+                                  ? '#1A1A1A' 
+                                  : isPast 
+                                  ? '#DC2626' 
+                                  : isBooked 
+                                  ? '#6B7280' 
+                                  : '#F59E0B',
+                                color: safeSelectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
+                                minHeight: '75px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                border: safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
+                                  ? '3px solid #1A1A1A' 
+                                  : isAvailable 
+                                  ? '2px solid #F5B800' 
+                                  : 'none',
+                                transition: 'all 0.2s ease',
+                                transform: safeSelectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
+                              }}
+                              onClick={() => {
+                                if (isAvailable) {
+                                  setSelectedDate(quickViewDate);
+                                  setTimeout(() => {
+                                    handleSlotToggle(slot.slot_hour);
+                                  }, 100);
+                                }
+                              }}
+                              onMouseEnter={(e) => {
+                                if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
+                                  e.currentTarget.style.transform = 'scale(1.05)';
+                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
+                                  e.currentTarget.style.transform = 'scale(1)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }
                               }}
                             >
-                              {slot.slot_hour === 0 ? '12:00' : slot.slot_hour > 12 ? `${slot.slot_hour - 12}:00` : `${slot.slot_hour}:00`}
-                            </Text>
-                            <Text 
-                              size="xs" 
-                              fw={600}
-                              style={{ 
-                                fontSize: '10px',
-                                opacity: 0.9,
-                              }}
-                            >
-                              {slot.slot_hour < 12 ? 'AM' : 'PM'}
-                            </Text>
-                            {isBooked ? (
-                              <Badge 
-                                size="xs" 
+                              <Text 
+                                fw={700} 
                                 style={{ 
-                                  background: '#DC2626', 
-                                  color: 'white',
-                                  fontSize: '9px',
-                                  padding: '2px 6px',
-                                  fontWeight: 700,
-                                  marginTop: '-2px',
+                                  fontSize: 'clamp(12px, 3vw, 15px)',
+                                  lineHeight: 1.1,
+                                  textAlign: 'center',
+                                  letterSpacing: '-0.5px',
                                 }}
                               >
-                                BOOKED
-                              </Badge>
-                            ) : (
-                              <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
-                                {safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
-                                  ? '✅' 
-                                  : isPast 
-                                  ? '⏱️' 
-                                  : isPending 
-                                  ? '⏳' 
-                                  : '✓'
-                                }
+                                {slot.slot_hour === 0 ? '12:00' : slot.slot_hour > 12 ? `${slot.slot_hour - 12}:00` : `${slot.slot_hour}:00`}
                               </Text>
-                            )}
-                          </Paper>
-                        );
-                      })}
-                    </SimpleGrid>
-
+                              <Text 
+                                size="xs" 
+                                fw={600}
+                                style={{ 
+                                  fontSize: '10px',
+                                  opacity: 0.9,
+                                }}
+                              >
+                                {slot.slot_hour < 12 ? 'AM' : 'PM'}
+                              </Text>
+                              {isBooked ? (
+                                <Badge 
+                                  size="xs" 
+                                  style={{ 
+                                    background: '#DC2626', 
+                                    color: 'white',
+                                    fontSize: '9px',
+                                    padding: '2px 6px',
+                                    fontWeight: 700,
+                                    marginTop: '-2px',
+                                  }}
+                                >
+                                  BOOKED
+                                </Badge>
+                              ) : (
+                                <Text style={{ fontSize: '14px', marginTop: '-2px' }}>
+                                  {safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
+                                    ? '✅' 
+                                    : isPast 
+                                    ? '⏱️' 
+                                    : isPending 
+                                    ? '⏳' 
+                                    : '✓'
+                                  }
+                                </Text>
+                              )}
+                            </Paper>
+                          );
+                        })}
+                      </SimpleGrid>
+                    </Box>
                     <Alert 
                       icon={<IconInfoCircle size={18} />}
                       color="dark" 
@@ -384,7 +419,6 @@ export default function CalendarFirstBooking() {
                         }
                       </Text>
                     </Alert>
-
                     {/* Date Picker Modal */}
                     {showDatePicker && (
                       <Box
@@ -418,11 +452,11 @@ export default function CalendarFirstBooking() {
                         >
                           <Stack gap="lg">
                             <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
-                            
                             <Box style={{ display: 'flex', justifyContent: 'center' }}>
                               <DatePicker
                                 value={quickViewDate}
                                 onChange={(date) => {
+                                  setSlotsLoading(true);
                                   setQuickViewDate(date ? new Date(date) : new Date());
                                   setShowDatePicker(false);
                                 }}
@@ -437,7 +471,6 @@ export default function CalendarFirstBooking() {
                                 }}
                               />
                             </Box>
-
                             <Button
                               fullWidth
                               size="lg"
