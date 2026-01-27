@@ -1123,6 +1123,8 @@ export default function AdminBookingsPage() {
           onSuccess={fetchBookings}
         />
       )}
+
     </Container>
   );
+}
 
