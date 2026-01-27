@@ -1119,6 +1119,7 @@ export default function AdminBookingsPage() {
           bookingId={selectedPaymentBooking.id}
           bookingNumber={selectedPaymentBooking.number}
           remainingAmount={selectedPaymentBooking.remaining}
+
           onSuccess={fetchBookings}
         />
       )}
