@@ -550,14 +550,14 @@ export default function AdminBookingsPage() {
             const discount = tableData[data.row.index].discount;
             if (discount > 0) {
               const doc = data.doc;
-              // Draw small red text below the paid amount
-              doc.setFontSize(6.5);
+              // Draw a very small red tag just below and right-aligned to the paid amount
+              doc.setFontSize(5.2);
               doc.setTextColor(220, 20, 60); // Red
               const text = `Discount: Rs ${discount.toLocaleString()}`;
-              // Place just below the paid amount
-              const x = data.cell.x + data.cell.width / 2;
-              const y = data.cell.y + data.cell.height - 2;
-              doc.text(text, x, y, { align: 'center' });
+              // Right-align, just below the paid amount (2.5mm below, 1.5mm from right edge)
+              const x = data.cell.x + data.cell.width - 1.5;
+              const y = data.cell.y + data.cell.height - 1.2;
+              doc.text(text, x, y, { align: 'right' });
               doc.setTextColor(0, 0, 0); // Reset to black
             }
           }
