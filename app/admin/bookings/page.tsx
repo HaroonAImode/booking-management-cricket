@@ -463,6 +463,19 @@ export default function AdminBookingsPage() {
     doc.setLineWidth(0.5);
     doc.line(10, 44, pageWidth - 10, 44);
 
+    // --- Payment Summary (move to top) ---
+    let statY = 52;
+    doc.setFontSize(11);
+    doc.setTextColor(34, 139, 230);
+    doc.text('Payment Summary:', 14, statY);
+    statY += 7;
+    doc.setFontSize(9.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Total Cash: Rs ${totalCash.toLocaleString()}`, 18, statY);
+    statY += 6;
+    doc.text(`Total Online: Rs ${totalOnline.toLocaleString()}  (Easypaisa: Rs ${totalEasypaisa.toLocaleString()}, SadaPay: Rs ${totalSadaPay.toLocaleString()})`, 18, statY);
+    statY += 8;
+
     // --- Statistics Section (colorful badges style) ---
     const totalRevenue = filteredBookings.reduce((sum, b) => sum + b.advance_payment + (b.remaining_payment_amount || 0), 0);
     const totalBookings = filteredBookings.length;
@@ -476,7 +489,6 @@ export default function AdminBookingsPage() {
     });
 
     // Draw "badges" for stats
-    let statY = 52;
     const badgeHeight = 10;
     const badgePad = 4;
     let badgeX = 14;
@@ -514,7 +526,6 @@ export default function AdminBookingsPage() {
       doc.text(`, Rs ${v.revenue.toLocaleString()}`, 90, monthY);
       monthY += 6;
     });
-
 
     // --- Group bookings by status ---
     const statusOrder = ['completed', 'approved', 'pending'];

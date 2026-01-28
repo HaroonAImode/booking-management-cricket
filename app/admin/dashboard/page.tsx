@@ -247,11 +247,11 @@ export default function AdminDashboardPage() {
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh', paddingTop: '1px' }}>
       <Container size="xl" py={{ base: 'sm', sm: 'md', md: 'xl' }} px={{ base: 'xs', sm: 'sm', md: 'md' }} className="animate-fade-in">
-      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
+      <Stack gap="xl">
         {/* Header */}
         <Paper
-          p={{ base: 'sm', sm: 'md', md: 'xl' }}
-          radius={{ base: 'md', sm: 'lg' }}
+          p="xl"
+          radius="lg"
           style={{
             background: '#1A1A1A',
             border: '2px solid #F5B800',
@@ -263,7 +263,7 @@ export default function AdminDashboardPage() {
               <Title 
                 order={1} 
                 c="white" 
-                size={{ base: 'h3', sm: 'h2', md: 'h1' }} 
+                size="h1"
                 fw={900}
                 style={{ 
                   fontSize: 'clamp(1.25rem, 5vw, 2.5rem)',
@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
               </Title>
               <Text 
                 c="#D1D1D1" 
-                size={{ base: 'xs', sm: 'sm', md: 'md' }} 
+                size="md"
                 mt={4}
                 lineClamp={1}
               >
@@ -282,7 +282,7 @@ export default function AdminDashboardPage() {
               </Text>
             </div>
             <Badge 
-              size={{ base: 'md', sm: 'lg' }}
+              size="lg"
               style={{ 
                 background: '#F5B800', 
                 color: '#1A1A1A',
@@ -293,6 +293,91 @@ export default function AdminDashboardPage() {
               LIVE
             </Badge>
           </Group>
+        </Paper>
+
+        {/* Payment Summary Section */}
+        <Paper
+          p={{ base: 'md', sm: 'lg' }}
+          radius="lg"
+          withBorder
+          style={{
+            background: '#F8FAFF',
+            border: '2px solid #E3EAFD',
+            boxShadow: '0 2px 8px rgba(34,139,230,0.07)',
+            marginTop: '-12px',
+          }}
+        >
+          <Title order={4} size="h4" mb={8} c="#227be6" style={{ fontWeight: 800, letterSpacing: 0.2 }}>Payment Summary</Title>
+          {/* Calculate payment summary from recent bookings, fallback if fields missing */}
+          {(() => {
+            let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0, fallbackTotal = 0, hasMethods = false;
+            if (data && data.recent_bookings) {
+              data.recent_bookings.forEach((b) => {
+                if (b.status === 'pending') return;
+                // Fallback: always sum advance_payment
+                fallbackTotal += Number(b.advance_payment) || 0;
+                // If method fields exist, use detailed breakdown
+                if ('advance_payment_method' in b && 'remaining_payment_method' in b && 'remaining_payment_amount' in b) {
+                  hasMethods = true;
+                  // Advance
+                  if (b.advance_payment_method === 'cash') {
+                    totalCash += Number(b.advance_payment) || 0;
+                  } else if (b.advance_payment_method === 'easypaisa') {
+                    totalOnline += Number(b.advance_payment) || 0;
+                    totalEasypaisa += Number(b.advance_payment) || 0;
+                  } else if (b.advance_payment_method === 'sadapay') {
+                    totalOnline += Number(b.advance_payment) || 0;
+                    totalSadaPay += Number(b.advance_payment) || 0;
+                  }
+                  // Remaining (only if paid)
+                  if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
+                    const rem = Number(b.remaining_payment_amount) || 0;
+                    if (b.remaining_payment_method === 'cash') {
+                      totalCash += rem;
+                    } else if (b.remaining_payment_method === 'easypaisa') {
+                      totalOnline += rem;
+                      totalEasypaisa += rem;
+                    } else if (b.remaining_payment_method === 'sadapay') {
+                      totalOnline += rem;
+                      totalSadaPay += rem;
+                    }
+                  }
+                }
+              });
+            }
+            if (hasMethods) {
+              return (
+                <Group gap={24} wrap="wrap" mt={4}>
+                  <Box>
+                    <Text size="sm" c="#888" fw={600}>Total Cash</Text>
+                    <Text size="lg" fw={800} c="green">Rs {totalCash.toLocaleString()}</Text>
+                  </Box>
+                  <Box>
+                    <Text size="sm" c="#888" fw={600}>Total Online</Text>
+                    <Text size="lg" fw={800} c="#227be6">Rs {totalOnline.toLocaleString()}</Text>
+                  </Box>
+                  <Box>
+                    <Text size="sm" c="#888" fw={600}>Easypaisa</Text>
+                    <Text size="lg" fw={800} c="#1976d2">Rs {totalEasypaisa.toLocaleString()}</Text>
+                  </Box>
+                  <Box>
+                    <Text size="sm" c="#888" fw={600}>SadaPay</Text>
+                    <Text size="lg" fw={800} c="#00bcd4">Rs {totalSadaPay.toLocaleString()}</Text>
+                  </Box>
+                </Group>
+              );
+            } else {
+              return (
+                <Group gap={24} wrap="wrap" mt={4}>
+                  <Box>
+                    <Text size="sm" c="#888" fw={600}>Total Advance Payments</Text>
+                    <Text size="lg" fw={800} c="#227be6">Rs {fallbackTotal.toLocaleString()}</Text>
+                  </Box>
+                  <Text size="xs" c="red" mt={8}>Detailed payment method breakdown not available in dashboard data.</Text>
+                </Group>
+              );
+            }
+          })()}
         </Paper>
 
         {/* Push Notifications */}
@@ -337,8 +422,8 @@ export default function AdminDashboardPage() {
         {/* Last 7 Days Stats */}
         <Paper
           withBorder
-          p={{ base: 'sm', sm: 'md', md: 'lg' }}
-          radius={{ base: 'md', sm: 'lg' }}
+          p="lg"
+          radius="lg"
           style={{
             background: '#FFFBF0',
             borderColor: '#F5B800',
@@ -347,8 +432,8 @@ export default function AdminDashboardPage() {
         >
           <Title 
             order={3} 
-            mb={{ base: 'sm', sm: 'md' }}
-            size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+            mb="md"
+            size="h3"
             style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
           >
             Last 7 Days Performance
@@ -413,14 +498,14 @@ export default function AdminDashboardPage() {
         {/* Monthly Summary */}
         {data.monthly_summary && data.monthly_summary.length > 0 && (
           <Paper 
-            p={{ base: 'sm', sm: 'md', md: 'lg' }}
-            radius={{ base: 'md', sm: 'lg' }}
+            p="md"
+            radius="lg"
             style={{ background: 'white' }}
           >
             <Title 
               order={3} 
-              mb={{ base: 'sm', sm: 'md' }}
-              size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+              mb="md"
+              size="h3"
               style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
             >
               Monthly Summary
@@ -454,14 +539,14 @@ export default function AdminDashboardPage() {
 
         {/* Recent Bookings */}
         <Paper 
-          p={{ base: 'sm', sm: 'md', md: 'lg' }}
-          radius={{ base: 'md', sm: 'lg' }}
+          p="md"
+          radius="lg"
           style={{ background: 'white' }}
         >
           <Title 
             order={3} 
-            mb={{ base: 'sm', sm: 'md' }}
-            size={{ base: 'h5', sm: 'h4', md: 'h3' }}
+            mb="md"
+            size="h4"
             style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
           >
             Recent Bookings
