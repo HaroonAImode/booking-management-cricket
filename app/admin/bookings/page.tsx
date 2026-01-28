@@ -550,15 +550,34 @@ export default function AdminBookingsPage() {
             const discount = tableData[data.row.index].discount;
             if (discount > 0) {
               const doc = data.doc;
-              // Draw a very small red tag just below and right-aligned to the paid amount
-              doc.setFontSize(5.2);
-              doc.setTextColor(220, 20, 60); // Red
-              const text = `Discount: Rs ${discount.toLocaleString()}`;
-              // Right-align, just below the paid amount (2.5mm below, 1.5mm from right edge)
-              const x = data.cell.x + data.cell.width - 1.5;
-              const y = data.cell.y + data.cell.height - 1.2;
-              doc.text(text, x, y, { align: 'right' });
-              doc.setTextColor(0, 0, 0); // Reset to black
+              // Tag styling
+              const tagFontSize = 4.2;
+              const tagPaddingX = 1.5;
+              const tagPaddingY = 0.7;
+              const tagText = `Discount: Rs ${discount.toLocaleString()}`;
+              doc.setFontSize(tagFontSize);
+              // Measure text width for pill background
+              const textWidth = doc.getTextWidth(tagText);
+              // Tag position: just below and right-aligned to paid amount
+              const tagX = data.cell.x + data.cell.width - 1.5 - textWidth / 2;
+              const tagY = data.cell.y + data.cell.height - 0.7;
+              // Draw pill background (light red/pink)
+              doc.setFillColor(255, 230, 236); // very light red
+              doc.setDrawColor(255, 230, 236);
+              doc.roundedRect(
+                tagX - tagPaddingX,
+                tagY - tagPaddingY - tagFontSize / 2,
+                textWidth + tagPaddingX * 2,
+                tagFontSize + tagPaddingY * 2,
+                2, 2, 'F'
+              );
+              // Draw tag text (bold, red)
+              doc.setTextColor(220, 20, 60);
+              doc.setFont(undefined, 'bold');
+              doc.text(tagText, tagX + textWidth / 2, tagY, { align: 'center', baseline: 'middle' });
+              // Reset font and color
+              doc.setTextColor(0, 0, 0);
+              doc.setFont(undefined, 'normal');
             }
           }
         },
