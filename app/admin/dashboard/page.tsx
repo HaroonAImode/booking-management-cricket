@@ -295,66 +295,83 @@ export default function AdminDashboardPage() {
           </Group>
         </Paper>
 
-        {/* Payment Summary Section */}
-        <Paper
-          p={{ base: 'md', sm: 'lg' }}
-          radius="lg"
-          withBorder
-          style={{
-            background: '#F8FAFF',
-            border: '2px solid #E3EAFD',
-            boxShadow: '0 2px 8px rgba(34,139,230,0.07)',
-            marginTop: '-12px',
-          }}
-        >
-          <Title order={4} size="h4" mb={8} c="#227be6" style={{ fontWeight: 800, letterSpacing: 0.2 }}>Payment Summary</Title>
-          {(() => {
-            let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
-            if (data && data.recent_bookings) {
-              data.recent_bookings.forEach((b) => {
-                if (b.status === 'pending') return;
-                // Only count if payment method fields exist, else skip
-                if ('advance_payment_method' in b && 'remaining_payment_method' in b && 'remaining_payment_amount' in b) {
-                  // Advance
-                  if (b.advance_payment_method === 'cash') {
-                    totalCash += Number(b.advance_payment) || 0;
-                  } else if (b.advance_payment_method === 'easypaisa') {
-                    totalOnline += Number(b.advance_payment) || 0;
-                    totalEasypaisa += Number(b.advance_payment) || 0;
-                  } else if (b.advance_payment_method === 'sadapay') {
-                    totalOnline += Number(b.advance_payment) || 0;
-                    totalSadaPay += Number(b.advance_payment) || 0;
-                  }
-                  // Remaining (only if paid)
-                  if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
-                    const rem = Number(b.remaining_payment_amount) || 0;
-                    if (b.remaining_payment_method === 'cash') {
-                      totalCash += rem;
-                    } else if (b.remaining_payment_method === 'easypaisa') {
-                      totalOnline += rem;
-                      totalEasypaisa += rem;
-                    } else if (b.remaining_payment_method === 'sadapay') {
-                      totalOnline += rem;
-                      totalSadaPay += rem;
+        {/* Payment Summary By Month Section */}
+        {data && data.monthly_summary && data.monthly_summary.length > 0 && (
+          <Paper
+            p={{ base: 'md', sm: 'lg' }}
+            radius="lg"
+            withBorder
+            style={{
+              background: '#F8FAFF',
+              border: '2px solid #E3EAFD',
+              boxShadow: '0 2px 8px rgba(34,139,230,0.07)',
+              marginTop: '-12px',
+            }}
+          >
+            <Title order={4} size="h4" mb={8} c="#227be6" style={{ fontWeight: 800, letterSpacing: 0.2 }}>Payment Summary By Month</Title>
+            <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table highlightOnHover striped style={{ minWidth: 700 }}>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Month</Table.Th>
+                    <Table.Th>Total Cash</Table.Th>
+                    <Table.Th>Total Online</Table.Th>
+                    <Table.Th>Easypaisa</Table.Th>
+                    <Table.Th>SadaPay</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {data.monthly_summary.map((month, idx) => {
+                    // Calculate payment summary for this month
+                    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
+                    if (data.recent_bookings) {
+                      data.recent_bookings.forEach((b) => {
+                        if (b.status === 'pending') return;
+                        if (!b.booking_date) return;
+                        const bookingMonth = new Date(b.booking_date).toLocaleString('en-US', { month: 'long' });
+                        if (bookingMonth !== month.month_name) return;
+                        if ('advance_payment_method' in b && 'remaining_payment_method' in b && 'remaining_payment_amount' in b) {
+                          // Advance
+                          if (b.advance_payment_method === 'cash') {
+                            totalCash += Number(b.advance_payment) || 0;
+                          } else if (b.advance_payment_method === 'easypaisa') {
+                            totalOnline += Number(b.advance_payment) || 0;
+                            totalEasypaisa += Number(b.advance_payment) || 0;
+                          } else if (b.advance_payment_method === 'sadapay') {
+                            totalOnline += Number(b.advance_payment) || 0;
+                            totalSadaPay += Number(b.advance_payment) || 0;
+                          }
+                          // Remaining (only if paid)
+                          if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
+                            const rem = Number(b.remaining_payment_amount) || 0;
+                            if (b.remaining_payment_method === 'cash') {
+                              totalCash += rem;
+                            } else if (b.remaining_payment_method === 'easypaisa') {
+                              totalOnline += rem;
+                              totalEasypaisa += rem;
+                            } else if (b.remaining_payment_method === 'sadapay') {
+                              totalOnline += rem;
+                              totalSadaPay += rem;
+                            }
+                          }
+                        }
+                      });
                     }
-                  }
-                }
-              });
-            }
-            return (
-              <Group gap={32} wrap="wrap" mt={4}>
-                <Box>
-                  <Text size="sm" c="#888" fw={600}>Total Cash</Text>
-                  <Text size="lg" fw={800} c="green">Rs {totalCash.toLocaleString()}</Text>
-                </Box>
-                <Box>
-                  <Text size="sm" c="#888" fw={600}>Total Online</Text>
-                  <Text size="lg" fw={800} c="#227be6">Rs {totalOnline.toLocaleString()} <Text span size="sm" c="#888" fw={500} style={{ marginLeft: 4 }}>(Easypaisa: Rs {totalEasypaisa.toLocaleString()}, SadaPay: Rs {totalSadaPay.toLocaleString()})</Text></Text>
-                </Box>
-              </Group>
-            );
-          })()}
-        </Paper>
+                    return (
+                      <Table.Tr key={idx}>
+                        <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
+                        <Table.Td><Text size="sm" c="green" fw={700}>Rs {totalCash.toLocaleString()}</Text></Table.Td>
+                        <Table.Td><Text size="sm" c="#227be6" fw={700}>Rs {totalOnline.toLocaleString()}</Text></Table.Td>
+                        <Table.Td><Text size="sm" c="#1976d2">Rs {totalEasypaisa.toLocaleString()}</Text></Table.Td>
+                        <Table.Td><Text size="sm" c="#00bcd4">Rs {totalSadaPay.toLocaleString()}</Text></Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+            </Box>
+          </Paper>
+        )}
 
         {/* Push Notifications */}
         {userId && (

@@ -3,10 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // params is a Promise
 ) {
   try {
-    const bookingId = params.id;
+    // Await the params to get the actual values
+    const resolvedParams = await params;
+    const bookingId = resolvedParams.id;
+    
     const supabase = await createClient();
 
     // Check if booking exists
@@ -67,7 +70,7 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: 'Booking deleted successfully',
-      bookingNumber: booking.booking_number,
+      bookingNumber: booking.booking_number,s
     });
   } catch (error: any) {
     console.error('Delete booking error:', error);
