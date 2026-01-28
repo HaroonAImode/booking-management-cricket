@@ -551,22 +551,30 @@ export default function AdminBookingsPage() {
             if (discount > 0) {
               const doc = data.doc;
               // Tag styling
-              const tagFontSize = 4.2;
-              const tagPaddingX = 1.5;
-              const tagPaddingY = 0.7;
+              let tagFontSize = 4.0;
+              let tagPaddingX = 1.2;
+              let tagPaddingY = 0.6;
               const tagText = `Discount: Rs ${discount.toLocaleString()}`;
               doc.setFontSize(tagFontSize);
-              // Measure text width for pill background
-              const textWidth = doc.getTextWidth(tagText);
-              // Tag position: just below and right-aligned to paid amount
-              const tagX = data.cell.x + data.cell.width - 1.5 - textWidth / 2;
-              const tagY = data.cell.y + data.cell.height - 0.7;
+              let textWidth = doc.getTextWidth(tagText);
+              // If tag is too wide for cell, shrink font size
+              const maxTagWidth = data.cell.width - 3; // 1.5mm margin left/right
+              if (textWidth + tagPaddingX * 2 > maxTagWidth) {
+                tagFontSize = 3.2;
+                doc.setFontSize(tagFontSize);
+                textWidth = doc.getTextWidth(tagText);
+                tagPaddingX = 0.8;
+                tagPaddingY = 0.5;
+              }
+              // Tag position: right-aligned, just below paid amount, with margin from right and bottom
+              const tagX = data.cell.x + data.cell.width - tagPaddingX - 1.2;
+              const tagY = data.cell.y + data.cell.height - tagPaddingY - 0.7;
               // Draw pill background (light red/pink)
               doc.setFillColor(255, 230, 236); // very light red
               doc.setDrawColor(255, 230, 236);
               doc.roundedRect(
-                tagX - tagPaddingX,
-                tagY - tagPaddingY - tagFontSize / 2,
+                tagX - textWidth,
+                tagY - tagFontSize / 2 - tagPaddingY,
                 textWidth + tagPaddingX * 2,
                 tagFontSize + tagPaddingY * 2,
                 2, 2, 'F'
@@ -574,7 +582,7 @@ export default function AdminBookingsPage() {
               // Draw tag text (bold, red)
               doc.setTextColor(220, 20, 60);
               doc.setFont(undefined, 'bold');
-              doc.text(tagText, tagX + textWidth / 2, tagY, { align: 'center', baseline: 'middle' });
+              doc.text(tagText, tagX, tagY, { align: 'right', baseline: 'middle' });
               // Reset font and color
               doc.setTextColor(0, 0, 0);
               doc.setFont(undefined, 'normal');
