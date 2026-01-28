@@ -70,7 +70,7 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: 'Booking deleted successfully',
-      bookingNumber: booking.booking_number,s
+      bookingNumber: booking.booking_number,  // FIXED: Removed the stray 's'
     });
   } catch (error: any) {
     console.error('Delete booking error:', error);
