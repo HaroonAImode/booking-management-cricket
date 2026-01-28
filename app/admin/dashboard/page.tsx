@@ -308,17 +308,13 @@ export default function AdminDashboardPage() {
           }}
         >
           <Title order={4} size="h4" mb={8} c="#227be6" style={{ fontWeight: 800, letterSpacing: 0.2 }}>Payment Summary</Title>
-          {/* Calculate payment summary from recent bookings, fallback if fields missing */}
           {(() => {
-            let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0, fallbackTotal = 0, hasMethods = false;
+            let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
             if (data && data.recent_bookings) {
               data.recent_bookings.forEach((b) => {
                 if (b.status === 'pending') return;
-                // Fallback: always sum advance_payment
-                fallbackTotal += Number(b.advance_payment) || 0;
-                // If method fields exist, use detailed breakdown
+                // Only count if payment method fields exist, else skip
                 if ('advance_payment_method' in b && 'remaining_payment_method' in b && 'remaining_payment_amount' in b) {
-                  hasMethods = true;
                   // Advance
                   if (b.advance_payment_method === 'cash') {
                     totalCash += Number(b.advance_payment) || 0;
@@ -345,38 +341,18 @@ export default function AdminDashboardPage() {
                 }
               });
             }
-            if (hasMethods) {
-              return (
-                <Group gap={24} wrap="wrap" mt={4}>
-                  <Box>
-                    <Text size="sm" c="#888" fw={600}>Total Cash</Text>
-                    <Text size="lg" fw={800} c="green">Rs {totalCash.toLocaleString()}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="sm" c="#888" fw={600}>Total Online</Text>
-                    <Text size="lg" fw={800} c="#227be6">Rs {totalOnline.toLocaleString()}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="sm" c="#888" fw={600}>Easypaisa</Text>
-                    <Text size="lg" fw={800} c="#1976d2">Rs {totalEasypaisa.toLocaleString()}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="sm" c="#888" fw={600}>SadaPay</Text>
-                    <Text size="lg" fw={800} c="#00bcd4">Rs {totalSadaPay.toLocaleString()}</Text>
-                  </Box>
-                </Group>
-              );
-            } else {
-              return (
-                <Group gap={24} wrap="wrap" mt={4}>
-                  <Box>
-                    <Text size="sm" c="#888" fw={600}>Total Advance Payments</Text>
-                    <Text size="lg" fw={800} c="#227be6">Rs {fallbackTotal.toLocaleString()}</Text>
-                  </Box>
-                  <Text size="xs" c="red" mt={8}>Detailed payment method breakdown not available in dashboard data.</Text>
-                </Group>
-              );
-            }
+            return (
+              <Group gap={32} wrap="wrap" mt={4}>
+                <Box>
+                  <Text size="sm" c="#888" fw={600}>Total Cash</Text>
+                  <Text size="lg" fw={800} c="green">Rs {totalCash.toLocaleString()}</Text>
+                </Box>
+                <Box>
+                  <Text size="sm" c="#888" fw={600}>Total Online</Text>
+                  <Text size="lg" fw={800} c="#227be6">Rs {totalOnline.toLocaleString()} <Text span size="sm" c="#888" fw={500} style={{ marginLeft: 4 }}>(Easypaisa: Rs {totalEasypaisa.toLocaleString()}, SadaPay: Rs {totalSadaPay.toLocaleString()})</Text></Text>
+                </Box>
+              </Group>
+            );
           })()}
         </Paper>
 
