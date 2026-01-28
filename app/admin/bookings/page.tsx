@@ -403,6 +403,18 @@ export default function AdminBookingsPage() {
   };
 
   const handlePDFExport = (dateRange?: [Date | null, Date | null] | null) => {
+    // --- Timeline/Date Range ---
+    let timelineText = 'All Bookings';
+    let filteredBookings = bookings;
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const from = dateRange[0];
+      const to = dateRange[1];
+      filteredBookings = bookings.filter(b => {
+        const d = new Date(b.booking_date);
+        return d >= from && d <= to;
+      });
+      timelineText = `Timeline: ${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
+    }
 
     // --- Calculate total cash and online (excluding pending) ---
     let totalCash = 0;
@@ -441,21 +453,6 @@ export default function AdminBookingsPage() {
     doc.setFontSize(28);
     doc.setTextColor(34, 139, 230); // blue
     doc.text('Cricket Booking Report', pageWidth / 2, 22, { align: 'center' });
-
-    // --- Timeline/Date Range ---
-    doc.setFontSize(13);
-    doc.setTextColor(80, 80, 80);
-    let timelineText = 'All Bookings';
-    let filteredBookings = bookings;
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const from = dateRange[0];
-      const to = dateRange[1];
-      filteredBookings = bookings.filter(b => {
-        const d = new Date(b.booking_date);
-        return d >= from && d <= to;
-      });
-      timelineText = `Timeline: ${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
-    }
     doc.text(timelineText, pageWidth / 2, 32, { align: 'center' });
     doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
