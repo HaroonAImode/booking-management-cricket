@@ -404,6 +404,37 @@ export default function AdminBookingsPage() {
 
   const handlePDFExport = (dateRange?: [Date | null, Date | null] | null) => {
 
+    // --- Calculate total cash and online (excluding pending) ---
+    let totalCash = 0;
+    let totalOnline = 0;
+    let totalEasypaisa = 0;
+    let totalSadaPay = 0;
+    filteredBookings.forEach((b) => {
+      if (b.status === 'pending') return;
+      // Advance
+      if (b.advance_payment_method === 'cash') {
+        totalCash += b.advance_payment;
+      } else if (b.advance_payment_method === 'easypaisa') {
+        totalOnline += b.advance_payment;
+        totalEasypaisa += b.advance_payment;
+      } else if (b.advance_payment_method === 'sadapay') {
+        totalOnline += b.advance_payment;
+        totalSadaPay += b.advance_payment;
+      }
+      // Remaining (only if paid)
+      if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
+        if (b.remaining_payment_method === 'cash') {
+          totalCash += b.remaining_payment_amount;
+        } else if (b.remaining_payment_method === 'easypaisa') {
+          totalOnline += b.remaining_payment_amount;
+          totalEasypaisa += b.remaining_payment_amount;
+        } else if (b.remaining_payment_method === 'sadapay') {
+          totalOnline += b.remaining_payment_amount;
+          totalSadaPay += b.remaining_payment_amount;
+        }
+      }
+    });
+
     const doc = new jsPDF('l', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     // --- Centered Main Heading ---
@@ -581,6 +612,19 @@ export default function AdminBookingsPage() {
       // @ts-ignore
       tableY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 8 : tableY + 40;
     });
+
+    // --- Show totals summary below tables ---
+    let summaryY = tableY + 2;
+    doc.setFontSize(11);
+    doc.setTextColor(34, 139, 230);
+    doc.text('Payment Summary:', 14, summaryY);
+    summaryY += 7;
+    doc.setFontSize(9.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Total Cash: Rs ${totalCash.toLocaleString()}`, 18, summaryY);
+    summaryY += 6;
+    doc.text(`Total Online: Rs ${totalOnline.toLocaleString()}  (Easypaisa: Rs ${totalEasypaisa.toLocaleString()}, SadaPay: Rs ${totalSadaPay.toLocaleString()})`, 18, summaryY);
+    summaryY += 8;
 
     doc.save(`bookings-${new Date().toISOString().split('T')[0]}.pdf`);
     notifications.show({
