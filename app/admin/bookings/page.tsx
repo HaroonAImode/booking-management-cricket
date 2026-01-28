@@ -553,7 +553,6 @@ export default function AdminBookingsPage() {
               // Tag styling
               let tagFontSize = 4.0;
               let tagPaddingX = 1.2;
-              let tagPaddingY = 0.6;
               const tagText = `Discount: Rs ${discount.toLocaleString()}`;
               doc.setFontSize(tagFontSize);
               let textWidth = doc.getTextWidth(tagText);
@@ -564,25 +563,14 @@ export default function AdminBookingsPage() {
                 doc.setFontSize(tagFontSize);
                 textWidth = doc.getTextWidth(tagText);
                 tagPaddingX = 0.8;
-                tagPaddingY = 0.5;
               }
               // Tag position: right-aligned, just below paid amount, with margin from right and bottom
               const tagX = data.cell.x + data.cell.width - tagPaddingX - 1.2;
-              const tagY = data.cell.y + data.cell.height - tagPaddingY - 0.7;
-              // Draw pill background (light red/pink)
-              doc.setFillColor(255, 230, 236); // very light red
-              doc.setDrawColor(255, 230, 236);
-              doc.roundedRect(
-                tagX - textWidth,
-                tagY - tagFontSize / 2 - tagPaddingY,
-                textWidth + tagPaddingX * 2,
-                tagFontSize + tagPaddingY * 2,
-                2, 2, 'F'
-              );
-              // Draw tag text (bold, red)
+              const tagY = data.cell.y + data.cell.height - 1.2;
+              // Draw tag text (bold, red), no background
               doc.setTextColor(220, 20, 60);
               doc.setFont(undefined, 'bold');
-              doc.text(tagText, tagX, tagY, { align: 'right', baseline: 'middle' });
+              doc.text(tagText, tagX, tagY, { align: 'right', baseline: 'top' });
               // Reset font and color
               doc.setTextColor(0, 0, 0);
               doc.setFont(undefined, 'normal');
