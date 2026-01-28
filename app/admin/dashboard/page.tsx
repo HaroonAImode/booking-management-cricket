@@ -111,6 +111,9 @@ interface DashboardData {
     total_hours: number;
     total_amount: number;
     advance_payment: number;
+    advance_payment_method?: string;
+    remaining_payment_amount?: number;
+    remaining_payment_method?: string;
     status: string;
     created_at: string;
     pending_expires_at: string | null;
@@ -205,6 +208,66 @@ export default function AdminDashboardPage() {
       default:
         return 'gray';
     }
+  };
+
+  // Helper function to calculate payment summary for a month
+  const calculatePaymentSummaryForMonth = (monthName: string) => {
+    if (!data || !data.recent_bookings) {
+      return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0 };
+    }
+
+    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
+    
+    // Extract just the month name (remove year if present)
+    const targetMonth = monthName.split(' ')[0];
+    
+    data.recent_bookings.forEach((b) => {
+      // Skip pending bookings
+      if (b.status === 'pending') return;
+      if (!b.booking_date) return;
+      
+      // Extract month from booking date
+      const bookingDate = new Date(b.booking_date);
+      const bookingMonth = bookingDate.toLocaleString('en-US', { month: 'long' });
+      
+      // Match month (without year)
+      if (bookingMonth !== targetMonth) return;
+      
+      // Calculate advance payment
+      const advanceAmount = Number(b.advance_payment) || 0;
+      
+      if (b.advance_payment_method) {
+        if (b.advance_payment_method === 'cash') {
+          totalCash += advanceAmount;
+        } else if (b.advance_payment_method === 'easypaisa') {
+          totalOnline += advanceAmount;
+          totalEasypaisa += advanceAmount;
+        } else if (b.advance_payment_method === 'sadapay') {
+          totalOnline += advanceAmount;
+          totalSadaPay += advanceAmount;
+        }
+      }
+      
+      // Calculate remaining payment if paid (completed or approved with remaining payment)
+      const isCompleted = b.status === 'completed';
+      const isApprovedWithRemaining = b.status === 'approved' && b.remaining_payment_amount && b.remaining_payment_amount > 0;
+      
+      if ((isCompleted || isApprovedWithRemaining) && b.remaining_payment_method && b.remaining_payment_amount) {
+        const remainingAmount = Number(b.remaining_payment_amount) || 0;
+        
+        if (b.remaining_payment_method === 'cash') {
+          totalCash += remainingAmount;
+        } else if (b.remaining_payment_method === 'easypaisa') {
+          totalOnline += remainingAmount;
+          totalEasypaisa += remainingAmount;
+        } else if (b.remaining_payment_method === 'sadapay') {
+          totalOnline += remainingAmount;
+          totalSadaPay += remainingAmount;
+        }
+      }
+    });
+    
+    return { totalCash, totalOnline, totalEasypaisa, totalSadaPay };
   };
 
   if (loading) {
@@ -322,41 +385,8 @@ export default function AdminDashboardPage() {
                 </Table.Thead>
                 <Table.Tbody>
                   {data.monthly_summary.map((month, idx) => {
-                    // Calculate payment summary for this month
-                    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
-                    if (data.recent_bookings) {
-                      data.recent_bookings.forEach((b) => {
-                        if (b.status === 'pending') return;
-                        if (!b.booking_date) return;
-                        const bookingMonth = new Date(b.booking_date).toLocaleString('en-US', { month: 'long' });
-                        if (bookingMonth !== month.month_name) return;
-                        if ('advance_payment_method' in b && 'remaining_payment_method' in b && 'remaining_payment_amount' in b) {
-                          // Advance
-                          if (b.advance_payment_method === 'cash') {
-                            totalCash += Number(b.advance_payment) || 0;
-                          } else if (b.advance_payment_method === 'easypaisa') {
-                            totalOnline += Number(b.advance_payment) || 0;
-                            totalEasypaisa += Number(b.advance_payment) || 0;
-                          } else if (b.advance_payment_method === 'sadapay') {
-                            totalOnline += Number(b.advance_payment) || 0;
-                            totalSadaPay += Number(b.advance_payment) || 0;
-                          }
-                          // Remaining (only if paid)
-                          if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
-                            const rem = Number(b.remaining_payment_amount) || 0;
-                            if (b.remaining_payment_method === 'cash') {
-                              totalCash += rem;
-                            } else if (b.remaining_payment_method === 'easypaisa') {
-                              totalOnline += rem;
-                              totalEasypaisa += rem;
-                            } else if (b.remaining_payment_method === 'sadapay') {
-                              totalOnline += rem;
-                              totalSadaPay += rem;
-                            }
-                          }
-                        }
-                      });
-                    }
+                    const { totalCash, totalOnline, totalEasypaisa, totalSadaPay } = calculatePaymentSummaryForMonth(month.month_name);
+                    
                     return (
                       <Table.Tr key={idx}>
                         <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
@@ -370,6 +400,9 @@ export default function AdminDashboardPage() {
                 </Table.Tbody>
               </Table>
             </Box>
+            <Text size="xs" c="dimmed" mt="sm">
+              Note: Based on recent bookings data. For complete payment history, check detailed reports.
+            </Text>
           </Paper>
         )}
 
