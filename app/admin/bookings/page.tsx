@@ -507,32 +507,60 @@ export default function AdminBookingsPage() {
       doc.setTextColor(...statusColor);
       doc.text(status.charAt(0).toUpperCase() + status.slice(1), 14, tableY);
       tableY += 4;
+      // Prepare table data and discount info
       const tableData = grouped[status].map((b: Booking) => {
         const { cash, online } = getPaymentBreakdown(b);
         const totalPaid = b.advance_payment + (b.remaining_payment_amount || 0);
         const slotHours = b.slots.map((s: any) => s.slot_hour);
         const slotRange = formatSlotRanges(slotHours);
-        return [
-          b.booking_number,
-          b.customer.name,
-          b.customer.phone,
-          new Date(b.booking_date).toLocaleDateString(),
-          slotRange,
-          `Rs ${b.total_amount.toLocaleString()}`,
-          `Rs ${totalPaid.toLocaleString()}`,
-          `Rs ${cash.toLocaleString()}`,
-          `Rs ${online.toLocaleString()}`,
-          b.status,
-        ];
+        // Discount logic: only for completed and totalPaid < total_amount
+        let discount = 0;
+        if (b.status === 'completed' && totalPaid < b.total_amount) {
+          discount = b.total_amount - totalPaid;
+        }
+        // Attach discount value for use in didDrawCell
+        return {
+          row: [
+            b.booking_number,
+            b.customer.name,
+            b.customer.phone,
+            new Date(b.booking_date).toLocaleDateString(),
+            slotRange,
+            `Rs ${b.total_amount.toLocaleString()}`,
+            `Rs ${totalPaid.toLocaleString()}`,
+            `Rs ${cash.toLocaleString()}`,
+            `Rs ${online.toLocaleString()}`,
+            b.status,
+          ],
+          discount,
+        };
       });
       autoTable(doc, {
         head: [['Booking #', 'Customer', 'Phone', 'Date', 'Time', 'Total', 'Paid', 'Cash', 'Online', 'Status']],
-        body: tableData,
+        body: tableData.map(d => d.row),
         startY: tableY,
         styles: { fontSize: 7 },
         headStyles: { fillColor: [34, 139, 230] },
         columnStyles: {
           5: { fillColor: [220, 255, 220] }, // Highlight 'Total' column (light green)
+        },
+        didDrawCell: function (data) {
+          // Paid column is index 6
+          if (data.section === 'body' && data.column.index === 6) {
+            const discount = tableData[data.row.index].discount;
+            if (discount > 0) {
+              const doc = data.doc;
+              // Draw small red text below the paid amount
+              doc.setFontSize(6.5);
+              doc.setTextColor(220, 20, 60); // Red
+              const text = `Discount: Rs ${discount.toLocaleString()}`;
+              // Place just below the paid amount
+              const x = data.cell.x + data.cell.width / 2;
+              const y = data.cell.y + data.cell.height - 2;
+              doc.text(text, x, y, { align: 'center' });
+              doc.setTextColor(0, 0, 0); // Reset to black
+            }
+          }
         },
       });
       // @ts-ignore
