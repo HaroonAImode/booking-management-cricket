@@ -403,13 +403,18 @@ export default function AdminBookingsPage() {
   };
 
   const handlePDFExport = (dateRange?: [Date | null, Date | null] | null) => {
-    const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(18);
-    doc.text('Cricket Booking Report', 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
 
-    // Filter bookings by date range if provided
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // --- Centered Main Heading ---
+    doc.setFontSize(28);
+    doc.setTextColor(34, 139, 230); // blue
+    doc.text('Cricket Booking Report', pageWidth / 2, 22, { align: 'center' });
+
+    // --- Timeline/Date Range ---
+    doc.setFontSize(13);
+    doc.setTextColor(80, 80, 80);
+    let timelineText = 'All Bookings';
     let filteredBookings = bookings;
     if (dateRange && dateRange[0] && dateRange[1]) {
       const from = dateRange[0];
@@ -418,9 +423,19 @@ export default function AdminBookingsPage() {
         const d = new Date(b.booking_date);
         return d >= from && d <= to;
       });
+      timelineText = `Timeline: ${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
     }
+    doc.text(timelineText, pageWidth / 2, 32, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, 39, { align: 'center' });
 
-    // --- Statistics Section ---
+    // --- Draw a line below header ---
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.5);
+    doc.line(10, 44, pageWidth - 10, 44);
+
+    // --- Statistics Section (colorful badges style) ---
     const totalRevenue = filteredBookings.reduce((sum, b) => sum + b.advance_payment + (b.remaining_payment_amount || 0), 0);
     const totalBookings = filteredBookings.length;
     const monthMap = new Map<string, { bookings: number; revenue: number }>();
@@ -431,17 +446,47 @@ export default function AdminBookingsPage() {
       entry.bookings += 1;
       entry.revenue += b.advance_payment + (b.remaining_payment_amount || 0);
     });
-    let statY = 38;
+
+    // Draw "badges" for stats
+    let statY = 52;
+    const badgeHeight = 10;
+    const badgePad = 4;
+    let badgeX = 14;
+    // Total Bookings badge
+    doc.setFillColor(34, 139, 230); // blue
+    doc.roundedRect(badgeX, statY, 40, badgeHeight, 2, 2, 'F');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Bookings: ${totalBookings}`, badgeX + badgePad, statY + 7, { baseline: 'middle' });
+    badgeX += 46;
+    // Total Revenue badge
+    doc.setFillColor(46, 204, 113); // green
+    doc.roundedRect(badgeX, statY, 60, badgeHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Revenue: Rs ${totalRevenue.toLocaleString()}`, badgeX + badgePad, statY + 7, { baseline: 'middle' });
+    badgeX += 66;
+    // Month-wise badge (just show count of months)
+    doc.setFillColor(255, 193, 7); // yellow
+    doc.roundedRect(badgeX, statY, 48, badgeHeight, 2, 2, 'F');
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Months: ${monthMap.size}`, badgeX + badgePad, statY + 7, { baseline: 'middle' });
+
+    // Month-wise summary (below badges)
+    let monthY = statY + badgeHeight + 8;
     doc.setFontSize(10);
-    doc.text(`Total Bookings: ${totalBookings}`, 14, statY);
-    doc.text(`Total Revenue: Rs ${totalRevenue.toLocaleString()}`, 70, statY);
-    statY += 6;
-    doc.text('Month-wise Summary:', 14, statY);
-    let monthY = statY + 6;
+    doc.setTextColor(80, 80, 80);
+    doc.text('Month-wise Summary:', 14, monthY);
+    monthY += 6;
     monthMap.forEach((v, k) => {
-      doc.text(`${k}: ${v.bookings} bookings, Rs ${v.revenue.toLocaleString()}`, 18, monthY);
+      doc.setTextColor(34, 139, 230);
+      doc.text(`${k}: `, 18, monthY);
+      doc.setTextColor(46, 204, 113);
+      doc.text(`${v.bookings} bookings`, 55, monthY);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`, Rs ${v.revenue.toLocaleString()}`, 90, monthY);
       monthY += 6;
     });
+
 
     // --- Group bookings by status ---
     const statusOrder = ['completed', 'approved', 'pending'];
@@ -454,6 +499,12 @@ export default function AdminBookingsPage() {
     statusOrder.forEach((status: string) => {
       if (grouped[status].length === 0) return;
       doc.setFontSize(12);
+      // Color status heading
+      let statusColor: [number, number, number] = [120, 120, 120];
+      if (status === 'completed') statusColor = [46, 204, 113];
+      if (status === 'approved') statusColor = [34, 139, 230];
+      if (status === 'pending') statusColor = [255, 193, 7];
+      doc.setTextColor(...statusColor);
       doc.text(status.charAt(0).toUpperCase() + status.slice(1), 14, tableY);
       tableY += 4;
       const tableData = grouped[status].map((b: Booking) => {
