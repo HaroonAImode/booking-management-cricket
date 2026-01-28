@@ -604,6 +604,7 @@ export default function AdminBookingsPage() {
   };
 
   return (
+
     <Container 
       size="xl" 
       py="md" 
@@ -710,6 +711,35 @@ export default function AdminBookingsPage() {
               </Modal>
             </Group>
           </Group>
+
+          {/* Direct Status Filter Buttons */}
+          {isAdmin && (
+            <Group gap="xs" mt="md" mb={-8}>
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ].map((btn) => (
+                <Button
+                  key={btn.value}
+                  size="xs"
+                  variant={statusFilter === btn.value ? 'filled' : 'light'}
+                  color={
+                    btn.value === 'pending' ? 'orange' :
+                    btn.value === 'approved' ? 'green' :
+                    btn.value === 'completed' ? 'blue' :
+                    btn.value === 'cancelled' ? 'red' : 'gray'
+                  }
+                  onClick={() => setStatusFilter(btn.value)}
+                  style={{ fontWeight: 600, minWidth: 90 }}
+                >
+                  {btn.label}
+                </Button>
+              ))}
+            </Group>
+          )}
         </Stack>
 
         {/* Filters */}
