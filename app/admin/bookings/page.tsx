@@ -885,16 +885,23 @@ export default function AdminBookingsPage() {
                     <Table.Td>
                       {(() => {
                         const totalPaid = booking.advance_payment + (booking.remaining_payment_amount || 0);
+                        const discount = booking.status === 'completed' && totalPaid < booking.total_amount
+                          ? booking.total_amount - totalPaid
+                          : 0;
                         return (
                           <Stack gap={4}>
                             <Text size="sm" fw={700} c={totalPaid === booking.total_amount ? 'green' : 'orange'}>
                               Rs {totalPaid.toLocaleString()}
                             </Text>
-                            {totalPaid < booking.total_amount && (
+                            {discount > 0 ? (
+                              <Text size="xs" c="green" fw={600}>
+                                Discount: Rs {discount.toLocaleString()}
+                              </Text>
+                            ) : totalPaid < booking.total_amount && booking.status !== 'completed' ? (
                               <Text size="xs" c="red">
                                 Due: Rs {(booking.total_amount - totalPaid).toLocaleString()}
                               </Text>
-                            )}
+                            ) : null}
                           </Stack>
                         );
                       })()}
