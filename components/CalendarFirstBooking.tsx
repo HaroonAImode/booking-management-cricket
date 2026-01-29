@@ -107,7 +107,7 @@ export default function CalendarFirstBooking() {
 
   return (
     <Box style={{ background: '#FFF9E6', minHeight: '100vh', padding: isMobile ? '12px 8px' : '24px 0' }}>
-      <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: 'xs', sm: 'md' }}>
+      <Container size="lg" py={{ base: 'md', sm: 'xl' }} px={{ base: isMobile ? 4 : 'xs', sm: 'md' }}>
         <Stack gap={isMobile ? 'md' : 'xl'}>
 
           {/* Updated Header Section */}
@@ -202,7 +202,7 @@ export default function CalendarFirstBooking() {
 
           {activeStep === 0 && (
             <Stack gap={isMobile ? 'md' : 'lg'}>
-              {/* Updated Date Navigation Section */}
+              {/* Fixed Date Navigation Section */}
               <Paper
                 p={isMobile ? 'md' : 'lg'}
                 radius="lg"
@@ -210,14 +210,17 @@ export default function CalendarFirstBooking() {
                   background: '#FFFFFF',
                   border: '2px solid #F5B800',
                   boxShadow: '0 4px 16px rgba(26, 26, 26, 0.1)',
+                  width: '100%',
+                  overflow: 'hidden',
                 }}
               >
                 <Stack gap="md">
                   <Group justify="space-between" align="center" wrap="nowrap">
+                    {/* Previous Button - Fixed */}
                     <Button
                       size={isMobile ? 'sm' : 'md'}
                       variant="filled"
-                      leftSection={<IconChevronLeft size={isMobile ? 16 : 20} />}
+                      leftSection={<IconChevronLeft size={isMobile ? 14 : 18} />}
                       onClick={() => {
                         setSlotsLoading(true);
                         const prevDay = new Date(quickViewDate);
@@ -231,31 +234,48 @@ export default function CalendarFirstBooking() {
                         background: '#1A1A1A',
                         color: '#F5B800',
                         fontWeight: 700,
-                        minWidth: isMobile ? '80px' : '120px',
-                        padding: isMobile ? '8px 12px' : '10px 16px',
+                        padding: isMobile ? '6px 10px' : '8px 14px',
                         borderRadius: '8px',
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        minWidth: isMobile ? '90px' : '110px',
+                        maxWidth: isMobile ? '100px' : '120px',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      styles={{
+                        label: {
+                          overflow: 'visible',
+                          whiteSpace: 'nowrap',
+                        }
                       }}
                     >
                       {isMobile ? 'Previous' : '← Previous'}
                     </Button>
                     
+                    {/* Date Display - Fixed Center */}
                     <Box style={{ 
                       textAlign: 'center',
                       flex: 1,
-                      padding: isMobile ? '0 8px' : '0 16px'
+                      padding: isMobile ? '0 4px' : '0 12px',
+                      minWidth: 0,
                     }}>
                       <Text 
                         fw={800} 
                         c="#1A1A1A"
                         size={isMobile ? 'sm' : 'md'}
                         style={{ 
-                          marginBottom: '4px',
-                          fontSize: isMobile ? '0.875rem' : '1rem'
+                          marginBottom: '2px',
+                          fontSize: isMobile ? '0.8rem' : '0.95rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
                         {quickViewDate.toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
+                          weekday: 'short',
+                          month: 'short',
                           day: 'numeric',
                           year: 'numeric'
                         })}
@@ -263,16 +283,20 @@ export default function CalendarFirstBooking() {
                       <Text 
                         size={isMobile ? 'xs' : 'sm'} 
                         c="#666666"
-                        style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+                        style={{ 
+                          fontSize: isMobile ? '0.7rem' : '0.8rem',
+                          whiteSpace: 'nowrap',
+                        }}
                       >
                         {quickViewDate.toDateString() === new Date().toDateString() ? 'Today' : 'Selected Date'}
                       </Text>
                     </Box>
                     
+                    {/* Next Button - Fixed */}
                     <Button
                       size={isMobile ? 'sm' : 'md'}
                       variant="filled"
-                      rightSection={<IconChevronRight size={isMobile ? 16 : 20} />}
+                      rightSection={<IconChevronRight size={isMobile ? 14 : 18} />}
                       onClick={() => {
                         setSlotsLoading(true);
                         const nextDay = new Date(quickViewDate);
@@ -283,15 +307,28 @@ export default function CalendarFirstBooking() {
                         background: '#1A1A1A',
                         color: '#F5B800',
                         fontWeight: 700,
-                        minWidth: isMobile ? '80px' : '120px',
-                        padding: isMobile ? '8px 12px' : '10px 16px',
+                        padding: isMobile ? '6px 10px' : '8px 14px',
                         borderRadius: '8px',
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        minWidth: isMobile ? '90px' : '110px',
+                        maxWidth: isMobile ? '100px' : '120px',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      styles={{
+                        label: {
+                          overflow: 'visible',
+                          whiteSpace: 'nowrap',
+                        }
                       }}
                     >
                       {isMobile ? 'Next' : 'Next →'}
                     </Button>
                   </Group>
                   
+                  {/* Calendar Button */}
                   <Group justify="center">
                     <Button
                       size={isMobile ? 'sm' : 'md'}
@@ -303,8 +340,9 @@ export default function CalendarFirstBooking() {
                         color: '#1A1A1A',
                         fontWeight: 700,
                         borderRadius: '8px',
-                        padding: isMobile ? '8px 16px' : '10px 24px',
-                        fontSize: isMobile ? '0.75rem' : '0.875rem'
+                        padding: isMobile ? '6px 16px' : '8px 20px',
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        width: isMobile ? '100%' : 'auto',
                       }}
                     >
                       {isMobile ? 'Pick Date' : 'Select Specific Date'}
