@@ -6,18 +6,27 @@
  * - Company information
  * - Quick links
  * - Contact information with WhatsApp/Call options
- * - Social media links
+ * - Social media links with improved visibility
+ * - Location with Google Maps link
  * - Copyright notice
  */
 
 'use client';
 
-import { Container, Group, Text, Stack, ActionIcon, Tooltip, Button, Popover, Box, Menu, SimpleGrid } from '@mantine/core';
+import { Container, Group, Text, Stack, ActionIcon, Tooltip, Button, Menu, SimpleGrid } from '@mantine/core';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import styles from './PublicFooter.module.css';
-import { IconPhone, IconMail, IconBrandWhatsapp, IconBrandInstagram, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
+import { 
+  IconPhone, 
+  IconMail, 
+  IconBrandWhatsapp, 
+  IconBrandInstagram, 
+  IconBrandTiktok, 
+  IconChevronDown, 
+  IconMapPin,
+  IconClock
+} from '@tabler/icons-react';
 
 export default function PublicFooter() {
   const [contactMenuOpened, setContactMenuOpened] = useState(false);
@@ -26,322 +35,322 @@ export default function PublicFooter() {
   const formattedPhone = '0340-2639174';
   const whatsappLink = `https://wa.me/923402639174`;
   const callLink = `tel:${phoneNumber}`;
+  const locationLink = 'https://maps.app.goo.gl/Mozvf2b5jXEq9KVn8';
+  const emailAddress = 'Powerplaycricketarena@gmail.com';
   
   const socialLinks = [
     {
       name: 'Instagram',
       username: '@powerplaycricketarena',
-      link: 'https://instagram.com/powerplaycricketarena',
+      link: 'https://www.instagram.com/powerplaycricketarena?igsh=MTA0c3NiOWR5aW9xeg==',
       icon: IconBrandInstagram,
       color: '#E4405F',
+      bgColor: 'rgba(228, 64, 95, 0.1)',
     },
     {
       name: 'TikTok',
       username: '@powerplaycricketarena',
-      link: 'https://tiktok.com/@powerplaycricketarena',
+      link: 'https://www.tiktok.com/@powerplaycricketarena?_r=1&_t=ZS-93SLIpFxSew',
       icon: IconBrandTiktok,
-      color: '#000000',
+      color: '#69C9D0', // TikTok's blue color instead of black
+      bgColor: 'rgba(105, 201, 208, 0.1)',
     },
+  ];
+
+  const quickLinks = [
+    { label: 'Home', href: '/' },
+    { label: 'New Booking', href: '/bookings' },
+    { label: 'Check Booking Status', href: '/bookings/check' },
+    { label: 'Pricing & Packages', href: '/pricing' },
+    { label: 'Gallery', href: '/gallery' },
+  ];
+
+  const businessHours = [
+    { day: 'Mon - Fri', time: '6:00 AM - 11:00 PM' },
+    { day: 'Sat - Sun', time: '5:00 AM - 12:00 AM' },
+    { day: 'Holidays', time: '24 Hours' },
   ];
 
   return (
     <footer className={styles.footer}>
       <Container size="xl">
-        {/* Main Footer Content */}
-        <SimpleGrid 
-          cols={{ base: 1, sm: 3 }} 
-          spacing="xl" 
-          py="xl"
-        >
-          {/* Company Info */}
-          <Stack gap="md">
-            <Text fw={700} c="white" size="lg">Powerplay Cricket Arena</Text>
-            <Text size="sm" c="#F5B800" style={{ lineHeight: 1.6 }}>
-              Professional cricket ground booking & premium sports facility
-            </Text>
-            
-            {/* Contact Info */}
-            <Stack gap="xs">
-              {/* Email */}
-              <Group gap="xs" align="flex-start">
-                <IconMail size={18} color="#F5B800" />
-                <Text 
-                  component="a"
-                  href="mailto:Powerplaycricketarena@gmail.com"
-                  size="sm"
-                  c="white"
-                  style={{
-                    textDecoration: 'none',
-                    transition: 'color 200ms ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
-                >
-                  Powerplaycricketarena@gmail.com
+        {/* Main Footer Content - Better mobile layout */}
+        <div className={styles.footerContent}>
+          
+          {/* Company Info & Contact - First column for mobile */}
+          <div className={styles.footerColumn}>
+            <Stack gap="md">
+              <div>
+                <Text fw={800} c="white" size="xl" className={styles.companyName}>
+                  Powerplay Cricket Arena
                 </Text>
-              </Group>
+                <Text size="sm" c="#F5B800" className={styles.tagline}>
+                  Premium Cricket Ground & Sports Facility
+                </Text>
+              </div>
               
-              {/* Phone with Menu */}
-              <Group gap="xs" align="flex-start">
-                <IconPhone size={18} color="#F5B800" />
-                <Menu
-                  width={200}
-                  position="top"
-                  withArrow
-                  shadow="md"
-                  opened={contactMenuOpened}
-                  onChange={setContactMenuOpened}
-                >
-                  <Menu.Target>
-                    <Group gap={4} style={{ cursor: 'pointer' }}>
-                      <Text 
-                        size="sm"
-                        c="white"
-                        style={{
-                          transition: 'color 200ms ease',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
-                      >
-                        {formattedPhone}
-                      </Text>
-                      <IconChevronDown size={14} color="#F5B800" />
-                    </Group>
-                  </Menu.Target>
-                  
-                  <Menu.Dropdown style={{ background: '#1a1a1a', borderColor: '#F5B800' }}>
-                    <Menu.Label style={{ color: '#F5B800', fontWeight: 600 }}>
-                      Contact Options
-                    </Menu.Label>
-                    
-                    <Menu.Item
-                      component="a"
-                      href={whatsappLink}
-                      target="_blank"
-                      leftSection={<IconBrandWhatsapp size={16} color="#25D366" />}
-                      style={{
-                        color: 'white',
-                        transition: 'all 200ms ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(37, 211, 102, 0.1)';
-                        e.currentTarget.style.color = '#25D366';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'white';
-                      }}
-                    >
-                      Chat on WhatsApp
-                    </Menu.Item>
-                    
-                    <Menu.Item
-                      component="a"
-                      href={callLink}
-                      leftSection={<IconPhone size={16} color="#F5B800" />}
-                      style={{
-                        color: 'white',
-                        transition: 'all 200ms ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(245, 184, 0, 0.1)';
-                        e.currentTarget.style.color = '#F5B800';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'white';
-                      }}
-                    >
-                      Make a Call
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Group>
-            </Stack>
-          </Stack>
-
-          {/* Quick Links */}
-          <Stack gap="md">
-            <Text fw={600} c="#F5B800" size="lg">Quick Links</Text>
-            {[
-              { label: 'Home', href: '/' },
-              { label: 'New Booking', href: '/bookings' },
-              { label: 'Check Booking Status', href: '/bookings/check' },
-              { label: 'Pricing & Packages', href: '/pricing' },
-              { label: 'Gallery', href: '/gallery' },
-            ].map((link) => (
-              <Text
-                key={link.href}
-                component={Link}
-                href={link.href}
-                size="sm"
-                c="white"
-                style={{
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  transition: 'color 200ms ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'white')}
-              >
-                {link.label}
-              </Text>
-            ))}
-          </Stack>
-
-          {/* Social Media Section */}
-          <Stack gap="md">
-            <Text fw={600} c="#F5B800" size="lg">Follow Us</Text>
-            <Text size="sm" c="white" style={{ lineHeight: 1.6 }}>
-              Stay connected for latest updates, offers, and cricket events
-            </Text>
-            
-            {/* Social Media Icons */}
-            <Group gap="md">
-              {socialLinks.map((social) => (
-                <Tooltip
-                  key={social.name}
-                  label={`Follow us on ${social.name}: ${social.username}`}
-                  position="top"
-                  withArrow
-                  style={{ background: social.color, color: 'white' }}
-                >
-                  <ActionIcon
+              {/* Contact Info */}
+              <Stack gap="xs">
+                {/* Email */}
+                <Group gap="xs" align="flex-start" className={styles.contactItem}>
+                  <div className={styles.iconWrapper}>
+                    <IconMail size={18} color="#F5B800" />
+                  </div>
+                  <Text 
                     component="a"
-                    href={social.link}
-                    target="_blank"
-                    size="lg"
-                    radius="md"
-                    variant="outline"
-                    style={{
-                      borderColor: social.color,
-                      color: social.color,
-                      transition: 'all 200ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = social.color;
-                      e.currentTarget.style.color = 'white';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = social.color;
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <social.icon size={20} />
-                  </ActionIcon>
-                </Tooltip>
-              ))}
-            </Group>
-            
-            {/* Social Media Text Links */}
-            <Stack gap={4}>
-              {socialLinks.map((social) => (
-                <Group key={social.name} gap={6}>
-                  <social.icon size={14} color={social.color} />
-                  <Text
-                    component="a"
-                    href={social.link}
-                    target="_blank"
-                    size="xs"
+                    href={`mailto:${emailAddress}`}
+                    size="sm"
                     c="white"
-                    style={{
-                      textDecoration: 'none',
-                      transition: 'all 200ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = social.color;
-                      e.currentTarget.style.textDecoration = 'underline';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'white';
-                      e.currentTarget.style.textDecoration = 'none';
-                    }}
+                    className={styles.contactLink}
                   >
-                    {social.name}: {social.username}
+                    {emailAddress}
                   </Text>
                 </Group>
-              ))}
+                
+                {/* Phone */}
+                <Group gap="xs" align="flex-start" className={styles.contactItem}>
+                  <div className={styles.iconWrapper}>
+                    <IconPhone size={18} color="#F5B800" />
+                  </div>
+                  <Menu
+                    width={200}
+                    position="top"
+                    withArrow
+                    shadow="md"
+                    opened={contactMenuOpened}
+                    onChange={setContactMenuOpened}
+                  >
+                    <Menu.Target>
+                      <Group gap={4} className={styles.phoneNumber}>
+                        <Text 
+                          size="sm"
+                          c="white"
+                          className={styles.contactLink}
+                        >
+                          {formattedPhone}
+                        </Text>
+                        <IconChevronDown size={14} color="#F5B800" />
+                      </Group>
+                    </Menu.Target>
+                    
+                    <Menu.Dropdown className={styles.contactDropdown}>
+                      <Menu.Label className={styles.dropdownLabel}>
+                        Contact Options
+                      </Menu.Label>
+                      
+                      <Menu.Item
+                        component="a"
+                        href={whatsappLink}
+                        target="_blank"
+                        leftSection={<IconBrandWhatsapp size={16} color="#25D366" />}
+                        className={styles.dropdownItem}
+                      >
+                        Chat on WhatsApp
+                      </Menu.Item>
+                      
+                      <Menu.Item
+                        component="a"
+                        href={callLink}
+                        leftSection={<IconPhone size={16} color="#F5B800" />}
+                        className={styles.dropdownItem}
+                      >
+                        Make a Call
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+                
+                {/* Location */}
+                <Group gap="xs" align="flex-start" className={styles.contactItem}>
+                  <div className={styles.iconWrapper}>
+                    <IconMapPin size={18} color="#F5B800" />
+                  </div>
+                  <Text 
+                    component="a"
+                    href={locationLink}
+                    target="_blank"
+                    size="sm"
+                    c="white"
+                    className={styles.contactLink}
+                  >
+                    View on Google Maps
+                  </Text>
+                </Group>
+              </Stack>
+              
+              {/* Quick Contact Buttons - Mobile Only */}
+              <Group gap="sm" className={styles.mobileContactButtons}>
+                <Button
+                  component="a"
+                  href={whatsappLink}
+                  target="_blank"
+                  size="sm"
+                  variant="filled"
+                  leftSection={<IconBrandWhatsapp size={16} />}
+                  className={styles.whatsappButton}
+                >
+                  WhatsApp
+                </Button>
+                <Button
+                  component="a"
+                  href={callLink}
+                  size="sm"
+                  variant="outline"
+                  leftSection={<IconPhone size={16} />}
+                  className={styles.callButton}
+                >
+                  Call Now
+                </Button>
+              </Group>
             </Stack>
-          </Stack>
-        </SimpleGrid>
+          </div>
+
+          {/* Quick Links & Business Hours - Second column */}
+          <div className={styles.footerColumn}>
+            <SimpleGrid cols={2} spacing="xl" className={styles.quickLinksGrid}>
+              <Stack gap="md">
+                <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
+                  Quick Links
+                </Text>
+                <Stack gap="xs">
+                  {quickLinks.map((link) => (
+                    <Text
+                      key={link.href}
+                      component={Link}
+                      href={link.href}
+                      size="sm"
+                      c="white"
+                      className={styles.navLink}
+                    >
+                      {link.label}
+                    </Text>
+                  ))}
+                </Stack>
+              </Stack>
+              
+              <Stack gap="md">
+                <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
+                  Business Hours
+                </Text>
+                <Stack gap="xs">
+                  {businessHours.map((schedule, index) => (
+                    <div key={index} className={styles.businessHours}>
+                      <Group gap="xs">
+                        <IconClock size={14} color="#F5B800" />
+                        <Text size="sm" c="white" fw={500}>{schedule.day}</Text>
+                      </Group>
+                      <Text size="sm" c="#F5B800" fw={600}>{schedule.time}</Text>
+                    </div>
+                  ))}
+                </Stack>
+              </Stack>
+            </SimpleGrid>
+          </div>
+
+          {/* Social Media - Third column */}
+          <div className={styles.footerColumn}>
+            <Stack gap="md">
+              <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
+                Follow Us
+              </Text>
+              <Text size="sm" c="white" className={styles.socialDescription}>
+                Stay updated with latest offers, tournaments, and cricket tips
+              </Text>
+              
+              {/* Social Media Icons */}
+              <Group gap="md" justify="center" className={styles.socialIcons}>
+                {socialLinks.map((social) => (
+                  <Tooltip
+                    key={social.name}
+                    label={`Follow us on ${social.name}`}
+                    position="top"
+                    withArrow
+                    className={styles.socialTooltip}
+                    style={{ 
+                      background: social.color,
+                      color: social.name === 'TikTok' ? 'black' : 'white'
+                    }}
+                  >
+                    <ActionIcon
+                      component="a"
+                      href={social.link}
+                      target="_blank"
+                      size={50}
+                      radius="md"
+                      className={styles.socialIcon}
+                      style={{
+                        background: social.bgColor,
+                        borderColor: social.color,
+                        color: social.color,
+                      }}
+                    >
+                      <social.icon size={24} />
+                    </ActionIcon>
+                  </Tooltip>
+                ))}
+              </Group>
+              
+              {/* Social Media Links */}
+              <Stack gap={6} className={styles.socialLinks}>
+                {socialLinks.map((social) => (
+                  <Group key={social.name} gap={8} wrap="nowrap">
+                    <social.icon size={16} color={social.color} />
+                    <Text
+                      component="a"
+                      href={social.link}
+                      target="_blank"
+                      size="sm"
+                      c="white"
+                      className={styles.socialLink}
+                    >
+                      <span style={{ fontWeight: 500, color: social.color }}>{social.name}</span>
+                      <span style={{ marginLeft: '4px', opacity: 0.9 }}>- {social.username}</span>
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+              
+              {/* Follow CTA */}
+              <Text size="xs" c="#F5B800" fw={500} ta="center" className={styles.followCTA}>
+                Click to follow us for daily updates!
+              </Text>
+            </Stack>
+          </div>
+        </div>
 
         {/* Copyright Section */}
-        <Box py="md" style={{ borderTop: '1px solid rgba(245, 184, 0, 0.3)' }}>
+        <div className={styles.copyrightSection}>
           <Text 
-            ta="center" 
             size="sm" 
             c="rgba(255, 255, 255, 0.7)"
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-            }}
+            ta="center"
+            className={styles.copyrightText}
           >
-            <span>© 2026 Powerplay Cricket Arena</span>
-            <span style={{ color: '#F5B800' }}>•</span>
+            <span>© 2024 Powerplay Cricket Arena</span>
+            <span className={styles.separator}>•</span>
             <span>All rights reserved</span>
-            <span style={{ color: '#F5B800' }}>•</span>
+            <span className={styles.separator}>•</span>
             <Text
               component={Link}
               href="/privacy"
               size="sm"
               c="rgba(255, 255, 255, 0.7)"
-              style={{ textDecoration: 'none' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')}
+              className={styles.legalLink}
             >
               Privacy Policy
             </Text>
-            <span style={{ color: '#F5B800' }}>•</span>
+            <span className={styles.separator}>•</span>
             <Text
               component={Link}
               href="/terms"
               size="sm"
               c="rgba(255, 255, 255, 0.7)"
-              style={{ textDecoration: 'none' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5B800')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')}
+              className={styles.legalLink}
             >
               Terms of Service
             </Text>
           </Text>
-          
-          {/* Quick Contact Buttons for Mobile */}
-          <Group justify="center" gap="md" mt="md" className={styles.mobileContactButtons}>
-            <Button
-              component="a"
-              href={whatsappLink}
-              target="_blank"
-              size="xs"
-              variant="filled"
-              leftSection={<IconBrandWhatsapp size={16} />}
-              style={{
-                background: '#25D366',
-                color: 'white',
-                border: 'none',
-              }}
-            >
-              WhatsApp
-            </Button>
-            <Button
-              component="a"
-              href={callLink}
-              size="xs"
-              variant="outline"
-              leftSection={<IconPhone size={16} />}
-              style={{
-                color: '#F5B800',
-                borderColor: '#F5B800',
-              }}
-            >
-              Call Now
-            </Button>
-          </Group>
-        </Box>
+        </div>
       </Container>
     </footer>
   );

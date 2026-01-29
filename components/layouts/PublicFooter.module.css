@@ -1,45 +1,373 @@
 .footer {
   border-top: 3px solid #F5B800;
-  margin-top: 4rem;
   background-color: #1A1A1A;
   color: white;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Mobile responsive styles */
-@media (max-width: 768px) {
-  .footer {
-    margin-top: 3rem;
-    padding: 0 1rem;
-  }
-  
-  .footer :global(.mantine-SimpleGrid-root) {
-    gap: 2rem !important;
-  }
-  
-  .footer :global(.mantine-Stack-root) {
-    align-items: center;
-    text-align: center;
+/* Decorative elements */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(245, 184, 0, 0.5) 20%, 
+    rgba(245, 184, 0, 0.8) 50%, 
+    rgba(245, 184, 0, 0.5) 80%, 
+    transparent 100%
+  );
+}
+
+/* Main content layout */
+.footerContent {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  padding: 2.5rem 0;
+}
+
+.footerColumn {
+  width: 100%;
+}
+
+/* Company name styling */
+.companyName {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.tagline {
+  font-style: italic;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Contact section */
+.contactItem {
+  padding: 0.4rem 0;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.contactLink {
+  text-decoration: none;
+  transition: color 200ms ease;
+  cursor: pointer;
+  flex: 1;
+}
+
+.contactLink:hover {
+  color: #F5B800 !important;
+  text-decoration: underline;
+}
+
+.phoneNumber {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Contact dropdown */
+.contactDropdown {
+  background: #2A2A2A !important;
+  border-color: #F5B800 !important;
+  border-width: 1px !important;
+}
+
+.dropdownLabel {
+  color: #F5B800 !important;
+  font-weight: 600 !important;
+  background: rgba(245, 184, 0, 0.1) !important;
+}
+
+.dropdownItem {
+  color: white !important;
+  background: transparent !important;
+  transition: all 200ms ease !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.dropdownItem:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #F5B800 !important;
+}
+
+/* Quick links grid */
+.quickLinksGrid {
+  width: 100%;
+}
+
+.sectionTitle {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.5rem;
+}
+
+.navLink {
+  text-decoration: none;
+  transition: all 200ms ease;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+.navLink:hover {
+  color: #F5B800 !important;
+  transform: translateX(4px);
+}
+
+/* Business hours */
+.businessHours {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(245, 184, 0, 0.1);
+}
+
+.businessHours:last-child {
+  border-bottom: none;
+}
+
+/* Social media section */
+.socialDescription {
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.socialIcons {
+  margin: 1rem 0;
+}
+
+.socialIcon {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-width: 2px !important;
+  backdrop-filter: blur(10px);
+}
+
+.socialIcon:hover {
+  transform: translateY(-4px) scale(1.1) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.socialTooltip {
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+}
+
+.socialLinks {
+  margin-top: 0.5rem;
+}
+
+.socialLink {
+  text-decoration: none;
+  transition: all 200ms ease;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.socialLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.followCTA {
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Mobile contact buttons */
+.mobileContactButtons {
+  display: flex !important;
+  margin-top: 1rem;
+}
+
+.whatsappButton {
+  background: #25D366 !important;
+  color: white !important;
+  border: none !important;
+  font-weight: 600 !important;
+  transition: all 200ms ease !important;
+}
+
+.whatsappButton:hover {
+  background: #128C7E !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3) !important;
+}
+
+.callButton {
+  color: #F5B800 !important;
+  border-color: #F5B800 !important;
+  font-weight: 600 !important;
+  transition: all 200ms ease !important;
+}
+
+.callButton:hover {
+  background: rgba(245, 184, 0, 0.1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 184, 0, 0.2) !important;
+}
+
+/* Copyright section */
+.copyrightSection {
+  border-top: 1px solid rgba(245, 184, 0, 0.2);
+  padding: 1.5rem 0;
+}
+
+.copyrightText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.separator {
+  color: #F5B800;
+  opacity: 0.5;
+}
+
+.legalLink {
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.legalLink:hover {
+  color: #F5B800 !important;
+}
+
+/* ========== DESKTOP STYLES ========== */
+@media (min-width: 768px) {
+  .footerContent {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+    gap: 3rem;
   }
   
   .mobileContactButtons {
-    display: flex !important;
+    display: none !important;
+  }
+  
+  .quickLinksGrid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .copyrightText {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
   }
 }
 
-/* Desktop only */
-@media (min-width: 769px) {
+/* ========== TABLET STYLES ========== */
+@media (min-width: 576px) and (max-width: 767px) {
+  .footerContent {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .footerColumn:last-child {
+    grid-column: span 2;
+  }
+  
+  .quickLinksGrid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
   .mobileContactButtons {
     display: none !important;
   }
 }
 
-/* Hover effects */
-.footer :global(.mantine-Text-root[data-type="link"]:hover),
-.footer :global(.mantine-Text-root[component="a"]:hover) {
-  color: #F5B800 !important;
+/* ========== MOBILE STYLES ========== */
+@media (max-width: 575px) {
+  .footer {
+    padding: 1.5rem 0;
+  }
+  
+  .footerContent {
+    padding: 1.5rem 0;
+    gap: 2rem;
+  }
+  
+  .footerColumn {
+    text-align: center;
+  }
+  
+  .iconWrapper {
+    margin: 0 auto;
+  }
+  
+  .contactItem {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .phoneNumber {
+    justify-content: center;
+  }
+  
+  .quickLinksGrid {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+  }
+  
+  .sectionTitle {
+    text-align: center;
+  }
+  
+  .navLink {
+    justify-content: center;
+  }
+  
+  .businessHours {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .socialIcons {
+    justify-content: center;
+  }
+  
+  .socialLinks {
+    align-items: center;
+  }
+  
+  .socialLink {
+    justify-content: center;
+  }
+  
+  .mobileContactButtons {
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+  
+  .copyrightText {
+    text-align: center;
+    line-height: 1.6;
+  }
+  
+  .separator {
+    display: inline-block;
+    margin: 0 0.5rem;
+  }
 }
 
-.footer :global(.mantine-ActionIcon-root):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+/* ========== LARGE DESKTOP STYLES ========== */
+@media (min-width: 1200px) {
+  .footerContent {
+    gap: 4rem;
+  }
 }
