@@ -301,9 +301,9 @@ export default function CheckBookingPage() {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('For queries, contact: +92-XXX-XXXXXXX', 105, y + 7, { align: 'center' });
+    doc.text('For queries, contact: 03402639174', 105, y + 7, { align: 'center' });
     doc.setFont('helvetica', 'normal');
-    doc.text('Email: support@cricketground.com', 105, y + 12, { align: 'center' });
+    doc.text('Email: Powerplaycricketarena@gmail.com', 105, y + 12, { align: 'center' });
     
     // Footer
     doc.setTextColor(128, 128, 128);
@@ -591,7 +591,7 @@ export default function CheckBookingPage() {
         <Alert icon={<IconAlertCircle size={18} />} title="Need Help?" color="cyan">
           <Text size="sm">
             If you cannot find your booking or have any questions, please contact us at:{' '}
-            <strong>+92-XXX-XXXXXXX</strong>
+            <strong>03402639174</strong>
           </Text>
         </Alert>
       </Stack>

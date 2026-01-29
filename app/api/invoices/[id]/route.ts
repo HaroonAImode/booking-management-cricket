@@ -113,38 +113,32 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   let y = 20;
 
   // ==================== HEADER ====================
-  // Gold header banner with gradient effect
+  // Gold header banner
   doc.setFillColor(...gold);
-  doc.rect(0, 0, pageWidth, 45, 'F');
+  doc.rect(0, 0, pageWidth, 50, 'F');
   
-  // Add subtle pattern to header
-  doc.setDrawColor(255, 230, 150);
-  doc.setLineWidth(0.5);
-  for (let i = 0; i < pageWidth; i += 10) {
-    doc.line(i, 0, i + 5, 45);
-  }
-  
-  // Arena name with shadow effect
+  // Arena name
   doc.setTextColor(...black);
-  doc.setFontSize(28);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('POWERPLAY CRICKET ARENA', pageWidth / 2, 22, { align: 'center' });
   
   // Subtitle
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text('Premium Cricket Ground & Sports Facility', pageWidth / 2, 32, { align: 'center' });
   
-  // Invoice title with decorative line
+  // Invoice title with spacing
   doc.setDrawColor(...black);
   doc.setLineWidth(0.5);
-  doc.line(pageWidth / 2 - 80, 38, pageWidth / 2 + 80, 38);
-  doc.setFontSize(16);
+  doc.line(pageWidth / 2 - 80, 40, pageWidth / 2 + 80, 40);
+  
+  doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
-  doc.text('BOOKING CONFIRMATION INVOICE', pageWidth / 2, 42, { align: 'center' });
+  doc.text('BOOKING CONFIRMATION INVOICE', pageWidth / 2, 48, { align: 'center' });
   
-  y = 55;
+  y = 60;
 
   // ==================== BOOKING INFO CARD ====================
   // Card background
@@ -158,25 +152,26 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   // Left Column: Customer Details
   doc.setTextColor(...darkGray);
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('CUSTOMER DETAILS', 22, y);
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
   doc.line(22, y + 2, 60, y + 2);
   
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
   doc.text(booking.customer.name, 22, y + 10);
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(...darkGray);
-  doc.text(`📱 ${booking.customer.phone || 'Not provided'}`, 22, y + 16);
+  // Use text icon instead of emoji
+  doc.text(`Phone: ${booking.customer.phone || 'Not provided'}`, 22, y + 16);
   
   // Right Column: Invoice Details
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('INVOICE DETAILS', pageWidth - 80, y);
@@ -184,20 +179,20 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   // Invoice Number
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(220, 20, 60); // Red for invoice number
   doc.text(`#${booking.booking_number}`, pageWidth - 80, y + 10);
   
   // Invoice Date
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(...darkGray);
   const invoiceDate = new Date().toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   });
-  doc.text(`📅 ${invoiceDate}`, pageWidth - 80, y + 16);
+  doc.text(`Date: ${invoiceDate}`, pageWidth - 80, y + 16);
   
   // Booking Date
   const bookingDateFormatted = new Date(booking.booking_date).toLocaleDateString('en-US', {
@@ -206,7 +201,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
     month: 'short',
     year: 'numeric'
   });
-  doc.text(`📅 Booking: ${bookingDateFormatted}`, pageWidth - 80, y + 22);
+  doc.text(`Booking: ${bookingDateFormatted}`, pageWidth - 80, y + 22);
   
   y += 35;
 
@@ -215,19 +210,19 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setFillColor(...gold);
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
   doc.setTextColor(...black);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('📋 BOOKING DETAILS', 22, y + 8);
+  doc.text('BOOKING DETAILS', 22, y + 8);
   
   y += 20;
   
   // Time slots
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Time Slots:', 22, y);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(...black);
   const slotRanges = formatSlotRanges(booking.slots.map(s => s.slot_hour));
   doc.text(slotRanges, 55, y);
@@ -235,12 +230,12 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 8;
   
   // Duration
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Duration:', 22, y);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(...black);
   doc.text(`${booking.total_hours} hour${booking.total_hours !== 1 ? 's' : ''}`, 55, y);
   
@@ -252,12 +247,12 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   if (regularSlots > 0 || nightSlots > 0) {
     y += 8;
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...darkGray);
     doc.text('Rate Breakdown:', 22, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(...black);
     
     let rateText = '';
@@ -274,7 +269,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 8;
   
   // Status badge
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Status:', 22, y);
@@ -285,22 +280,22 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   switch (booking.status) {
     case 'pending':
-      statusText = '⏳ PENDING APPROVAL';
+      statusText = 'PENDING APPROVAL';
       statusBg = [255, 245, 230]; // Light orange
       statusColor = [255, 140, 0];
       break;
     case 'approved':
-      statusText = '✅ CONFIRMED';
+      statusText = 'CONFIRMED';
       statusBg = [220, 255, 220]; // Light green
       statusColor = [0, 128, 0];
       break;
     case 'completed':
-      statusText = '🏁 COMPLETED';
+      statusText = 'COMPLETED';
       statusBg = [230, 240, 255]; // Light blue
       statusColor = [0, 0, 150];
       break;
     case 'cancelled':
-      statusText = '❌ CANCELLED';
+      statusText = 'CANCELLED';
       statusBg = [255, 230, 230]; // Light red
       statusColor = [200, 0, 0];
       break;
@@ -313,7 +308,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setFillColor(...statusBg);
   doc.roundedRect(55, y - 4, statusWidth, 8, 4, 4, 'F');
   doc.setTextColor(...statusColor);
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.text(statusText, 60, y);
   doc.setTextColor(...black);
   
@@ -324,9 +319,9 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setFillColor(...gold);
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
   doc.setTextColor(...black);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('💰 PAYMENT SUMMARY', 22, y + 8);
+  doc.text('PAYMENT SUMMARY', 22, y + 8);
   
   y += 20;
   
@@ -337,7 +332,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setLineWidth(0.3);
   doc.rect(20, y, pageWidth - 40, 10, 'S');
   
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Description', 25, y + 7);
@@ -346,7 +341,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 12;
   
   // Total Amount row
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
   doc.text('Total Booking Amount', 25, y + 7);
@@ -355,7 +350,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 12;
   
   // Advance Payment row
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   doc.text('Advance Payment Received', 30, y + 7);
@@ -365,14 +360,14 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
                         booking.advance_payment_method === 'sadapay' ? 'SadaPay' :
                         booking.advance_payment_method === 'cash' ? 'Cash' : 'N/A';
   
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFillColor(...goldLight);
   doc.roundedRect(30, y - 2, doc.getTextWidth(advanceMethod) + 6, 6, 2, 2, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text(advanceMethod, 33, y + 2);
   
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 150, 0); // Green
   doc.text(`- PKR ${booking.advance_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
@@ -386,7 +381,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 8;
   
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
   doc.text('Balance Due', 25, y + 7);
@@ -400,13 +395,13 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
                              booking.remaining_payment_method === 'sadapay' ? 'SadaPay' :
                              booking.remaining_payment_method === 'cash' ? 'Cash' : 'N/A';
       
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...darkGray);
       doc.text(`Pay via: ${remainingMethod}`, 30, y + 15);
     }
     
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(200, 0, 0); // Red
     doc.text(`PKR ${booking.remaining_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
@@ -415,20 +410,20 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += booking.remaining_payment > 0 ? 22 : 15;
 
   // ==================== PAYMENT STATUS MESSAGE ====================
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   
   if (booking.remaining_payment === 0) {
     doc.setFillColor(220, 255, 220); // Light green
     doc.roundedRect(20, y - 5, pageWidth - 40, 12, 3, 3, 'F');
     doc.setTextColor(0, 100, 0);
-    doc.text('🎉 Your booking has been successfully confirmed!', pageWidth / 2, y + 3, { align: 'center' });
+    doc.text('Your booking has been successfully confirmed!', pageWidth / 2, y + 3, { align: 'center' });
   } else {
     doc.setFillColor(255, 245, 230); // Light orange
     doc.roundedRect(20, y - 5, pageWidth - 40, 15, 3, 3, 'F');
     doc.setTextColor(180, 80, 0);
-    doc.text('⚠️ Remaining Payment Due:', pageWidth / 2, y + 3, { align: 'center' });
-    doc.setFontSize(13);
+    doc.text('Remaining Payment Due:', pageWidth / 2, y + 3, { align: 'center' });
+    doc.setFontSize(12);
     doc.text(`PKR ${booking.remaining_payment.toLocaleString()}`, pageWidth / 2, y + 10, { align: 'center' });
   }
   
@@ -442,27 +437,27 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setLineWidth(1);
   doc.roundedRect(15, y, pageWidth - 30, 50, 5, 5, 'S');
   
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
-  doc.text('📝 IMPORTANT INFORMATION', 22, y + 8);
+  doc.text('IMPORTANT INFORMATION', 22, y + 8);
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
-  doc.line(22, y + 10, 90, y + 10);
+  doc.line(22, y + 10, 70, y + 10);
   
   y += 15;
   
-  // Information points
+  // Information points (using text icons instead of emojis)
   const infoPoints = [
-    '🏏 Bats, wickets, and tapes will be provided by the facility.',
-    '🎾 Bring your own tennis balls, or purchase them at the venue.',
-    '⏰ Please arrive 15 minutes before your scheduled time.',
-    '♻️ Keep the ground clean and dispose of trash properly.',
-    '🚫 Follow all safety rules and guidelines during play.',
-    '📞 Contact us if you need to reschedule or cancel your booking.'
+    '• Bats, wickets, and tapes will be provided by the facility.',
+    '• Bring your own tennis balls, or purchase them at the venue.',
+    '• Please arrive 15 minutes before your scheduled time.',
+    '• Keep the ground clean and dispose of trash properly.',
+    '• Follow all safety rules and guidelines during play.',
+    '• Contact us if you need to reschedule or cancel your booking.'
   ];
   
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   
@@ -482,16 +477,16 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setLineWidth(0.5);
   doc.roundedRect(15, y, pageWidth - 30, 35, 5, 5, 'S');
   
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
-  doc.text('📞 CONTACT INFORMATION', pageWidth / 2, y + 8, { align: 'center' });
+  doc.text('CONTACT INFORMATION', pageWidth / 2, y + 8, { align: 'center' });
   
   y += 15;
   
   // Contact details in two columns
   // Left column - Contact
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Phone:', 30, y);
@@ -503,15 +498,10 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setTextColor(...darkGray);
   doc.text('Email:', 30, y + 7);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...black);
-  // Email with clickable indication
   doc.setTextColor(0, 102, 204); // Blue for clickable
   doc.text('Powerplaycricketarena@gmail.com', 50, y + 7);
   
-  // Right column - Social Media (with clickable URLs)
-  const instagramLink = 'https://www.instagram.com/powerplaycricketarena';
-  const tiktokLink = 'https://www.tiktok.com/@powerplaycricketarena';
-  
+  // Right column - Social Media
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
   doc.text('Follow Us:', pageWidth - 100, y);
@@ -520,21 +510,21 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   // Instagram
   doc.setTextColor(228, 64, 95); // Instagram pink
   doc.text('Instagram', pageWidth - 100, y + 7);
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(0, 102, 204); // Blue for URL
   doc.text('@powerplaycricketarena', pageWidth - 100, y + 12);
   
   // TikTok
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...black); // TikTok black
-  doc.text('TikTok', pageWidth - 50, y + 7);
   doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0); // Black for TikTok
+  doc.text('TikTok', pageWidth - 50, y + 7);
+  doc.setFontSize(8);
   doc.setTextColor(0, 102, 204); // Blue for URL
   doc.text('@powerplaycricketarena', pageWidth - 50, y + 12);
   
   // Add clickable indicators
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(0, 102, 204);
   doc.text('(Clickable links in digital copy)', pageWidth / 2, y + 22, { align: 'center' });
@@ -542,31 +532,33 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 28;
 
   // ==================== FOOTER ====================
-  // Footer background
+  // Footer background with enough space
+  const footerHeight = 40;
   doc.setFillColor(...black);
-  doc.rect(0, pageHeight - 35, pageWidth, 35, 'F');
+  doc.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
   
   // Thank you message
   doc.setTextColor(...gold);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Thank You For Choosing Powerplay Cricket Arena!', pageWidth / 2, pageHeight - 25, { align: 'center' });
+  doc.text('Thank You For Choosing Powerplay Cricket Arena!', pageWidth / 2, pageHeight - 30, { align: 'center' });
   
   // Tagline
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Your Premier Destination for Cricket Excellence', pageWidth / 2, pageHeight - 18, { align: 'center' });
+  doc.text('Your Premier Destination for Cricket Excellence', pageWidth / 2, pageHeight - 23, { align: 'center' });
   
   // Final message
-  doc.setFontSize(9);
-  doc.text('We look forward to serving you. See you on the pitch!', pageWidth / 2, pageHeight - 12, { align: 'center' });
-  
-  // Copyright and page number
   doc.setFontSize(8);
-  doc.setTextColor(200, 200, 200);
-  doc.text(`Invoice ID: ${booking.booking_number} • Generated: ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+  doc.text('We look forward to serving you. See you on the pitch!', pageWidth / 2, pageHeight - 17, { align: 'center' });
   
-  // Add page border for professional look
+  // Copyright and page number with proper spacing from border
+  doc.setFontSize(7);
+  doc.setTextColor(200, 200, 200);
+  const generatedText = `Invoice ID: ${booking.booking_number} • Generated: ${new Date().toLocaleString()}`;
+  doc.text(generatedText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+  
+  // Add page border for professional look with proper spacing
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
   doc.rect(5, 5, pageWidth - 10, pageHeight - 10, 'S');

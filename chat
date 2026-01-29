@@ -117,8 +117,10 @@ so please give me all prompts for each section so i can keep giving prompts to v
 
 
 
-
-
+- also want to add 1 more thing like how the people who booked get to know did there request was approved or are thay good to go so for that i think if we add a button in booking page(http://localhost:3000/bookings) where those customers book the slots etc a button which says check your bookign and upon clicking that they will see a proper new page with search bar etc with premium styling etc and search bar ill see please enter your name and when they enter there name then booking appearing with that name and they can search there in the list liek can see proper name , email , phone number and timmings they were alloted etc so this is something helpfull and they can confirm from there and also a button at the end of there row like which will say downloaded booking slip 
+and when they click it simpley download pdf format slip with there namne , email , contact number , and alloted timing etc in proper way and professiaonly styled and proper instructions like please appear before 5 munute of alloted time etc and if any query then conntct this number etc and proper rules like dont break anything or any net and other rules please add them and pdf will be of 1 page only 
+- and also add proper remainder messgaes in clear way in booking page when tey are booking which says liek please vissi tagain here and lcick this button to see etc 
+and also rpoper message liek when they submit there request liek please click this button and search with your name within 10 minutes to see conformation message and download pdf slip etc all in propr way 
 
 for usign later on:
 You are now acting as a combined team of:

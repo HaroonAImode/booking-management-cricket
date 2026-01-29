@@ -13,7 +13,7 @@
 
 'use client';
 
-import { Container, Group, Text, Stack, ActionIcon, Tooltip, Button, Menu, SimpleGrid } from '@mantine/core';
+import { Container, Group, Text, Stack, ActionIcon, Tooltip, Button, Menu } from '@mantine/core';
 import Link from 'next/link';
 import { useState } from 'react';
 import styles from './PublicFooter.module.css';
@@ -24,8 +24,7 @@ import {
   IconBrandInstagram, 
   IconBrandTiktok, 
   IconChevronDown, 
-  IconMapPin,
-  IconClock
+  IconMapPin
 } from '@tabler/icons-react';
 
 export default function PublicFooter() {
@@ -52,7 +51,7 @@ export default function PublicFooter() {
       username: '@powerplaycricketarena',
       link: 'https://www.tiktok.com/@powerplaycricketarena?_r=1&_t=ZS-93SLIpFxSew',
       icon: IconBrandTiktok,
-      color: '#69C9D0', // TikTok's blue color instead of black
+      color: '#69C9D0',
       bgColor: 'rgba(105, 201, 208, 0.1)',
     },
   ];
@@ -65,19 +64,13 @@ export default function PublicFooter() {
     { label: 'Gallery', href: '/gallery' },
   ];
 
-  const businessHours = [
-    { day: 'Mon - Fri', time: '6:00 AM - 11:00 PM' },
-    { day: 'Sat - Sun', time: '5:00 AM - 12:00 AM' },
-    { day: 'Holidays', time: '24 Hours' },
-  ];
-
   return (
     <footer className={styles.footer}>
       <Container size="xl">
-        {/* Main Footer Content - Better mobile layout */}
+        {/* Main Footer Content */}
         <div className={styles.footerContent}>
           
-          {/* Company Info & Contact - First column for mobile */}
+          {/* Company Info & Contact */}
           <div className={styles.footerColumn}>
             <Stack gap="md">
               <div>
@@ -205,49 +198,30 @@ export default function PublicFooter() {
             </Stack>
           </div>
 
-          {/* Quick Links & Business Hours - Second column */}
+          {/* Quick Links */}
           <div className={styles.footerColumn}>
-            <SimpleGrid cols={2} spacing="xl" className={styles.quickLinksGrid}>
-              <Stack gap="md">
-                <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
-                  Quick Links
-                </Text>
-                <Stack gap="xs">
-                  {quickLinks.map((link) => (
-                    <Text
-                      key={link.href}
-                      component={Link}
-                      href={link.href}
-                      size="sm"
-                      c="white"
-                      className={styles.navLink}
-                    >
-                      {link.label}
-                    </Text>
-                  ))}
-                </Stack>
+            <Stack gap="md">
+              <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
+                Quick Links
+              </Text>
+              <Stack gap="xs">
+                {quickLinks.map((link) => (
+                  <Text
+                    key={link.href}
+                    component={Link}
+                    href={link.href}
+                    size="sm"
+                    c="white"
+                    className={styles.navLink}
+                  >
+                    {link.label}
+                  </Text>
+                ))}
               </Stack>
-              
-              <Stack gap="md">
-                <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
-                  Business Hours
-                </Text>
-                <Stack gap="xs">
-                  {businessHours.map((schedule, index) => (
-                    <div key={index} className={styles.businessHours}>
-                      <Group gap="xs">
-                        <IconClock size={14} color="#F5B800" />
-                        <Text size="sm" c="white" fw={500}>{schedule.day}</Text>
-                      </Group>
-                      <Text size="sm" c="#F5B800" fw={600}>{schedule.time}</Text>
-                    </div>
-                  ))}
-                </Stack>
-              </Stack>
-            </SimpleGrid>
+            </Stack>
           </div>
 
-          {/* Social Media - Third column */}
+          {/* Social Media */}
           <div className={styles.footerColumn}>
             <Stack gap="md">
               <Text fw={600} c="#F5B800" size="lg" className={styles.sectionTitle}>
