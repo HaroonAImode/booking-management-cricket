@@ -567,7 +567,7 @@ export default function CalendarFirstBooking() {
                       </SimpleGrid>
                     </Box>
                     
-                    {/* Updated Selection Info Bar */}
+                    {/* UPDATED: Selection Info Bar with fixed Continue button */}
                     {safeSelectedSlots.length > 0 ? (
                       <Box style={{
                         background: 'linear-gradient(135deg, #F5B800 0%, #FFD95E 100%)',
@@ -576,11 +576,24 @@ export default function CalendarFirstBooking() {
                         border: '2px solid #1A1A1A'
                       }}>
                         <Group justify="space-between" align="center" wrap="nowrap">
-                          <Box>
+                          <Box style={{ 
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden'
+                          }}>
                             <Text fw={800} c="#1A1A1A" size={isMobile ? 'sm' : 'md'}>
                               {safeSelectedSlots.length} slot{safeSelectedSlots.length !== 1 ? 's' : ''} selected
                             </Text>
-                            <Text size={isMobile ? 'xs' : 'sm'} c="#1A1A1A" opacity={0.8}>
+                            <Text 
+                              size={isMobile ? 'xs' : 'sm'} 
+                              c="#1A1A1A" 
+                              opacity={0.8}
+                              style={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
                               {safeSelectedSlots.map(h => formatTime(h) + formatAmPm(h)).join(', ')}
                             </Text>
                           </Box>
@@ -593,9 +606,18 @@ export default function CalendarFirstBooking() {
                               color: '#F5B800',
                               fontWeight: 700,
                               borderRadius: '8px',
-                              padding: isMobile ? '6px 16px' : '8px 20px',
+                              padding: isMobile ? '8px 12px' : '8px 20px',
                               fontSize: isMobile ? '0.75rem' : '0.875rem',
-                              whiteSpace: 'nowrap'
+                              whiteSpace: 'nowrap',
+                              minWidth: isMobile ? '90px' : 'auto',
+                              flexShrink: 0,
+                            }}
+                            styles={{
+                              label: {
+                                overflow: 'visible',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'clip',
+                              }
                             }}
                           >
                             Continue
