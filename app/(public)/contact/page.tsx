@@ -36,18 +36,18 @@ export default function ContactPage() {
     {
       icon: IconPhone,
       title: 'Phone',
-      value: '+92-300-1234567',
+      value: '0340-2639174',
       subtitle: 'Available 24/7',
       color: 'green',
-      href: 'tel:+923001234567',
+      href: 'tel:03402639174',
     },
     {
       icon: IconBrandWhatsapp,
       title: 'WhatsApp',
-      value: '+92-300-1234567',
+      value: '0340-2639174',
       subtitle: 'Quick response',
       color: 'teal',
-      href: 'https://wa.me/923001234567',
+      href: 'https://wa.me/923402639174',
     },
     {
       icon: IconMail,
@@ -76,7 +76,7 @@ export default function ContactPage() {
   const socialMedia = [
     { icon: IconBrandFacebook, name: 'Facebook', color: 'blue', href: '#' },
     { icon: IconBrandInstagram, name: 'Instagram', color: 'pink', href: '#' },
-    { icon: IconBrandWhatsapp, name: 'WhatsApp', color: 'teal', href: '#' },
+    { icon: IconBrandWhatsapp, name: 'WhatsApp', color: 'teal', href: 'https://wa.me/923402639174' },
   ];
 
   return (
@@ -175,7 +175,7 @@ export default function ContactPage() {
                 />
                 <TextInput
                   label="Phone Number"
-                  placeholder="03XX-XXXXXXX"
+                  placeholder="0340-2639174"
                   required
                   leftSection={<IconPhone size={16} />}
                 />
@@ -258,7 +258,7 @@ export default function ContactPage() {
             <Group gap="sm">
               <Button
                 component="a"
-                href="tel:+923001234567"
+                href="tel:03402639174"
                 size="lg"
                 variant="white"
                 leftSection={<IconPhone size={20} />}
@@ -267,7 +267,7 @@ export default function ContactPage() {
               </Button>
               <Button
                 component="a"
-                href="https://wa.me/923001234567"
+                href="https://wa.me/923402639174"
                 target="_blank"
                 size="lg"
                 variant="outline"

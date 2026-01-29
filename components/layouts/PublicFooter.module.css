@@ -4,3 +4,42 @@
   background-color: #1A1A1A;
   color: white;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .footer {
+    margin-top: 3rem;
+    padding: 0 1rem;
+  }
+  
+  .footer :global(.mantine-SimpleGrid-root) {
+    gap: 2rem !important;
+  }
+  
+  .footer :global(.mantine-Stack-root) {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .mobileContactButtons {
+    display: flex !important;
+  }
+}
+
+/* Desktop only */
+@media (min-width: 769px) {
+  .mobileContactButtons {
+    display: none !important;
+  }
+}
+
+/* Hover effects */
+.footer :global(.mantine-Text-root[data-type="link"]:hover),
+.footer :global(.mantine-Text-root[component="a"]:hover) {
+  color: #F5B800 !important;
+}
+
+.footer :global(.mantine-ActionIcon-root):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}

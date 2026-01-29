@@ -26,13 +26,18 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     // Parse the JSON response
     const dashboardData = typeof data === 'string' ? JSON.parse(data) : data;
 
-    // Get recent bookings with slot details
+    // Get recent bookings with ALL payment details
     const { data: recentBookings, error: bookingsError } = await supabase
       .from('bookings')
       .select(`
         *,
         customer:customers!inner(name, phone),
-        slots:booking_slots(slot_hour, is_night_rate)
+        slots:booking_slots(slot_hour, is_night_rate),
+        payments:booking_payments(
+          payment_type,
+          payment_method,
+          amount
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -51,10 +56,15 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       total_hours: booking.total_hours,
       total_amount: booking.total_amount,
       advance_payment: booking.advance_payment,
+      advance_payment_method: booking.advance_payment_method,
+      remaining_payment: booking.remaining_payment,
+      remaining_payment_method: booking.remaining_payment_method,
+      remaining_payment_amount: booking.remaining_payment_amount,
       status: booking.status,
       created_at: booking.created_at,
       pending_expires_at: booking.pending_expires_at,
       slots: booking.slots || [],
+      payments: booking.payments || [],
     })) || [];
 
     return NextResponse.json({
