@@ -238,7 +238,7 @@ export default function CalendarFirstBooking() {
                           onClick={() => {
                             setSlotsLoading(true);
                             const currentDate = quickViewDate;
-                            const nextDay = new Date(currentDate);
+                              const nextDay = new Date(currentDate);
                             nextDay.setDate(nextDay.getDate() + 1);
                             setQuickViewDate(nextDay);
                           }}
@@ -380,9 +380,14 @@ export default function CalendarFirstBooking() {
                                     background: '#DC2626', 
                                     color: 'white',
                                     fontSize: '9px',
-                                    padding: '2px 6px',
+                                    padding: '2px 4px', // Reduced padding for mobile
                                     fontWeight: 700,
                                     marginTop: '-2px',
+                                    whiteSpace: 'nowrap', // Keep text on one line
+                                    minWidth: 'fit-content', // Allow badge to expand as needed
+                                    width: 'auto', // Don't restrict width
+                                    maxWidth: '100%', // But don't exceed slot width
+                                    overflow: 'visible', // Don't hide overflow
                                   }}
                                 >
                                   BOOKED
@@ -612,4 +617,3 @@ export default function CalendarFirstBooking() {
     </Box>
   );
 }
-
