@@ -435,24 +435,16 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 18;
 
-  // ==================== IMPORTANT INFORMATION ====================
-  // Check if we have enough space before adding footer
-  const footerHeight = 25;
-  const importantInfoHeight = 45; // Reduced from 55
-  const minSpaceNeeded = importantInfoHeight + footerHeight + 5;
+  // ==================== IMPORTANT INFORMATION WITH CONTACT ====================
+  // Single combined section to save space
+  const combinedSectionHeight = 60; // Enough space for info + contact
   
-  // If not enough space, add a new page
-  if (y + minSpaceNeeded > pageHeight) {
-    doc.addPage();
-    y = 20;
-  }
-  
-  // Information card - COMPACT VERSION
+  // Information card
   doc.setFillColor(...goldLight);
-  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'F');
+  doc.roundedRect(15, y, pageWidth - 30, combinedSectionHeight, 5, 5, 'F');
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
-  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'S');
+  doc.roundedRect(15, y, pageWidth - 30, combinedSectionHeight, 5, 5, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -464,7 +456,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 12;
   
-  // Information points - COMPACT with smaller font
+  // Information points - Compact with smaller font
   const infoPoints = [
     '• Bats, wickets, and tapes will be provided by the facility.',
     '• Bring your own tennis balls, or purchase them at the venue.',
@@ -480,57 +472,54 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
     doc.text(point, 25, y + (index * 5.5)); // Reduced line spacing
   });
   
-  y += 25; // Reduced spacing after information points
-
-  // ==================== CONTACT & SOCIAL MEDIA ====================
-  // Only add if there's enough space above footer
-  const contactHeight = 25;
-  if (y + contactHeight + footerHeight < pageHeight - 10) {
-    doc.setFillColor(...lightGray);
-    doc.roundedRect(15, y, pageWidth - 30, 20, 5, 5, 'F'); // Reduced height
-    doc.setDrawColor(...darkGray);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(15, y, pageWidth - 30, 20, 5, 5, 'S');
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...black);
-    doc.text('CONTACT US', pageWidth / 2, y + 8, { align: 'center' });
-    
-    y += 10;
-    
-    // Compact contact info
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...black);
-    doc.text('Phone: 0340-2639174', 25, y + 3);
-    doc.setTextColor(0, 102, 204); // Blue for clickable
-    doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 25, y + 3, { align: 'right' });
-    
-    y += 10;
-  }
-
-  // ==================== FOOTER ====================
-  // Ensure footer doesn't overlap content
-  let footerY = Math.max(pageHeight - footerHeight, y + 10);
+  y += 25; // After information points
   
-  // Footer background
-  doc.setFillColor(...black);
-  doc.rect(0, footerY, pageWidth, footerHeight, 'F');
+  // Add separator line
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.5);
+  doc.line(25, y, pageWidth - 25, y);
   
-  // Thank you message
-  doc.setTextColor(...gold);
-  doc.setFontSize(10);
+  y += 5;
+  
+  // Contact information - Compact version
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('Thank You For Choosing Powerplay Cricket Arena!', pageWidth / 2, footerY + 10, { align: 'center' });
+  doc.setTextColor(...black);
+  doc.text('CONTACT US', 22, y);
   
-  // Invoice details
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...darkGray);
+  doc.text('Phone: 0340-2639174', 25, y + 8);
+  
+  doc.setFontSize(9);
+  doc.setTextColor(0, 102, 204); // Blue for email
+  doc.text('Email: Powerplaycricketarena@gmail.com', 25, y + 16);
+  
+  y += 30;
+
+  // ==================== SIMPLE FOOTER WITH INVOICE INFO ====================
+  // Add a simple line and invoice info at the bottom
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.5);
+  doc.line(15, y, pageWidth - 15, y);
+  
+  y += 5;
+  
+  // Invoice info in small font at bottom
   doc.setFontSize(7);
-  doc.setTextColor(200, 200, 200);
-  const generatedText = `Invoice ID: ${booking.booking_number} • Generated: ${new Date().toLocaleString()}`;
-  doc.text(generatedText, pageWidth / 2, footerY + 18, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...darkGray);
+  const generatedText = `Invoice: ${booking.booking_number} • Generated: ${new Date().toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })}`;
+  doc.text(generatedText, pageWidth / 2, y, { align: 'center' });
   
-  // Add page border with proper spacing
+  // Add page border for professional look
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
   doc.rect(5, 5, pageWidth - 10, pageHeight - 10, 'S');
