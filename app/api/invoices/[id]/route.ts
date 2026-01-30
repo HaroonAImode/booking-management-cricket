@@ -175,12 +175,11 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 15;
 
-  /* ================= PAYMENT SUMMARY TABLE ================= */
+  /* ================= PAYMENT SUMMARY ================= */
   doc.setFillColor(...gold);
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
   doc.text('PAYMENT SUMMARY', 22, y + 8);
 
   y += 18;
@@ -190,7 +189,6 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   const col3 = pageWidth - 25;
   const rowHeight = 10;
 
-  // Header
   doc.setFillColor(...lightGray);
   doc.rect(20, y, pageWidth - 40, rowHeight, 'F');
   doc.setFontSize(10);
@@ -211,44 +209,25 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   };
 
   drawRow('Total Booking Amount', '-', booking.total_amount.toLocaleString(), true);
+  drawRow('Advance Paid', booking.advance_payment_method.toUpperCase(), `- ${booking.advance_payment.toLocaleString()}`);
+
   drawRow(
-    'Advance Paid',
-    booking.advance_payment_method.toUpperCase(),
-    `- ${booking.advance_payment.toLocaleString()}`
+    'Remaining Balance',
+    booking.remaining_payment === 0 ? '-' : booking.remaining_payment_method?.toUpperCase() || '-',
+    booking.remaining_payment === 0 ? 'PAID IN FULL' : booking.remaining_payment.toLocaleString(),
+    true
   );
 
-  if (booking.remaining_payment === 0) {
-    drawRow('Remaining Balance', '-', 'PAID IN FULL', true);
-  } else {
-    drawRow(
-      'Remaining Balance',
-      booking.remaining_payment_method?.toUpperCase() || '-',
-      booking.remaining_payment.toLocaleString(),
-      true
-    );
-  }
+  y += 8;
 
-  y += 10;
-
-  /* ================= PAYMENT STATUS ================= */
-  if (booking.remaining_payment === 0) {
-    doc.setFillColor(...lightGreen);
-    doc.roundedRect(20, y, pageWidth - 40, 12, 3, 3, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 120, 0);
-    doc.text('Your booking has been successfully confirmed.', pageWidth / 2, y + 8, { align: 'center' });
-    y += 20;
-  }
-
-  /* ================= IMPORTANT INFO ================= */
+  /* ================= IMPORTANT INFO (REDUCED HEIGHT) ================= */
   doc.setFillColor(...goldLight);
-  doc.roundedRect(15, y, pageWidth - 30, 50, 4, 4, 'F');
+  doc.roundedRect(15, y, pageWidth - 30, 42, 4, 4, 'F');
   doc.setDrawColor(...gold);
-  doc.roundedRect(15, y, pageWidth - 30, 50, 4, 4, 'S');
+  doc.roundedRect(15, y, pageWidth - 30, 42, 4, 4, 'S');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(...black);
   doc.text('IMPORTANT INFORMATION', 22, y + 10);
 
   doc.setFont('helvetica', 'normal');
@@ -261,24 +240,22 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
     '• Keep the ground clean at all times.',
     '• Tennis balls are not included.'
   ].forEach((t, i) => {
-    doc.text(t, 22, y + 20 + i * 7);
+    doc.text(t, 22, y + 18 + i * 6);
   });
 
-  y += 65;
+  /* ================= CONTACT (FIXED BOTTOM POSITION) ================= */
+  const footerY = pageHeight - 35;
 
-  /* ================= CONTACT ================= */
   doc.setDrawColor(...gold);
-  doc.line(20, y, pageWidth - 20, y);
+  doc.line(20, footerY, pageWidth - 20, footerY);
 
-  y += 8;
   doc.setFont('helvetica', 'bold');
-  doc.text('CONTACT US', pageWidth / 2, y, { align: 'center' });
+  doc.text('CONTACT US', pageWidth / 2, footerY + 8, { align: 'center' });
 
-  y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text('Phone: 0340-2639174', 30, y);
-  doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 30, y, { align: 'right' });
+  doc.text('Phone: 0340-2639174', 30, footerY + 16);
+  doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 30, footerY + 16, { align: 'right' });
 
   /* ================= BORDER ================= */
   doc.setDrawColor(...gold);
