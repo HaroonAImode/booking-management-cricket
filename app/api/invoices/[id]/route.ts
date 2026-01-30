@@ -436,7 +436,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 18;
 
   // ==================== IMPORTANT INFORMATION ====================
-  // Information card - Proper height for two-column layout
+  // Information card - Optimized for A4
   const importantInfoHeight = 65;
   doc.setFillColor(...goldLight);
   doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'F');
@@ -452,9 +452,9 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setLineWidth(0.5);
   doc.line(22, y + 10, 75, y + 10);
   
-  y += 15;
+  y += 12;
   
-  // Information points in TWO COLUMNS
+  // Information points in TWO COLUMNS with proper spacing
   const leftColumnPoints = [
     '• Bats, wickets, and tapes will be provided by the facility.',
     '• Please arrive 15 minutes before your scheduled time.'
@@ -465,61 +465,62 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
     '• Bring your own tennis balls, or purchase them at the venue.'
   ];
   
-  doc.setFontSize(8.5); // Slightly larger for readability
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   
-  // Left column
+  // Left column - Reduced spacing from 15 to 10
   leftColumnPoints.forEach((point, index) => {
-    doc.text(point, 25, y + (index * 15));
+    doc.text(point, 25, y + (index * 10));
   });
   
-  // Right column (starting at page center + 10px margin)
+  // Right column - Starting at page center + 5px margin
   rightColumnPoints.forEach((point, index) => {
-    doc.text(point, pageWidth / 2 + 5, y + (index * 15));
+    doc.text(point, pageWidth / 2 + 5, y + (index * 10));
   });
   
-  y += 35; // Space after two-column points
+  y += 25; // Space after two-column points
   
   // ==================== CONTACT INFORMATION ====================
-  // Contact section - inside the same box
+  // Contact section inside the same box
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
   doc.line(25, y, pageWidth - 25, y);
   
-  y += 8;
+  y += 5;
   
-  // Contact title
-  doc.setFontSize(10);
+  // Contact title - Centered properly
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
   doc.text('CONTACT US', pageWidth / 2, y, { align: 'center' });
   
-  y += 8;
+  y += 6;
   
-  // Contact details in single line
-  doc.setFontSize(9);
+  // Phone on left - Ensure it fits within page
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
+  const phoneText = 'Phone: 0340-2639174';
+  const phoneX = Math.max(25, pageWidth / 2 - doc.getTextWidth(phoneText) - 20);
+  doc.text(phoneText, phoneX, y);
   
-  // Phone on left
-  doc.text('Phone: 0340-2639174', 25, y);
-  
-  // Email on right
+  // Email on right - Ensure it fits within page
   doc.setTextColor(0, 102, 204); // Blue for email
   const emailText = 'Email: Powerplaycricketarena@gmail.com';
-  const emailWidth = doc.getTextWidth(emailText);
-  doc.text(emailText, pageWidth - 25 - emailWidth, y);
+  const emailX = Math.min(pageWidth - 25 - doc.getTextWidth(emailText), pageWidth / 2 + 20);
+  doc.text(emailText, emailX, y);
   
-  y += 15;
+  y += 10;
 
   // ==================== SIMPLE FOOTER ====================
+  // Check if we're getting too close to page bottom
+  const footerY = Math.min(y + 10, pageHeight - 15);
+  
   // Add a simple line at the bottom
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
-  doc.line(15, y, pageWidth - 15, y);
-  
-  y += 5;
+  doc.line(15, footerY, pageWidth - 15, footerY);
   
   // Invoice info in small font at bottom
   doc.setFontSize(7);
@@ -532,7 +533,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
     hour: '2-digit',
     minute: '2-digit'
   })}`;
-  doc.text(generatedText, pageWidth / 2, y, { align: 'center' });
+  doc.text(generatedText, pageWidth / 2, footerY + 5, { align: 'center' });
   
   // Add page border for professional look
   doc.setDrawColor(...gold);
