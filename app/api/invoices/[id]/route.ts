@@ -99,8 +99,8 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   const black: [number, number, number] = [20, 20, 20];
   const gray: [number, number, number] = [90, 90, 90];
   const lightGray: [number, number, number] = [240, 240, 240];
-  const lightGreen: [number, number, number] = [230, 255, 230];
   const goldLight: [number, number, number] = [255, 252, 230];
+  const linkBlue: [number, number, number] = [0, 102, 204];
 
   let y = 20;
 
@@ -151,7 +151,6 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
   doc.text('BOOKING DETAILS', 22, y + 8);
 
   y += 18;
@@ -167,10 +166,8 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 8;
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...gray);
   doc.text('Duration:', 22, y);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...black);
   doc.text(`${booking.total_hours} hour(s)`, 60, y);
 
   y += 15;
@@ -210,7 +207,6 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   drawRow('Total Booking Amount', '-', booking.total_amount.toLocaleString(), true);
   drawRow('Advance Paid', booking.advance_payment_method.toUpperCase(), `- ${booking.advance_payment.toLocaleString()}`);
-
   drawRow(
     'Remaining Balance',
     booking.remaining_payment === 0 ? '-' : booking.remaining_payment_method?.toUpperCase() || '-',
@@ -220,7 +216,7 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 8;
 
-  /* ================= IMPORTANT INFO (REDUCED HEIGHT) ================= */
+  /* ================= IMPORTANT INFO ================= */
   doc.setFillColor(...goldLight);
   doc.roundedRect(15, y, pageWidth - 30, 42, 4, 4, 'F');
   doc.setDrawColor(...gold);
@@ -238,24 +234,44 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
     '• Bats, wickets, and tapes will be provided.',
     '• Please arrive 15 minutes before your slot.',
     '• Keep the ground clean at all times.',
-    '• Tennis balls are not included.'
+    '• Bring your own tennis balls, or purchase them at the venue.'
   ].forEach((t, i) => {
     doc.text(t, 22, y + 18 + i * 6);
   });
 
-  /* ================= CONTACT (FIXED BOTTOM POSITION) ================= */
-  const footerY = pageHeight - 35;
+  /* ================= CONTACT + SOCIAL (CLICKABLE) ================= */
+  const footerY = pageHeight - 42;
 
   doc.setDrawColor(...gold);
   doc.line(20, footerY, pageWidth - 20, footerY);
 
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...black);
   doc.text('CONTACT US', pageWidth / 2, footerY + 8, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text('Phone: 0340-2639174', 30, footerY + 16);
   doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 30, footerY + 16, { align: 'right' });
+
+  // Social links (clickable)
+  doc.setTextColor(...linkBlue);
+  doc.textWithLink(
+    'Instagram: @powerplaycricketarena',
+    30,
+    footerY + 24,
+    { url: 'https://www.instagram.com/powerplaycricketarena?igsh=MTA0c3NiOWR5aW9xeg==' }
+  );
+
+  doc.textWithLink(
+    'TikTok: @powerplaycricketarena',
+    pageWidth - 30,
+    footerY + 24,
+    {
+      url: 'https://www.tiktok.com/@powerplaycricketarena?_r=1&_t=ZS-93SLIpFxSew',
+      align: 'right'
+    }
+  );
 
   /* ================= BORDER ================= */
   doc.setDrawColor(...gold);
