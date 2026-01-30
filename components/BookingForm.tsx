@@ -49,15 +49,15 @@ import { uploadPaymentProof, validatePaymentProofFile } from '@/lib/supabase/sto
 import { SlotInfo, BookingSummary } from '@/types';
 
 const PAYMENT_METHODS = [
-  { value: 'easypaisa', label: 'Easypaisa - 03XX XXXXXXX' },
-  { value: 'sadapay', label: 'SadaPay - 03XX XXXXXXX' },
+  { value: 'easypaisa', label: 'Easypaisa - 03065329174 (Soban Ahmed Khan)' },
+  { value: 'sadapay', label: 'SadaPay - 03065329174 (Soban Ahmed Khan)' },
   { value: 'cash', label: 'Cash' },
 ];
 
-// Payment account details
+// Updated Payment account details
 const PAYMENT_ACCOUNTS = {
-  easypaisa: { number: '03001234567', name: 'Cricket Ground Bookings' },
-  sadapay: { number: '03007654321', name: 'Cricket Ground Bookings' },
+  easypaisa: { number: '03065329174', name: 'Soban Ahmed Khan' },
+  sadapay: { number: '03065329174', name: 'Soban Ahmed Khan' },
 };
 
 interface BookingFormProps {
@@ -703,10 +703,10 @@ export default function BookingForm({
                   <Stack gap={4}>
                     <Text size="sm" fw={600}>Transfer to this account:</Text>
                     <Text size="sm">
-                      <strong>Account Name:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.name}
+                      <strong>Account Number:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.number} 
                     </Text>
                     <Text size="sm">
-                      <strong>Account Number:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.number}
+                      <strong>Account Holder:</strong> {PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS]?.name}
                     </Text>
                     <Text size="xs" c="dimmed" mt={4}>
                       💡 After transferring, please upload the payment screenshot below
@@ -850,4 +850,3 @@ export default function BookingForm({
     </>
   );
 }
-

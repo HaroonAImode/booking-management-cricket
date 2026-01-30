@@ -319,7 +319,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 15;
 
-  // ==================== PAYMENT SUMMARY TABLE ====================
+  // ==================== IMPROVED PAYMENT SUMMARY TABLE ====================
   // Section header
   doc.setFillColor(...gold);
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
@@ -330,56 +330,55 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 20;
   
-  // Table header
+  // Table header with improved styling
   doc.setFillColor(...lightGray);
   doc.rect(20, y, pageWidth - 40, 10, 'F');
   doc.setDrawColor(...darkGray);
-  doc.setLineWidth(0.3);
+  doc.setLineWidth(0.5);
   doc.rect(20, y, pageWidth - 40, 10, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...darkGray);
-  doc.text('Description', 25, y + 7);
-  doc.text('Amount', pageWidth - 25, y + 7, { align: 'right' });
+  doc.text('DESCRIPTION', 25, y + 7);
+  doc.text('AMOUNT (PKR)', pageWidth - 25, y + 7, { align: 'right' });
   
   y += 12;
   
-  // Total Amount row
+  // Total Amount row with better styling
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
   doc.text('Total Booking Amount', 25, y + 7);
-  doc.text(`PKR ${booking.total_amount.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
+  doc.text(booking.total_amount.toLocaleString(), pageWidth - 25, y + 7, { align: 'right' });
   
   y += 12;
   
-  // Advance Payment row - IMPROVED STYLING
+  // Advance Payment row with method
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  doc.text('Advance Payment Received', 30, y + 7);
+  doc.text('Advance Paid', 25, y + 7);
   
-  // Payment method badge - IMPROVED WITH RED/BOLD
+  // Payment method badge
   const advanceMethod = booking.advance_payment_method === 'easypaisa' ? 'EasyPaisa' :
                         booking.advance_payment_method === 'sadapay' ? 'SadaPay' :
                         booking.advance_payment_method === 'cash' ? 'Cash' : 'N/A';
   
-  // Add payment method badge in front of "Advance Payment Received"
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(220, 20, 60); // Red color for badge
-  const methodX = 30 + doc.getTextWidth('Advance Payment Received ') + 2;
-  doc.text(`[${advanceMethod}]`, methodX, y + 7);
+  doc.setTextColor(220, 20, 60); // Red for method
+  const methodText = `[${advanceMethod}]`;
+  doc.text(methodText, 25 + doc.getTextWidth('Advance Paid ') + 2, y + 7);
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 150, 0); // Green for amount
-  doc.text(`- PKR ${booking.advance_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
+  doc.setTextColor(0, 150, 0); // Green for paid amount
+  doc.text(`- ${booking.advance_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
   
   y += 12;
   
-  // Remaining Amount row
+  // Balance Due row with separator
   doc.setDrawColor(...darkGray);
   doc.setLineWidth(0.3);
   doc.line(25, y + 3, pageWidth - 25, y + 3);
@@ -388,13 +387,18 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
-  doc.text('Balance Due', 25, y + 7);
   
   if (booking.remaining_payment === 0) {
+    // Fully paid
+    doc.setTextColor(...black);
+    doc.text('Balance Due', 25, y + 7);
     doc.setTextColor(0, 150, 0); // Green
     doc.text('PAID IN FULL', pageWidth - 25, y + 7, { align: 'right' });
   } else {
+    // Payment due
+    doc.setTextColor(...black);
+    doc.text('Balance Due', 25, y + 7);
+    
     if (booking.remaining_payment_method) {
       const remainingMethod = booking.remaining_payment_method === 'easypaisa' ? 'EasyPaisa' :
                              booking.remaining_payment_method === 'sadapay' ? 'SadaPay' :
@@ -403,19 +407,18 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...darkGray);
-      doc.text(`Pay via: ${remainingMethod}`, 30, y + 15);
+      doc.text(`Pay via: ${remainingMethod}`, 25, y + 15);
     }
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(200, 0, 0); // Red
-    doc.text(`PKR ${booking.remaining_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
+    doc.setTextColor(200, 0, 0); // Red for due amount
+    doc.text(`${booking.remaining_payment.toLocaleString()}`, pageWidth - 25, y + 7, { align: 'right' });
   }
   
   y += booking.remaining_payment > 0 ? 22 : 15;
 
   // ==================== PAYMENT STATUS MESSAGE ====================
-  // Moved up to make space for important information
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   
@@ -436,8 +439,8 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 18;
 
   // ==================== IMPORTANT INFORMATION ====================
-  // Information card - Optimized for A4
-  const importantInfoHeight = 65;
+  // Reduced height to fit better
+  const importantInfoHeight = 60;
   doc.setFillColor(...goldLight);
   doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'F');
   doc.setDrawColor(...gold);
@@ -454,7 +457,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 12;
   
-  // Information points in TWO COLUMNS with proper spacing
+  // Information points in compact two-column layout
   const leftColumnPoints = [
     '• Bats, wickets, and tapes will be provided by the facility.',
     '• Please arrive 15 minutes before your scheduled time.'
@@ -469,27 +472,27 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   
-  // Left column - Reduced spacing from 15 to 10
+  // Left column - Tight spacing
   leftColumnPoints.forEach((point, index) => {
-    doc.text(point, 25, y + (index * 10));
+    doc.text(point, 25, y + (index * 9));
   });
   
-  // Right column - Starting at page center + 5px margin
+  // Right column - Tight spacing
   rightColumnPoints.forEach((point, index) => {
-    doc.text(point, pageWidth / 2 + 5, y + (index * 10));
+    doc.text(point, pageWidth / 2 + 5, y + (index * 9));
   });
   
-  y += 25; // Space after two-column points
+  y += 22; // Space after information points
   
   // ==================== CONTACT INFORMATION ====================
-  // Contact section inside the same box
+  // Contact section - More compact
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
   doc.line(25, y, pageWidth - 25, y);
   
-  y += 5;
+  y += 6;
   
-  // Contact title - Centered properly
+  // Contact title
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
@@ -497,45 +500,44 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 6;
   
-  // Phone on left - Ensure it fits within page
+  // Contact details - Simpler layout
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...darkGray);
-  const phoneText = 'Phone: 0340-2639174';
-  const phoneX = Math.max(25, pageWidth / 2 - doc.getTextWidth(phoneText) - 20);
-  doc.text(phoneText, phoneX, y);
   
-  // Email on right - Ensure it fits within page
+  // Phone - left aligned
+  doc.setTextColor(...darkGray);
+  doc.text('📞 0340-2639174', 30, y);
+  
+  // Email - right aligned
   doc.setTextColor(0, 102, 204); // Blue for email
-  const emailText = 'Email: Powerplaycricketarena@gmail.com';
-  const emailX = Math.min(pageWidth - 25 - doc.getTextWidth(emailText), pageWidth / 2 + 20);
-  doc.text(emailText, emailX, y);
+  const emailText = '✉️ Powerplaycricketarena@gmail.com';
+  doc.text(emailText, pageWidth - 30 - doc.getTextWidth(emailText), y);
   
   y += 10;
 
-  // ==================== SIMPLE FOOTER ====================
-  // Check if we're getting too close to page bottom
-  const footerY = Math.min(y + 10, pageHeight - 15);
+  // ==================== FOOTER ====================
+  // Check if we have enough space for footer
+  if (y < pageHeight - 20) {
+    // Add separator line
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    doc.line(15, y, pageWidth - 15, y);
+    
+    // Invoice info
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...darkGray);
+    const generatedText = `Invoice: ${booking.booking_number} • Generated: ${new Date().toLocaleString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    doc.text(generatedText, pageWidth / 2, y + 6, { align: 'center' });
+  }
   
-  // Add a simple line at the bottom
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(0.5);
-  doc.line(15, footerY, pageWidth - 15, footerY);
-  
-  // Invoice info in small font at bottom
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...darkGray);
-  const generatedText = `Invoice: ${booking.booking_number} • Generated: ${new Date().toLocaleString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })}`;
-  doc.text(generatedText, pageWidth / 2, footerY + 5, { align: 'center' });
-  
-  // Add page border for professional look
+  // Add page border
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
   doc.rect(5, 5, pageWidth - 10, pageHeight - 10, 'S');

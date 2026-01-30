@@ -26,9 +26,16 @@ import {
   IconArrowLeft,
   IconCheck,
   IconFileInvoice,
+  IconCreditCard,
 } from '@tabler/icons-react';
 import { BookingSummary } from '@/types';
 import { formatSlotRanges } from '@/lib/supabase/bookings';
+
+// Payment account details
+const PAYMENT_ACCOUNTS = {
+  easypaisa: { number: '03065329174', name: 'Soban Ahmed Khan' },
+  sadapay: { number: '03065329174', name: 'Soban Ahmed Khan' },
+};
 
 interface BookingReviewProps {
   opened: boolean;
@@ -61,6 +68,17 @@ export default function BookingReview({
 
   const daySlots = bookingData.day_slots || [];
   const nightSlots = bookingData.night_slots || [];
+
+  // Get account details based on payment method
+  const getPaymentAccountDetails = () => {
+    const method = bookingData.advance_payment_method;
+    if (method === 'easypaisa' || method === 'sadapay') {
+      return PAYMENT_ACCOUNTS[method];
+    }
+    return null;
+  };
+
+  const accountDetails = getPaymentAccountDetails();
 
   return (
     <Modal
@@ -230,16 +248,45 @@ export default function BookingReview({
                   {bookingData.advance_payment_method === 'cash' && 'Cash'}
                   {!['easypaisa', 'sadapay', 'cash'].includes(bookingData.advance_payment_method) && bookingData.advance_payment_method}
                 </Badge>
-                {bookingData.advance_payment_method === 'easypaisa' && (
-                  <Text size="xs" c="dimmed">Acc: 03001234567</Text>
-                )}
-                {bookingData.advance_payment_method === 'sadapay' && (
-                  <Text size="xs" c="dimmed">Acc: 03007654321</Text>
+                
+                {/* Display account details for online payments */}
+                {accountDetails && (
+                  <Box mt={4}>
+                    <Text size="xs" c="dimmed" fw={600}>
+                      Account Details:
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Number: {accountDetails.number}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Holder: {accountDetails.name}
+                    </Text>
+                  </Box>
                 )}
               </Stack>
             </SimpleGrid>
 
             <Divider />
+
+            {/* Payment Instructions for Online Payments */}
+            {accountDetails && (
+              <Alert icon={<IconCreditCard size="1rem" />} color="blue" variant="light" mt="md">
+                <Stack gap={2}>
+                  <Text size="sm" fw={600}>
+                    💰 Payment Instructions:
+                  </Text>
+                  <Text size="xs">
+                    1. Send PKR {bookingData.advance_payment.toLocaleString()} to account number: {accountDetails.number}
+                  </Text>
+                  <Text size="xs">
+                    2. Account holder name: {accountDetails.name}
+                  </Text>
+                  <Text size="xs">
+                    3. Upload screenshot of payment confirmation below
+                  </Text>
+                </Stack>
+              </Alert>
+            )}
 
             <Stack gap={4}>
               <Text size="sm" fw={600}>
