@@ -436,12 +436,23 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   y += 18;
 
   // ==================== IMPORTANT INFORMATION ====================
-  // Information card - REDUCED HEIGHT to fit on page
+  // Check if we have enough space before adding footer
+  const footerHeight = 25;
+  const importantInfoHeight = 45; // Reduced from 55
+  const minSpaceNeeded = importantInfoHeight + footerHeight + 5;
+  
+  // If not enough space, add a new page
+  if (y + minSpaceNeeded > pageHeight) {
+    doc.addPage();
+    y = 20;
+  }
+  
+  // Information card - COMPACT VERSION
   doc.setFillColor(...goldLight);
-  doc.roundedRect(15, y, pageWidth - 30, 40, 5, 5, 'F');
+  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'F');
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
-  doc.roundedRect(15, y, pageWidth - 30, 40, 5, 5, 'S');
+  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -453,7 +464,7 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 12;
   
-  // Information points - REDUCED to 4 key points
+  // Information points - COMPACT with smaller font
   const infoPoints = [
     '• Bats, wickets, and tapes will be provided by the facility.',
     '• Bring your own tennis balls, or purchase them at the venue.',
@@ -461,62 +472,65 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
     '• Keep the ground clean and dispose of trash properly.'
   ];
   
-  doc.setFontSize(9);
+  doc.setFontSize(8); // Smaller font to fit better
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   
   infoPoints.forEach((point, index) => {
-    doc.text(point, 25, y + (index * 6));
+    doc.text(point, 25, y + (index * 5.5)); // Reduced line spacing
   });
   
-  y += 30;
+  y += 25; // Reduced spacing after information points
 
   // ==================== CONTACT & SOCIAL MEDIA ====================
-  // Contact section - COMPACT VERSION
-  if (y < pageHeight - 60) { // Only add if there's space
+  // Only add if there's enough space above footer
+  const contactHeight = 25;
+  if (y + contactHeight + footerHeight < pageHeight - 10) {
     doc.setFillColor(...lightGray);
-    doc.roundedRect(15, y, pageWidth - 30, 25, 5, 5, 'F');
+    doc.roundedRect(15, y, pageWidth - 30, 20, 5, 5, 'F'); // Reduced height
     doc.setDrawColor(...darkGray);
     doc.setLineWidth(0.5);
-    doc.roundedRect(15, y, pageWidth - 30, 25, 5, 5, 'S');
+    doc.roundedRect(15, y, pageWidth - 30, 20, 5, 5, 'S');
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...black);
     doc.text('CONTACT US', pageWidth / 2, y + 8, { align: 'center' });
     
-    y += 12;
+    y += 10;
     
-    // Compact contact info in one line
+    // Compact contact info
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...black);
-    doc.text('Phone: 0340-2639174', 30, y + 3);
+    doc.text('Phone: 0340-2639174', 25, y + 3);
     doc.setTextColor(0, 102, 204); // Blue for clickable
-    doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth / 2, y + 3, { align: 'center' });
+    doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 25, y + 3, { align: 'right' });
     
-    y += 8;
+    y += 10;
   }
 
   // ==================== FOOTER ====================
-  // Footer background with enough space
-  const footerHeight = 25;
-  doc.setFillColor(...black);
-  doc.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
+  // Ensure footer doesn't overlap content
+  let footerY = Math.max(pageHeight - footerHeight, y + 10);
   
-  // Thank you message - SIMPLIFIED
+  // Footer background
+  doc.setFillColor(...black);
+  doc.rect(0, footerY, pageWidth, footerHeight, 'F');
+  
+  // Thank you message
   doc.setTextColor(...gold);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Thank You For Choosing Powerplay Cricket Arena!', pageWidth / 2, pageHeight - 16, { align: 'center' });
+  doc.text('Thank You For Choosing Powerplay Cricket Arena!', pageWidth / 2, footerY + 10, { align: 'center' });
   
-  // Copyright and page number with proper spacing from border
+  // Invoice details
   doc.setFontSize(7);
   doc.setTextColor(200, 200, 200);
   const generatedText = `Invoice ID: ${booking.booking_number} • Generated: ${new Date().toLocaleString()}`;
-  doc.text(generatedText, pageWidth / 2, pageHeight - 8, { align: 'center' });
+  doc.text(generatedText, pageWidth / 2, footerY + 18, { align: 'center' });
   
-  // Add page border for professional look with proper spacing
+  // Add page border with proper spacing
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
   doc.rect(5, 5, pageWidth - 10, pageHeight - 10, 'S');
