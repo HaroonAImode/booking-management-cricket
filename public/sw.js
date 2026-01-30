@@ -4,136 +4,95 @@
  */
 
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installed');
+  console.log('🛠️ Service Worker installed');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activated');
-  event.waitUntil(clients.claim());
+  console.log('🚀 Service Worker activated');
+  event.waitUntil(self.clients.claim());
 });
 
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  console.log('Push notification received', event);
+/* ================= PUSH EVENT ================= */
 
-  let notificationData = {
+self.addEventListener('push', (event) => {
+  console.log('🔔 Push notification received');
+
+  let payload = {
     title: 'New Booking',
     body: 'A new booking has been submitted',
     icon: '/icon.png',
     badge: '/icon.png',
-    tag: 'booking-notification',
-    requireInteraction: true,
-    data: {
-      url: '/admin/bookings',
-      bookingId: null,
-    },
+    tag: `booking-${Date.now()}`,
+    url: '/admin/bookings',
+    bookingId: null,
   };
 
   if (event.data) {
     try {
       const data = event.data.json();
-      console.log('Parsed push data:', data);
-      
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || notificationData.body,
-        icon: data.icon || notificationData.icon,
-        badge: data.badge || notificationData.badge,
-        tag: `${data.tag || notificationData.tag}-${Date.now()}`, // Unique tag to bypass throttling
-        renotify: true, // Force new notification sound
-        requireInteraction: true,
-        silent: false, // Enable sound
-        vibrate: [300, 100, 300, 100, 300], // Strong vibration pattern
-        sound: '/notification.mp3', // Custom sound (if browser supports)
-        data: {
-          url: data.url || notificationData.data.url,
-          bookingId: data.bookingId || null,
-        },
-        actions: [
-          {
-            action: 'approve',
-            title: '✅ Review & Approve',
-          },
-          {
-            action: 'view',
-            title: '👁️ View Details',
-          },
-        ],
-        // Show expanded notification on Android
-        image: data.icon || '/icon.png',
+      console.log('📦 Push payload:', data);
+
+      payload = {
+        title: data.title || payload.title,
+        body: data.body || payload.body,
+        icon: data.icon || payload.icon,
+        badge: data.badge || payload.badge,
+        tag: data.tag || payload.tag,
+        url: data.url || payload.url,
+        bookingId: data.bookingId || null,
       };
-    } catch (error) {
-      console.error('Error parsing notification data:', error);
+    } catch (err) {
+      console.error('❌ Failed to parse push payload', err);
     }
   }
 
-  console.log('Showing notification with data:', notificationData);
+  const notificationOptions = {
+    body: payload.body,
+    icon: payload.icon,
+    badge: payload.badge,
+    tag: payload.tag,
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [300, 100, 300, 100, 300],
+    data: {
+      url: payload.url, // ✅ RELATIVE URL (IMPORTANT)
+      bookingId: payload.bookingId,
+    },
+    actions: [
+      { action: 'approve', title: '✅ Review & Approve' },
+      { action: 'view', title: '👁️ View Details' },
+    ],
+  };
 
-  const promiseChain = self.registration.showNotification(notificationData.title, {
-    body: notificationData.body,
-    icon: notificationData.icon,
-    badge: notificationData.badge,
-    tag: notificationData.tag,
-    renotify: notificationData.renotify,
-    requireInteraction: notificationData.requireInteraction,
-    silent: notificationData.silent,
-    vibrate: notificationData.vibrate,
-    sound: notificationData.sound,
-    data: notificationData.data,
-    actions: notificationData.actions,
-    image: notificationData.image,
-  }).then(() => {
-    console.log('✅ Notification displayed successfully!');
-  }).catch((error) => {
-    console.error('❌ Error displaying notification:', error);
-  });
-
-  event.waitUntil(promiseChain);
+  event.waitUntil(
+    self.registration.showNotification(payload.title, notificationOptions)
+      .then(() => console.log('✅ Notification shown'))
+      .catch(err => console.error('❌ Notification error', err))
+  );
 });
 
-// Handle notification clicks
+/* ================= CLICK EVENT ================= */
+
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked', event);
-  console.log('Action:', event.action);
+  console.log('🖱️ Notification clicked:', event.action);
 
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/admin/bookings';
+  const relativeUrl = event.notification.data?.url || '/admin/bookings';
+  const targetUrl = new URL(relativeUrl, self.location.origin).href;
 
-  // Handle different actions
-  if (event.action === 'approve' || event.action === 'view') {
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // Check if there's already a window open
-        for (const client of clientList) {
-          const clientUrl = new URL(client.url);
-          const targetUrl = new URL(urlToOpen, self.location.origin);
-          
-          if (clientUrl.origin === targetUrl.origin && 'focus' in client) {
-            client.postMessage({ action: 'navigate', url: urlToOpen });
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientsList) => {
+        for (const client of clientsList) {
+          if (client.url === targetUrl && 'focus' in client) {
             return client.focus();
           }
         }
-        // If no window is open, open a new one
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
         }
       })
-    );
-  } else {
-    // Default action - open bookings page
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        for (const client of clientList) {
-          if (client.url === new URL(urlToOpen, self.location.origin).href && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
-      })
-    );
-  }
+  );
 });
