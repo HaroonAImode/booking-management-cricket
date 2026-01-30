@@ -42,8 +42,12 @@ export default function CalendarFirstBooking() {
         const bookedHours = data.bookedSlots || [];
         const now = new Date();
         const isToday = quickViewDate.toDateString() === now.toDateString();
+        
+        // FIX: Only calculate current hour for today, not for future dates
         const currentHour = isToday ? now.getHours() : -1;
+        
         const slots = Array.from({ length: 24 }, (_, hour) => {
+          // FIX: Only mark as past if it's today AND hour has passed
           const isPast = isToday && hour <= currentHour;
           const isAvailable = availableHours.includes(hour) && !isPast;
           const isBooked = bookedHours.includes(hour);
@@ -451,10 +455,11 @@ export default function CalendarFirstBooking() {
                     <Box style={{ transition: 'opacity 0.3s', opacity: slotsLoading ? 0.3 : 1 }}>
                       <SimpleGrid cols={{ base: 3, xs: 4, sm: 6, md: 8 }} spacing={{ base: 'xs', sm: 'sm' }}>
                         {todaySlots.map((slot) => {
-                          const isPast = !slot.is_available && slot.slot_hour <= new Date().getHours();
+                          // FIXED: Use the slot's actual status from the API response
                           const isBooked = slot.current_status === 'booked';
                           const isPending = slot.current_status === 'pending';
-                          const isAvailable = slot.is_available && !isPast;
+                          const isPast = slot.current_status === 'past';
+                          const isAvailable = slot.current_status === 'available';
 
                           return (
                             <Paper
@@ -636,7 +641,7 @@ export default function CalendarFirstBooking() {
                         <Text size="sm" fw={600}>
                           {safeSelectedSlots.length > 0 
                             ? `✓ ${safeSelectedSlots.length} slot${safeSelectedSlots.length > 1 ? 's' : ''} selected! Click "Continue" above.`
-                            : `💡 ${todaySlots.filter(s => s.is_available && s.current_status === 'available').length} slots available! Click any green slot to select.`
+                            : `💡 ${todaySlots.filter(s => s.current_status === 'available').length} slots available! Click any green slot to select.`
                           }
                         </Text>
                       </Alert>

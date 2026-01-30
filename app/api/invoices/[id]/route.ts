@@ -435,16 +435,14 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   
   y += 18;
 
-  // ==================== IMPORTANT INFORMATION WITH CONTACT ====================
-  // Single combined section to save space
-  const combinedSectionHeight = 60; // Enough space for info + contact
-  
-  // Information card
+  // ==================== IMPORTANT INFORMATION ====================
+  // Information card - Proper height for two-column layout
+  const importantInfoHeight = 65;
   doc.setFillColor(...goldLight);
-  doc.roundedRect(15, y, pageWidth - 30, combinedSectionHeight, 5, 5, 'F');
+  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'F');
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
-  doc.roundedRect(15, y, pageWidth - 30, combinedSectionHeight, 5, 5, 'S');
+  doc.roundedRect(15, y, pageWidth - 30, importantInfoHeight, 5, 5, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -452,54 +450,71 @@ async function generateInvoicePDF(booking: BookingData, supabase: any): Promise<
   doc.text('IMPORTANT INFORMATION', 22, y + 8);
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
-  doc.line(22, y + 10, 70, y + 10);
+  doc.line(22, y + 10, 75, y + 10);
   
-  y += 12;
+  y += 15;
   
-  // Information points - Compact with smaller font
-  const infoPoints = [
+  // Information points in TWO COLUMNS
+  const leftColumnPoints = [
     '• Bats, wickets, and tapes will be provided by the facility.',
-    '• Bring your own tennis balls, or purchase them at the venue.',
-    '• Please arrive 15 minutes before your scheduled time.',
-    '• Keep the ground clean and dispose of trash properly.'
+    '• Please arrive 15 minutes before your scheduled time.'
   ];
   
-  doc.setFontSize(8); // Smaller font to fit better
+  const rightColumnPoints = [
+    '• Keep the ground clean and dispose of trash properly.',
+    '• Bring your own tennis balls, or purchase them at the venue.'
+  ];
+  
+  doc.setFontSize(8.5); // Slightly larger for readability
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
   
-  infoPoints.forEach((point, index) => {
-    doc.text(point, 25, y + (index * 5.5)); // Reduced line spacing
+  // Left column
+  leftColumnPoints.forEach((point, index) => {
+    doc.text(point, 25, y + (index * 15));
   });
   
-  y += 25; // After information points
+  // Right column (starting at page center + 10px margin)
+  rightColumnPoints.forEach((point, index) => {
+    doc.text(point, pageWidth / 2 + 5, y + (index * 15));
+  });
   
-  // Add separator line
+  y += 35; // Space after two-column points
+  
+  // ==================== CONTACT INFORMATION ====================
+  // Contact section - inside the same box
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
   doc.line(25, y, pageWidth - 25, y);
   
-  y += 5;
+  y += 8;
   
-  // Contact information - Compact version
-  doc.setFontSize(9);
+  // Contact title
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...black);
-  doc.text('CONTACT US', 22, y);
+  doc.text('CONTACT US', pageWidth / 2, y, { align: 'center' });
   
+  y += 8;
+  
+  // Contact details in single line
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  doc.text('Phone: 0340-2639174', 25, y + 8);
   
-  doc.setFontSize(9);
+  // Phone on left
+  doc.text('Phone: 0340-2639174', 25, y);
+  
+  // Email on right
   doc.setTextColor(0, 102, 204); // Blue for email
-  doc.text('Email: Powerplaycricketarena@gmail.com', 25, y + 16);
+  const emailText = 'Email: Powerplaycricketarena@gmail.com';
+  const emailWidth = doc.getTextWidth(emailText);
+  doc.text(emailText, pageWidth - 25 - emailWidth, y);
   
-  y += 30;
+  y += 15;
 
-  // ==================== SIMPLE FOOTER WITH INVOICE INFO ====================
-  // Add a simple line and invoice info at the bottom
+  // ==================== SIMPLE FOOTER ====================
+  // Add a simple line at the bottom
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.5);
   doc.line(15, y, pageWidth - 15, y);
