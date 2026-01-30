@@ -68,16 +68,18 @@ export async function GET(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    const pdf = generateInvoicePDF(booking as BookingData);
+    const bookingData = booking as unknown as BookingData;
+    const pdf = generateInvoicePDF(bookingData);
+
     const buffer = Buffer.from(pdf.output('arraybuffer'));
-    const safeName = booking.customer.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeName = bookingData.customer.name.replace(/[^a-zA-Z0-9]/g, '_');
 
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${safeName}_${booking.booking_number}_Invoice.pdf"`,
-        'Cache-Control': 'no-cache',
-      },
+        'Content-Disposition': `attachment; filename="${safeName}_${bookingData.booking_number}_Invoice.pdf"`,
+        'Cache-Control': 'no-cache'
+      }
     });
   } catch (err) {
     console.error(err);
@@ -121,7 +123,7 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y = 55;
 
-  /* ================= CUSTOMER / INVOICE ================= */
+  /* ================= CUSTOMER + INVOICE ================= */
   doc.setFillColor(...goldLight);
   doc.roundedRect(15, y, pageWidth - 30, 42, 4, 4, 'F');
   doc.setDrawColor(...gold);
@@ -154,8 +156,8 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 18;
 
-  doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(...gray);
   doc.text('Time Slots:', 22, y);
 
@@ -173,11 +175,12 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 15;
 
-  /* ================= PAYMENT SUMMARY ================= */
+  /* ================= PAYMENT SUMMARY TABLE ================= */
   doc.setFillColor(...gold);
   doc.roundedRect(15, y, pageWidth - 30, 12, 3, 3, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...black);
   doc.text('PAYMENT SUMMARY', 22, y + 8);
 
   y += 18;
@@ -187,6 +190,7 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   const col3 = pageWidth - 25;
   const rowHeight = 10;
 
+  // Header
   doc.setFillColor(...lightGray);
   doc.rect(20, y, pageWidth - 40, rowHeight, 'F');
   doc.setFontSize(10);
@@ -210,20 +214,15 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   drawRow(
     'Advance Paid',
     booking.advance_payment_method.toUpperCase(),
-    booking.advance_payment.toLocaleString()
+    `- ${booking.advance_payment.toLocaleString()}`
   );
 
-  if (booking.remaining_payment === 0 && booking.remaining_payment_method) {
-    drawRow(
-      'Remaining Payment',
-      booking.remaining_payment_method.toUpperCase(),
-      '0',
-      true
-    );
+  if (booking.remaining_payment === 0) {
+    drawRow('Remaining Balance', '-', 'PAID IN FULL', true);
   } else {
     drawRow(
       'Remaining Balance',
-      '-',
+      booking.remaining_payment_method?.toUpperCase() || '-',
       booking.remaining_payment.toLocaleString(),
       true
     );
@@ -231,13 +230,13 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   y += 10;
 
-  /* ================= STATUS ================= */
+  /* ================= PAYMENT STATUS ================= */
   if (booking.remaining_payment === 0) {
     doc.setFillColor(...lightGreen);
     doc.roundedRect(20, y, pageWidth - 40, 12, 3, 3, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 120, 0);
-    doc.text('STATUS: PAID IN FULL', pageWidth / 2, y + 8, { align: 'center' });
+    doc.text('Your booking has been successfully confirmed.', pageWidth / 2, y + 8, { align: 'center' });
     y += 20;
   }
 
@@ -249,6 +248,7 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
+  doc.setTextColor(...black);
   doc.text('IMPORTANT INFORMATION', 22, y + 10);
 
   doc.setFont('helvetica', 'normal');
@@ -259,8 +259,10 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
     '• Bats, wickets, and tapes will be provided.',
     '• Please arrive 15 minutes before your slot.',
     '• Keep the ground clean at all times.',
-    '• Tennis balls are not included.',
-  ].forEach((t, i) => doc.text(t, 22, y + 20 + i * 7));
+    '• Tennis balls are not included.'
+  ].forEach((t, i) => {
+    doc.text(t, 22, y + 20 + i * 7);
+  });
 
   y += 65;
 
@@ -278,6 +280,7 @@ function generateInvoicePDF(booking: BookingData): jsPDF {
   doc.text('Phone: 0340-2639174', 30, y);
   doc.text('Email: Powerplaycricketarena@gmail.com', pageWidth - 30, y, { align: 'right' });
 
+  /* ================= BORDER ================= */
   doc.setDrawColor(...gold);
   doc.setLineWidth(1);
   doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
