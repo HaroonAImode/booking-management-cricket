@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
     if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
     return data.monthly_summary[0]?.month_name || '';
   }, [data]);
-  const { totalCash, totalOnline } = useMemo(() => {
+  const totalCashOnline = useMemo(() => {
     if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
     const result = calculatePaymentSummaryForMonth(currentMonthName);
     return {
@@ -228,6 +228,8 @@ export default function AdminDashboardPage() {
       totalOnline: result?.totalOnline ?? 0,
     };
   }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
+  const totalCash = totalCashOnline.totalCash;
+  const totalOnline = totalCashOnline.totalOnline;
 
   /** ✅ LAST 7 DAYS REVENUE */
   const last7DaysRevenue = useMemo(() => {
