@@ -247,14 +247,14 @@ export default function AdminDashboardPage() {
 
   // Helper function to calculate payment summary for a month
   const calculatePaymentSummaryForMonth = (monthName: string) => {
-    if (!data || !data.recent_bookings) {
+    if (!data || !Array.isArray(data.recent_bookings)) {
       return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0 };
     }
 
     let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
 
     // Extract just the month name (remove year if present)
-    const targetMonth = monthName?.split(' ')[0] || '';
+    const targetMonth = typeof monthName === 'string' ? monthName.split(' ')[0] : '';
 
     data.recent_bookings.forEach((bookingItem) => {
       if (!bookingItem || typeof bookingItem !== 'object') return;
@@ -271,8 +271,13 @@ export default function AdminDashboardPage() {
       if (status === 'pending') return;
 
       // Extract month from booking date
-      const bookingDateObj = new Date(booking_date);
-      const bookingMonth = bookingDateObj.toLocaleString('en-US', { month: 'long' });
+      let bookingMonth = '';
+      try {
+        const bookingDateObj = new Date(booking_date);
+        bookingMonth = bookingDateObj.toLocaleString('en-US', { month: 'long' });
+      } catch (e) {
+        return;
+      }
 
       // Match month (without year)
       if (bookingMonth !== targetMonth) return;
@@ -311,7 +316,13 @@ export default function AdminDashboardPage() {
       }
     });
 
-    return { totalCash, totalOnline, totalEasypaisa, totalSadaPay };
+    // Always return a valid object
+    return {
+      totalCash: typeof totalCash === 'number' ? totalCash : 0,
+      totalOnline: typeof totalOnline === 'number' ? totalOnline : 0,
+      totalEasypaisa: typeof totalEasypaisa === 'number' ? totalEasypaisa : 0,
+      totalSadaPay: typeof totalSadaPay === 'number' ? totalSadaPay : 0,
+    };
   };
 
   if (loading) {
