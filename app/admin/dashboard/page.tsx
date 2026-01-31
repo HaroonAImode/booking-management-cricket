@@ -188,7 +188,7 @@ export default function AdminDashboardPage() {
   const formatSlotRange = (slots: Array<{ slot_hour: number; is_night_rate: boolean }>) => {
     if (!slots || slots.length === 0) return '';
     
-    const sortedSlots = [...slots].sort((a, b) => a.slot_hour - b.slot_hour);
+    const sortedSlots = [...slots].sort((slotA, slotB) => slotA.slot_hour - slotB.slot_hour);
     const firstSlot = sortedSlots[0].slot_hour;
     const lastSlot = sortedSlots[sortedSlots.length - 1].slot_hour;
     
