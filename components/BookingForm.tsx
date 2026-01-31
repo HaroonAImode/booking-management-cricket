@@ -351,7 +351,7 @@ export default function BookingForm({
         uploadData = uploadResult.data;
       }
 
-      // Step 2: Create booking
+      // Step 2: Create booking with retry logic for duplicate booking numbers
       const bookingData = {
         customer: bookingSummary.customer,
         booking: {
@@ -378,12 +378,53 @@ export default function BookingForm({
         }),
       };
 
-      const { data: bookingResult, error: bookingError } = await createCompleteBooking(
-        bookingData
-      );
+      let bookingResult = null;
+      let bookingError = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      // Retry logic for duplicate booking number
+      while (retryCount < maxRetries) {
+        try {
+          const result = await createCompleteBooking(bookingData);
+          bookingResult = result.data;
+          bookingError = result.error;
+          
+          if (bookingError) {
+            if (bookingError.includes('duplicate key') || bookingError.includes('23505')) {
+              retryCount++;
+              console.log(`Retry ${retryCount}/${maxRetries} for duplicate booking number`);
+              
+              // Wait a random time before retrying (to avoid same timestamp)
+              await new Promise(resolve => setTimeout(resolve, 100 * retryCount + Math.random() * 100));
+              continue;
+            } else {
+              // Other error, break out
+              break;
+            }
+          } else {
+            // Success, break out
+            break;
+          }
+        } catch (err: any) {
+          bookingError = err.message;
+          
+          if (err.message?.includes('duplicate key') || err.message?.includes('23505')) {
+            retryCount++;
+            console.log(`Retry ${retryCount}/${maxRetries} for duplicate booking number`);
+            
+            // Wait a random time before retrying
+            await new Promise(resolve => setTimeout(resolve, 100 * retryCount + Math.random() * 100));
+            continue;
+          } else {
+            // Other error, break out
+            break;
+          }
+        }
+      }
 
       if (bookingError || !bookingResult) {
-        throw new Error(bookingError || 'Failed to create booking');
+        throw new Error(bookingError || 'Failed to create booking after retries');
       }
 
       // Step 3: Send push notification to all admins
@@ -428,9 +469,16 @@ export default function BookingForm({
       router.push(`/booking-success?booking=${bookingResult.booking_number}`);
     } catch (err: any) {
       console.error('Booking submission error:', err);
+      let errorMessage = err.message || 'An error occurred. Please try again or contact support.';
+      
+      // Provide more specific error message for duplicate booking number
+      if (err.message?.includes('duplicate key') || err.message?.includes('23505')) {
+        errorMessage = 'Booking number conflict. Please try again in a moment.';
+      }
+      
       notifications.show({
         title: '❌ Booking Failed',
-        message: err.message || 'An error occurred. Please try again or contact support.',
+        message: errorMessage,
         color: 'red',
         autoClose: 6000,
         icon: <IconAlertCircle size={18} />,
