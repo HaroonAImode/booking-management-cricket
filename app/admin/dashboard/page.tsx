@@ -524,46 +524,46 @@ export default function AdminDashboardPage() {
           </Title>
           <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing={{ base: 'sm', sm: 'md', md: 'lg' }}>
             <div>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Total Bookings
               </Text>
-              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
+              <Text fw={700} size="xl" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.total_bookings}
               </Text>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
+              <Text size="xs" c="dimmed" mt={5}>
                 {data.last_7_days.total_hours} total hours
               </Text>
             </div>
             <div>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Revenue
               </Text>
-              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
+              <Text fw={700} size="xl" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {formatCurrency(data.last_7_days.total_revenue)}
               </Text>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
+              <Text size="xs" c="dimmed" mt={5}>
                 Avg: {formatCurrency(data.last_7_days.average_booking_value)}
               </Text>
             </div>
             <div>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Approved
               </Text>
-              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} c="green" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
+              <Text fw={700} size="xl" c="green" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.approved_bookings}
               </Text>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
+              <Text size="xs" c="dimmed" mt={5}>
                 Successfully confirmed
               </Text>
             </div>
             <div>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" fw={500} tt="uppercase" mb={5}>
+              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
                 Cancelled
               </Text>
-              <Text fw={700} size={{ base: 'lg', sm: 'xl' }} c="red" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
+              <Text fw={700} size="xl" c="red" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
                 {data.last_7_days.cancelled_bookings}
               </Text>
-              <Text size={{ base: '10px', sm: 'xs' }} c="dimmed" mt={5}>
+              <Text size="xs" c="dimmed" mt={5}>
                 Cancel rate: {((data.last_7_days.cancelled_bookings / data.last_7_days.total_bookings) * 100).toFixed(1)}%
               </Text>
             </div>
