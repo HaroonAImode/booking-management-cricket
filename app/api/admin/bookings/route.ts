@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
+import { v4 as uuidv4 } from 'uuid';
 
 export const GET = withAdminAuth(async (request, { adminProfile }) => {
   try {
@@ -135,15 +136,13 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       autoApprove,
     } = body;
 
-    // Validate required fields
+    // 1. VALIDATE INPUT
     if (!customerName || !customerPhone || !bookingDate || !slots || slots.length === 0) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: Customer name, phone, booking date, and at least one slot are required' },
         { status: 400 }
       );
     }
-
-    // Validate advance payment
     if (advancePayment < 0 || advancePayment > totalAmount) {
       return NextResponse.json(
         { error: 'Advance payment must be between 0 and total amount' },
@@ -151,78 +150,115 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-    // Always create a new customer for every booking, even if name/phone matches existing records
-    let customerId = null;
-    const { data: newCustomer, error: createCustomerError } = await supabase
+    // 2. CREATE OR FIND CUSTOMER
+    let customerId;
+    // Check if a customer with this phone already exists
+    const { data: existingCustomer } = await supabase
       .from('customers')
-      .insert([{ name: customerName, phone: customerPhone }])
       .select('id')
+      .eq('phone', customerPhone)
+      .maybeSingle(); // Use maybeSingle to handle no rows found
+
+    if (existingCustomer) {
+      // Use existing customer
+      customerId = existingCustomer.id;
+      // Update customer name if it's different
+      await supabase
+        .from('customers')
+        .update({ name: customerName })
+        .eq('id', customerId);
+    } else {
+      // Create a new customer
+      const { data: newCustomer, error: createCustomerError } = await supabase
+        .from('customers')
+        .insert([{ 
+          name: customerName, 
+          phone: customerPhone 
+        }])
+        .select('id')
+        .single();
+      
+      if (createCustomerError || !newCustomer) {
+        console.error('Create customer error:', createCustomerError);
+        return NextResponse.json(
+          { error: 'Failed to create new customer' },
+          { status: 500 }
+        );
+      }
+      customerId = newCustomer.id;
+    }
+
+    // 3. GENERATE BOOKING DETAILS
+    const bookingId = uuidv4();
+    const bookingNumber = `PPCA${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    const status = autoApprove ? 'approved' : 'pending';
+    const remainingPayment = totalAmount - advancePayment;
+    const pendingExpiresAt = autoApprove ? null : new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+
+    // 4. CREATE THE BOOKING
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .insert({
+        id: bookingId,
+        booking_number: bookingNumber,
+        customer_id: customerId,
+        booking_date: bookingDate,
+        total_hours: slots.length,
+        total_amount: totalAmount,
+        advance_payment: advancePayment,
+        advance_payment_method: advancePaymentMethod,
+        advance_payment_proof: advancePaymentProof || null,
+        remaining_payment_amount: remainingPayment,
+        notes: notes || null,
+        status: status,
+        pending_expires_at: pendingExpiresAt,
+        is_manual_booking: true,
+        created_by_admin: true,
+      })
+      .select('id, booking_number')
       .single();
-    
-    if (createCustomerError || !newCustomer) {
-      console.error('Create customer error:', createCustomerError);
+
+    if (bookingError) {
+      console.error('Create booking error:', bookingError);
       return NextResponse.json(
-        { error: 'Failed to create new customer' },
+        { error: `Failed to create booking: ${bookingError.message}` },
         { status: 500 }
       );
     }
-    customerId = newCustomer.id;
 
-    // Format slots for RPC function
-    const formattedSlots = slots.map((slot: any) => ({
+    // 5. CREATE BOOKING SLOTS
+    const slotRecords = slots.map((slot: any) => ({
+      booking_id: bookingId,
       slot_hour: slot.hour,
-      slot_time: `${String(slot.hour).padStart(2, '0')}:00:00`,
       is_night_rate: slot.isNightRate,
       hourly_rate: slot.rate,
     }));
 
-    // Call create booking function
-    const { data, error } = await supabase.rpc('create_booking_with_slots', {
-      p_customer_id: customerId,
-      p_booking_date: bookingDate,
-      p_total_hours: slots.length,
-      p_total_amount: totalAmount,
-      p_advance_payment: advancePayment || 0,
-      p_advance_payment_method: advancePaymentMethod || 'cash',
-      p_advance_payment_proof: advancePaymentProof || 'manual-booking-no-proof',
-      p_slots: formattedSlots,
-      p_customer_notes: notes || null,
-    });
+    const { error: slotsError } = await supabase
+      .from('booking_slots')
+      .insert(slotRecords);
 
-    let bookingResult = data;
-    if (typeof bookingResult === 'string') bookingResult = JSON.parse(bookingResult);
-    if (Array.isArray(bookingResult)) bookingResult = bookingResult[0];
-
-    if (!bookingResult || !bookingResult.success) {
-      console.error('Booking creation failed:', { result: bookingResult, error, body });
+    if (slotsError) {
+      console.error('Create slots error:', slotsError);
+      // Attempt to delete the booking to maintain data integrity
+      await supabase.from('bookings').delete().eq('id', bookingId);
       return NextResponse.json(
-        { error: (bookingResult && bookingResult.error_message) || error?.message || 'Failed to create booking' },
-        { status: 400 }
+        { error: `Failed to create booking slots: ${slotsError.message}` },
+        { status: 500 }
       );
     }
 
-    // Auto-approve if requested
-    if (autoApprove) {
-      const { error: approveError } = await supabase.rpc('approve_booking', {
-        p_booking_id: bookingResult.booking_id,
-        p_admin_notes: `Manual booking created by ${adminProfile.full_name}`,
-      });
-
-      if (approveError) {
-        console.error('Auto-approve error:', approveError);
-        // Don't fail the whole booking if auto-approve fails
-      }
-    }
-
+    // 6. SUCCESS RESPONSE
     return NextResponse.json({
       success: true,
-      bookingId: bookingResult.booking_id,
-      bookingNumber: bookingResult.booking_number,
-      message: `Booking created successfully${autoApprove ? ' and auto-approved' : ''}`,
+      bookingId: bookingId,
+      bookingNumber: booking.booking_number,
+      message: `Booking ${booking.booking_number} created successfully${autoApprove ? ' and auto-approved' : ''}.`,
       createdBy: adminProfile.full_name,
     });
+
   } catch (error: any) {
-    console.error('Create booking error:', error);
+    console.error('Create booking API error:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
