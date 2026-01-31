@@ -210,17 +210,20 @@ export default function AdminDashboardPage() {
     }
   };
 
-  /** ✅ ACTUAL TOTAL REVENUE (Advance + Paid Remaining only) */
+  /** ✅ ACTUAL TOTAL REVENUE (from backend SQL) */
   const totalRevenue = useMemo(() => {
-    if (!data?.recent_bookings) return 0;
-
-    return data.recent_bookings.reduce((sum, b) => {
-      const advance = b.advance_payment || 0;
-      const remainingPaid =
-        b.status === 'completed' ? b.remaining_payment_amount || 0 : 0;
-      return sum + advance + remainingPaid;
-    }, 0);
+    return data?.revenue?.total_revenue || 0;
   }, [data]);
+
+  /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
+  const currentMonthName = useMemo(() => {
+    if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
+    return data.monthly_summary[0].month_name;
+  }, [data]);
+  const { totalCash, totalOnline } = useMemo(() => {
+    if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
+    return calculatePaymentSummaryForMonth(currentMonthName);
+  }, [currentMonthName, data]);
 
   /** ✅ LAST 7 DAYS REVENUE */
   const last7DaysRevenue = useMemo(() => {
@@ -440,7 +443,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Key Metrics - Row 1 */}
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 'sm', sm: 'lg' }}>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 6 }} spacing={{ base: 'sm', sm: 'lg' }}>
           <StatCard
             title="Total Revenue"
             value={formatCurrency(totalRevenue)}
@@ -470,6 +473,20 @@ export default function AdminDashboardPage() {
             icon={<IconAlertCircle size={24} />}
             color="blue"
             description="Total revenue collected"
+          />
+          <StatCard
+            title="Total Cash Payments"
+            value={formatCurrency(totalCash)}
+            icon={<IconCurrencyRupee size={24} />}
+            color="green"
+            description="Cash received this month"
+          />
+          <StatCard
+            title="Total Online Payments"
+            value={formatCurrency(totalOnline)}
+            icon={<IconCurrencyRupee size={24} />}
+            color="blue"
+            description="Easypaisa + SadaPay this month"
           />
         </SimpleGrid>
 
