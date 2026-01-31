@@ -227,7 +227,7 @@ export default function AdminDashboardPage() {
       totalCash: result?.totalCash ?? 0,
       totalOnline: result?.totalOnline ?? 0,
     };
-  }, [currentMonthName, data]);
+  }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
 
   /** ✅ LAST 7 DAYS REVENUE */
   const last7DaysRevenue = useMemo(() => {
