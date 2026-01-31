@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    productionBrowserSourceMaps: true,
   // Configure to allow images from external domains if needed
   images: {
     remotePatterns: [],
