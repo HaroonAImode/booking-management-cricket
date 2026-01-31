@@ -242,7 +242,7 @@ export default function AdminDashboardPage() {
   /** ✅ PENDING APPROVALS COUNT */
   const pendingApprovalsCount = useMemo(() => {
     if (!data?.recent_bookings) return 0;
-    return data.recent_bookings.filter(b => b.status === 'pending').length;
+    return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
   }, [data]);
 
   // Helper function to calculate payment summary for a month
