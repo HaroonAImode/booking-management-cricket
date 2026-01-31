@@ -256,46 +256,55 @@ export default function AdminDashboardPage() {
     // Extract just the month name (remove year if present)
     const targetMonth = monthName?.split(' ')[0] || '';
 
-    data.recent_bookings.forEach((b) => {
-      if (!b || !b.status || !b.booking_date) return;
+    data.recent_bookings.forEach((booking) => {
+      if (!booking || typeof booking !== 'object') return;
+      const {
+        status,
+        booking_date,
+        advance_payment,
+        advance_payment_method,
+        remaining_payment_amount,
+        remaining_payment_method
+      } = booking || {};
+      if (!status || !booking_date) return;
       // Skip pending bookings
-      if (b.status === 'pending') return;
+      if (status === 'pending') return;
 
       // Extract month from booking date
-      const bookingDate = new Date(b.booking_date);
-      const bookingMonth = bookingDate.toLocaleString('en-US', { month: 'long' });
+      const bookingDateObj = new Date(booking_date);
+      const bookingMonth = bookingDateObj.toLocaleString('en-US', { month: 'long' });
 
       // Match month (without year)
       if (bookingMonth !== targetMonth) return;
 
       // Calculate advance payment
-      const advanceAmount = Number(b.advance_payment) || 0;
+      const advanceAmount = Number(advance_payment) || 0;
 
-      if (b.advance_payment_method) {
-        if (b.advance_payment_method === 'cash') {
+      if (advance_payment_method) {
+        if (advance_payment_method === 'cash') {
           totalCash += advanceAmount;
-        } else if (b.advance_payment_method === 'easypaisa') {
+        } else if (advance_payment_method === 'easypaisa') {
           totalOnline += advanceAmount;
           totalEasypaisa += advanceAmount;
-        } else if (b.advance_payment_method === 'sadapay') {
+        } else if (advance_payment_method === 'sadapay') {
           totalOnline += advanceAmount;
           totalSadaPay += advanceAmount;
         }
       }
 
       // Calculate remaining payment if paid (completed or approved with remaining payment)
-      const isCompleted = b.status === 'completed';
-      const isApprovedWithRemaining = b.status === 'approved' && b.remaining_payment_amount && b.remaining_payment_amount > 0;
+      const isCompleted = status === 'completed';
+      const isApprovedWithRemaining = status === 'approved' && remaining_payment_amount && remaining_payment_amount > 0;
 
-      if ((isCompleted || isApprovedWithRemaining) && b.remaining_payment_method && b.remaining_payment_amount) {
-        const remainingAmount = Number(b.remaining_payment_amount) || 0;
+      if ((isCompleted || isApprovedWithRemaining) && remaining_payment_method && remaining_payment_amount) {
+        const remainingAmount = Number(remaining_payment_amount) || 0;
 
-        if (b.remaining_payment_method === 'cash') {
+        if (remaining_payment_method === 'cash') {
           totalCash += remainingAmount;
-        } else if (b.remaining_payment_method === 'easypaisa') {
+        } else if (remaining_payment_method === 'easypaisa') {
           totalOnline += remainingAmount;
           totalEasypaisa += remainingAmount;
-        } else if (b.remaining_payment_method === 'sadapay') {
+        } else if (remaining_payment_method === 'sadapay') {
           totalOnline += remainingAmount;
           totalSadaPay += remainingAmount;
         }
