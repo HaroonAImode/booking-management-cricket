@@ -663,31 +663,31 @@ export default function AdminDashboardPage() {
                     return (
                       <Table.Tr key={booking.id}>
                         <Table.Td>
-                          <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
+                          <Text size="sm" fw={500}>
                             {booking.booking_number}
                           </Text>
                         </Table.Td>
                         <Table.Td>
                           <div>
-                            <Text size={{ base: 'xs', sm: 'sm' }}>{booking.customer_name}</Text>
+                            <Text size="sm">{booking.customer_name}</Text>
                             <Text size="xs" c="dimmed">
                               {booking.customer_phone}
                             </Text>
                           </div>
                         </Table.Td>
                         <Table.Td>
-                          <Text size={{ base: 'xs', sm: 'sm' }}>
+                          <Text size="sm">
                             {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size={{ base: 'xs', sm: 'sm' }}>
+                          <Text size="sm">
                             {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
                           </Text>
                         </Table.Td>
                         <Table.Td>
                           <div>
-                            <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
+                            <Text size="sm" fw={500}>
                               {formatCurrency(received)}
                             </Text>
                             <Text size="xs" c="dimmed">
