@@ -218,11 +218,15 @@ export default function AdminDashboardPage() {
   /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
   const currentMonthName = useMemo(() => {
     if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
-    return data.monthly_summary[0].month_name;
+    return data.monthly_summary[0]?.month_name || '';
   }, [data]);
   const { totalCash, totalOnline } = useMemo(() => {
     if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
-    return calculatePaymentSummaryForMonth(currentMonthName);
+    const result = calculatePaymentSummaryForMonth(currentMonthName);
+    return {
+      totalCash: result?.totalCash ?? 0,
+      totalOnline: result?.totalOnline ?? 0,
+    };
   }, [currentMonthName, data]);
 
   /** ✅ LAST 7 DAYS REVENUE */
@@ -248,25 +252,25 @@ export default function AdminDashboardPage() {
     }
 
     let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
-    
+
     // Extract just the month name (remove year if present)
-    const targetMonth = monthName.split(' ')[0];
-    
+    const targetMonth = monthName?.split(' ')[0] || '';
+
     data.recent_bookings.forEach((b) => {
+      if (!b || !b.status || !b.booking_date) return;
       // Skip pending bookings
       if (b.status === 'pending') return;
-      if (!b.booking_date) return;
-      
+
       // Extract month from booking date
       const bookingDate = new Date(b.booking_date);
       const bookingMonth = bookingDate.toLocaleString('en-US', { month: 'long' });
-      
+
       // Match month (without year)
       if (bookingMonth !== targetMonth) return;
-      
+
       // Calculate advance payment
       const advanceAmount = Number(b.advance_payment) || 0;
-      
+
       if (b.advance_payment_method) {
         if (b.advance_payment_method === 'cash') {
           totalCash += advanceAmount;
@@ -278,14 +282,14 @@ export default function AdminDashboardPage() {
           totalSadaPay += advanceAmount;
         }
       }
-      
+
       // Calculate remaining payment if paid (completed or approved with remaining payment)
       const isCompleted = b.status === 'completed';
       const isApprovedWithRemaining = b.status === 'approved' && b.remaining_payment_amount && b.remaining_payment_amount > 0;
-      
+
       if ((isCompleted || isApprovedWithRemaining) && b.remaining_payment_method && b.remaining_payment_amount) {
         const remainingAmount = Number(b.remaining_payment_amount) || 0;
-        
+
         if (b.remaining_payment_method === 'cash') {
           totalCash += remainingAmount;
         } else if (b.remaining_payment_method === 'easypaisa') {
@@ -297,7 +301,7 @@ export default function AdminDashboardPage() {
         }
       }
     });
-    
+
     return { totalCash, totalOnline, totalEasypaisa, totalSadaPay };
   };
 
