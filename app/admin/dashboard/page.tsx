@@ -256,8 +256,8 @@ export default function AdminDashboardPage() {
     // Extract just the month name (remove year if present)
     const targetMonth = monthName?.split(' ')[0] || '';
 
-    data.recent_bookings.forEach((booking) => {
-      if (!booking || typeof booking !== 'object') return;
+    data.recent_bookings.forEach((bookingItem) => {
+      if (!bookingItem || typeof bookingItem !== 'object') return;
       const {
         status,
         booking_date,
@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
         advance_payment_method,
         remaining_payment_amount,
         remaining_payment_method
-      } = booking || {};
+      } = bookingItem || {};
       if (!status || !booking_date) return;
       // Skip pending bookings
       if (status === 'pending') return;
