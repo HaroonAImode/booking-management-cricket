@@ -14,7 +14,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -209,6 +209,34 @@ export default function AdminDashboardPage() {
         return 'gray';
     }
   };
+
+  /** ✅ ACTUAL TOTAL REVENUE (Advance + Paid Remaining only) */
+  const totalRevenue = useMemo(() => {
+    if (!data?.recent_bookings) return 0;
+
+    return data.recent_bookings.reduce((sum, b) => {
+      const advance = b.advance_payment || 0;
+      const remainingPaid =
+        b.status === 'completed' ? b.remaining_payment_amount || 0 : 0;
+      return sum + advance + remainingPaid;
+    }, 0);
+  }, [data]);
+
+  /** ✅ LAST 7 DAYS REVENUE */
+  const last7DaysRevenue = useMemo(() => {
+    if (!data?.daily_revenue_chart) return 0;
+
+    return data.daily_revenue_chart.reduce(
+      (sum, d) => sum + d.advance_received + d.remaining_payment,
+      0
+    );
+  }, [data]);
+
+  /** ✅ PENDING APPROVALS COUNT */
+  const pendingApprovalsCount = useMemo(() => {
+    if (!data?.recent_bookings) return 0;
+    return data.recent_bookings.filter(b => b.status === 'pending').length;
+  }, [data]);
 
   // Helper function to calculate payment summary for a month
   const calculatePaymentSummaryForMonth = (monthName: string) => {
@@ -415,14 +443,14 @@ export default function AdminDashboardPage() {
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 'sm', sm: 'lg' }}>
           <StatCard
             title="Total Revenue"
-            value={formatCurrency(data.revenue.total_revenue)}
+            value={formatCurrency(totalRevenue)}
             icon={<IconCurrencyRupee size={24} />}
             color="yellow"
-            description={`Advance: ${formatCurrency(data.revenue.total_advance_received)}`}
+            description="Only received payments"
           />
           <StatCard
             title="Pending Approvals"
-            value={data.pending_approvals}
+            value={pendingApprovalsCount}
             icon={<IconClockHour4 size={24} />}
             color="warning"
             description="Awaiting approval"
@@ -437,11 +465,11 @@ export default function AdminDashboardPage() {
             description={`${data.today_bookings.total_hours} hours booked`}
           />
           <StatCard
-            title="Remaining Payments"
-            value={formatCurrency(data.revenue.total_remaining_payment)}
+            title="Last 7 Days Revenue"
+            value={formatCurrency(last7DaysRevenue)}
             icon={<IconAlertCircle size={24} />}
-            color="danger"
-            description="To be collected"
+            color="blue"
+            description="Total revenue collected"
           />
         </SimpleGrid>
 
@@ -577,75 +605,91 @@ export default function AdminDashboardPage() {
           >
             Recent Bookings
           </Title>
-          <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <Table highlightOnHover striped style={{ minWidth: 700 }}>
-              <Table.Thead>
-                <Table.Tr>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Timings</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
-                <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {data.recent_bookings.slice(0, 10).map((booking) => (
-                <Table.Tr key={booking.id}>
-                  <Table.Td>
-                    <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
-                      {booking.booking_number}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <div>
-                      <Text size={{ base: 'xs', sm: 'sm' }}>{booking.customer_name}</Text>
-                      <Text size="xs" c="dimmed">
-                        {booking.customer_phone}
-                      </Text>
-                    </div>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size={{ base: 'xs', sm: 'sm' }}>
-                      {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size={{ base: 'xs', sm: 'sm' }}>
-                      {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <div>
-                      <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
-                        {formatCurrency(booking.total_amount)}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Adv: {formatCurrency(booking.advance_payment)}
-                      </Text>
-                    </div>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={
-                        booking.status === 'approved'
-                          ? 'green'
-                          : booking.status === 'pending'
-                          ? 'orange'
-                          : booking.status === 'completed'
-                          ? 'teal'
-                          : 'red'
-                      }
-                      variant="light"
-                      size="sm"
-                    >
-                      {booking.status}
-                    </Badge>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+          {(!data.recent_bookings || data.recent_bookings.length === 0) ? (
+            <EmptyState
+              title="No recent bookings"
+              description="Bookings will appear here once available"
+            />
+          ) : (
+            <>
+              <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <Table highlightOnHover striped style={{ minWidth: 700 }}>
+                  <Table.Thead>
+                    <Table.Tr>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Timings</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {data.recent_bookings.slice(0, 10).map((booking) => {
+                    const received =
+                      booking.advance_payment +
+                      (booking.status === 'completed' ? booking.remaining_payment_amount || 0 : 0);
+                    
+                    return (
+                      <Table.Tr key={booking.id}>
+                        <Table.Td>
+                          <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
+                            {booking.booking_number}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <div>
+                            <Text size={{ base: 'xs', sm: 'sm' }}>{booking.customer_name}</Text>
+                            <Text size="xs" c="dimmed">
+                              {booking.customer_phone}
+                            </Text>
+                          </div>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size={{ base: 'xs', sm: 'sm' }}>
+                            {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size={{ base: 'xs', sm: 'sm' }}>
+                            {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <div>
+                            <Text size={{ base: 'xs', sm: 'sm' }} fw={500}>
+                              {formatCurrency(received)}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Paid only
+                            </Text>
+                          </div>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            color={
+                              booking.status === 'approved'
+                                ? 'green'
+                                : booking.status === 'pending'
+                                ? 'orange'
+                                : booking.status === 'completed'
+                                ? 'teal'
+                                : 'red'
+                            }
+                            variant="light"
+                            size="sm"
+                          >
+                            {booking.status}
+                          </Badge>
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+              </Box>
+            </>
+          )}
           
           {/* See All Bookings Button */}
           <Group justify="center" mt="md">
@@ -666,7 +710,6 @@ export default function AdminDashboardPage() {
               See All Bookings
             </Button>
           </Group>
-          </Box>
         </Paper>
       </Stack>
     </Container>

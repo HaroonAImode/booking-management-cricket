@@ -215,7 +215,7 @@ export default function ManualBookingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: formData.customerName,
-          customerPhone: formData.customerPhone || null,
+          customerPhone: formData.customerPhone,
           bookingDate: formData.bookingDate.toISOString().split('T')[0],
           slots: selectedSlots.map(hour => {
             const slot = availableSlots?.find(s => s.slot_hour === hour);
@@ -309,8 +309,9 @@ export default function ManualBookingModal({
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
-                  label="Phone Number (Optional)"
-                  placeholder="03001234567 (optional)"
+                  label="Phone Number"
+                  placeholder="03001234567"
+                  required
                   value={formData.customerPhone}
                   onChange={(e) =>
                     setFormData({ ...formData, customerPhone: e.target.value })

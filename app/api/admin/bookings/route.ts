@@ -143,6 +143,13 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
+    // Validate advance payment
+    if (advancePayment < 0 || advancePayment > totalAmount) {
+      return NextResponse.json(
+        { error: 'Advance payment must be between 0 and total amount' },
+        { status: 400 }
+      );
+    }
 
     // Always create a new customer for every booking, even if name/phone matches existing records
     let customerId = null;
@@ -151,7 +158,9 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       .insert([{ name: customerName, phone: customerPhone }])
       .select('id')
       .single();
+    
     if (createCustomerError || !newCustomer) {
+      console.error('Create customer error:', createCustomerError);
       return NextResponse.json(
         { error: 'Failed to create new customer' },
         { status: 500 }
@@ -167,17 +176,16 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       hourly_rate: slot.rate,
     }));
 
-    // Call create booking function (pass customer name as the original name for this booking, not to update customer)
+    // Call create booking function
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
-      p_customer_name: existingCustomerName || customerName,
+      p_customer_id: customerId,
       p_booking_date: bookingDate,
       p_total_hours: slots.length,
       p_total_amount: totalAmount,
       p_advance_payment: advancePayment || 0,
       p_advance_payment_method: advancePaymentMethod || 'cash',
       p_advance_payment_proof: advancePaymentProof || 'manual-booking-no-proof',
-      p_slots: formattedSlots, // Pass as array, not string
-      p_customer_phone: customerPhone || null,
+      p_slots: formattedSlots,
       p_customer_notes: notes || null,
     });
 
@@ -195,10 +203,15 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
 
     // Auto-approve if requested
     if (autoApprove) {
-      await supabase.rpc('approve_booking', {
+      const { error: approveError } = await supabase.rpc('approve_booking', {
         p_booking_id: bookingResult.booking_id,
         p_admin_notes: `Manual booking created by ${adminProfile.full_name}`,
       });
+
+      if (approveError) {
+        console.error('Auto-approve error:', approveError);
+        // Don't fail the whole booking if auto-approve fails
+      }
     }
 
     return NextResponse.json({
@@ -208,10 +221,10 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
       message: `Booking created successfully${autoApprove ? ' and auto-approved' : ''}`,
       createdBy: adminProfile.full_name,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create booking error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

@@ -46,15 +46,15 @@ export default function RevenueChart({ data }: RevenueChartProps) {
     );
   }
 
-  // Format data for chart
+  // Format data for chart - Show only actual received payments
   const chartData = data.map((item) => ({
     date: new Date(item.booking_date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     }),
-    'Total Revenue': parseFloat(item.total_revenue?.toString() || '0'),
-    'Advance Received': parseFloat(item.advance_received?.toString() || '0'),
-    'Remaining': parseFloat(item.remaining_payment?.toString() || '0'),
+    'Received': (item.advance_received || 0) + (item.remaining_payment || 0),
+    'Advance': item.advance_received || 0,
+    'Remaining': item.remaining_payment || 0,
   }));
 
   const formatCurrency = (value: number) => {
@@ -65,39 +65,58 @@ export default function RevenueChart({ data }: RevenueChartProps) {
     <Paper withBorder p="md" radius="md">
       <Stack gap="md">
         <div>
-          <Title order={4}>Revenue Trends</Title>
+          <Title order={4}>Revenue Trends (Received Only)</Title>
           <Text size="sm" c="dimmed">
-            Daily revenue breakdown
+            Daily revenue breakdown - Showing actual payments received
           </Text>
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="date"
               style={{ fontSize: '12px' }}
+              tick={{ fill: '#666' }}
+              axisLine={{ stroke: '#ddd' }}
             />
             <YAxis
               style={{ fontSize: '12px' }}
               tickFormatter={(value) => `Rs ${(value / 1000).toFixed(0)}k`}
+              tick={{ fill: '#666' }}
+              axisLine={{ stroke: '#ddd' }}
             />
-            <Tooltip formatter={(value: number | undefined) => value ? formatCurrency(value) : 'Rs 0'} />
-            <Legend />
+            <Tooltip 
+              formatter={(value: number) => formatCurrency(value)}
+              labelFormatter={(label) => `Date: ${label}`}
+              contentStyle={{ 
+                backgroundColor: 'white',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend 
+              verticalAlign="top"
+              height={36}
+              iconType="circle"
+            />
             <Area
               type="monotone"
-              dataKey="Total Revenue"
+              dataKey="Received"
               stackId="1"
-              stroke="#228be6"
-              fill="#228be6"
-              fillOpacity={0.6}
-            />
-            <Area
-              type="monotone"
-              dataKey="Advance Received"
-              stackId="2"
               stroke="#40c057"
               fill="#40c057"
-              fillOpacity={0.6}
+              fillOpacity={0.7}
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="Advance"
+              stackId="2"
+              stroke="#228be6"
+              fill="#228be6"
+              fillOpacity={0.5}
+              strokeWidth={2}
             />
             <Area
               type="monotone"
@@ -105,10 +124,14 @@ export default function RevenueChart({ data }: RevenueChartProps) {
               stackId="3"
               stroke="#fd7e14"
               fill="#fd7e14"
-              fillOpacity={0.6}
+              fillOpacity={0.5}
+              strokeWidth={2}
             />
           </AreaChart>
         </ResponsiveContainer>
+        <Text size="xs" c="dimmed" mt="xs">
+          Note: Shows only payments that have been received (advance + completed remaining payments)
+        </Text>
       </Stack>
     </Paper>
   );
