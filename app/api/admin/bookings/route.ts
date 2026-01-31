@@ -169,7 +169,7 @@ export const POST = withAdminAuth(async (request, { adminProfile }) => {
 
     // Call create booking function (pass customer name as the original name for this booking, not to update customer)
     const { data, error } = await supabase.rpc('create_booking_with_slots', {
-      p_customer_name: existingCustomerName || customerName,
+      p_customer_name: customerName,
       p_booking_date: bookingDate,
       p_total_hours: slots.length,
       p_total_amount: totalAmount,
