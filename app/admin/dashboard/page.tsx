@@ -210,44 +210,8 @@ export default function AdminDashboardPage() {
     }
   };
 
-  /** ✅ ACTUAL TOTAL REVENUE (from backend SQL) */
-  const totalRevenue = useMemo(() => {
-    return data?.revenue?.total_revenue || 0;
-  }, [data]);
 
-  /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
-  const currentMonthName = useMemo(() => {
-    if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
-    return data.monthly_summary[0]?.month_name || '';
-  }, [data]);
-  const totalCashOnline = useMemo(() => {
-    if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
-    const result = calculatePaymentSummaryForMonth(currentMonthName);
-    return {
-      totalCash: result?.totalCash ?? 0,
-      totalOnline: result?.totalOnline ?? 0,
-    };
-  }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
-  const totalCash = totalCashOnline.totalCash;
-  const totalOnline = totalCashOnline.totalOnline;
-
-  /** ✅ LAST 7 DAYS REVENUE */
-  const last7DaysRevenue = useMemo(() => {
-    if (!data?.daily_revenue_chart) return 0;
-
-    return data.daily_revenue_chart.reduce(
-      (sum, d) => sum + d.advance_received + d.remaining_payment,
-      0
-    );
-  }, [data]);
-
-  /** ✅ PENDING APPROVALS COUNT */
-  const pendingApprovalsCount = useMemo(() => {
-    if (!data?.recent_bookings) return 0;
-    return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
-  }, [data]);
-
-  // Helper function to calculate payment summary for a month
+    // Helper function to calculate payment summary for a month
   const calculatePaymentSummaryForMonth = (monthName: string) => {
     if (!data || !Array.isArray(data.recent_bookings)) {
       return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0 };
@@ -326,6 +290,46 @@ export default function AdminDashboardPage() {
       totalSadaPay: typeof totalSadaPay === 'number' ? totalSadaPay : 0,
     };
   };
+
+  
+  /** ✅ ACTUAL TOTAL REVENUE (from backend SQL) */
+  const totalRevenue = useMemo(() => {
+    return data?.revenue?.total_revenue || 0;
+  }, [data]);
+
+  /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
+  const currentMonthName = useMemo(() => {
+    if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
+    return data.monthly_summary[0]?.month_name || '';
+  }, [data]);
+  const totalCashOnline = useMemo(() => {
+    if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
+    const result = calculatePaymentSummaryForMonth(currentMonthName);
+    return {
+      totalCash: result?.totalCash ?? 0,
+      totalOnline: result?.totalOnline ?? 0,
+    };
+  }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
+  const totalCash = totalCashOnline.totalCash;
+  const totalOnline = totalCashOnline.totalOnline;
+
+  /** ✅ LAST 7 DAYS REVENUE */
+  const last7DaysRevenue = useMemo(() => {
+    if (!data?.daily_revenue_chart) return 0;
+
+    return data.daily_revenue_chart.reduce(
+      (sum, d) => sum + d.advance_received + d.remaining_payment,
+      0
+    );
+  }, [data]);
+
+  /** ✅ PENDING APPROVALS COUNT */
+  const pendingApprovalsCount = useMemo(() => {
+    if (!data?.recent_bookings) return 0;
+    return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
+  }, [data]);
+
+
 
   if (loading) {
     return (
