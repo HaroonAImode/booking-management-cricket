@@ -26,6 +26,7 @@ import {
   Badge,
   Table,
   Group,
+  LoadingOverlay,
   Alert,
   Divider,
   Box,
@@ -40,8 +41,6 @@ import {
   IconUsers,
   IconClock,
   IconArrowRight,
-  IconCoin,
-  IconCreditCard,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import StatCard from '@/components/dashboard/StatCard';
@@ -196,49 +195,29 @@ export default function AdminDashboardPage() {
     return `${formatSlotTime(firstSlot)} - ${formatSlotTime(lastSlot + 1)}`;
   };
 
-  // Helper function to calculate ACTUAL received revenue
-  const calculateActualRevenue = () => {
-    if (!data || !Array.isArray(data.recent_bookings)) {
-      return 0;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'orange';
+      case 'approved':
+        return 'green';
+      case 'completed':
+        return 'blue';
+      case 'cancelled':
+        return 'red';
+      default:
+        return 'gray';
     }
-
-    let totalReceived = 0;
-    
-    data.recent_bookings.forEach((booking) => {
-      if (!booking || typeof booking !== 'object') return;
-      
-      const {
-        status,
-        advance_payment,
-        remaining_payment_amount
-      } = booking;
-      
-      if (!status) return;
-      
-      // Only count approved and completed bookings
-      if (status === 'approved' || status === 'completed') {
-        // Add advance payment (always received for approved/completed)
-        const advanceAmount = Number(advance_payment) || 0;
-        totalReceived += advanceAmount;
-        
-        // Add remaining payment only for completed bookings
-        if (status === 'completed') {
-          const remainingAmount = Number(remaining_payment_amount) || 0;
-          totalReceived += remainingAmount;
-        }
-      }
-    });
-    
-    return totalReceived;
   };
 
-  // Helper function to calculate payment summary for a month
+
+    // Helper function to calculate payment summary for a month
   const calculatePaymentSummaryForMonth = (monthName: string) => {
     if (!data || !Array.isArray(data.recent_bookings)) {
-      return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0, totalReceived: 0 };
+      return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0 };
     }
 
-    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0, totalReceived = 0;
+    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0;
 
     // Extract just the month name (remove year if present)
     const targetMonth = typeof monthName === 'string' ? monthName.split(' ')[0] : '';
@@ -254,9 +233,8 @@ export default function AdminDashboardPage() {
         remaining_payment_method
       } = bookingItem || {};
       if (!status || !booking_date) return;
-      
-      // Only process approved and completed bookings
-      if (status !== 'approved' && status !== 'completed') return;
+      // Skip pending bookings
+      if (status === 'pending') return;
 
       // Extract month from booking date
       let bookingMonth = '';
@@ -270,9 +248,8 @@ export default function AdminDashboardPage() {
       // Match month (without year)
       if (bookingMonth !== targetMonth) return;
 
-      // Calculate advance payment (always received for approved/completed)
+      // Calculate advance payment
       const advanceAmount = Number(advance_payment) || 0;
-      totalReceived += advanceAmount;
 
       if (advance_payment_method) {
         if (advance_payment_method === 'cash') {
@@ -286,21 +263,21 @@ export default function AdminDashboardPage() {
         }
       }
 
-      // Calculate remaining payment only for completed bookings
-      if (status === 'completed') {
-        const remainingAmount = Number(remaining_payment_amount) || 0;
-        totalReceived += remainingAmount;
+      // Calculate remaining payment if paid (completed or approved with remaining payment)
+      const isCompleted = status === 'completed';
+      const isApprovedWithRemaining = status === 'approved' && remaining_payment_amount && remaining_payment_amount > 0;
 
-        if (remaining_payment_method) {
-          if (remaining_payment_method === 'cash') {
-            totalCash += remainingAmount;
-          } else if (remaining_payment_method === 'easypaisa') {
-            totalOnline += remainingAmount;
-            totalEasypaisa += remainingAmount;
-          } else if (remaining_payment_method === 'sadapay') {
-            totalOnline += remainingAmount;
-            totalSadaPay += remainingAmount;
-          }
+      if ((isCompleted || isApprovedWithRemaining) && remaining_payment_method && remaining_payment_amount) {
+        const remainingAmount = Number(remaining_payment_amount) || 0;
+
+        if (remaining_payment_method === 'cash') {
+          totalCash += remainingAmount;
+        } else if (remaining_payment_method === 'easypaisa') {
+          totalOnline += remainingAmount;
+          totalEasypaisa += remainingAmount;
+        } else if (remaining_payment_method === 'sadapay') {
+          totalOnline += remainingAmount;
+          totalSadaPay += remainingAmount;
         }
       }
     });
@@ -311,67 +288,40 @@ export default function AdminDashboardPage() {
       totalOnline: typeof totalOnline === 'number' ? totalOnline : 0,
       totalEasypaisa: typeof totalEasypaisa === 'number' ? totalEasypaisa : 0,
       totalSadaPay: typeof totalSadaPay === 'number' ? totalSadaPay : 0,
-      totalReceived: typeof totalReceived === 'number' ? totalReceived : 0,
     };
   };
 
-  // Helper function to calculate Last 7 Days ACTUAL revenue (only received payments)
-  const calculateLast7DaysActualRevenue = () => {
-    if (!data?.recent_bookings) return 0;
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    let totalReceived = 0;
-    
-    data.recent_bookings.forEach((booking) => {
-      if (!booking || typeof booking !== 'object') return;
-      
-      const {
-        status,
-        booking_date,
-        advance_payment,
-        remaining_payment_amount
-      } = booking;
-      
-      if (!status || !booking_date) return;
-      
-      // Check if booking is within last 7 days
-      const bookingDate = new Date(booking_date);
-      if (bookingDate < sevenDaysAgo) return;
-      
-      // Only count approved and completed bookings
-      if (status === 'approved' || status === 'completed') {
-        // Add advance payment
-        const advanceAmount = Number(advance_payment) || 0;
-        totalReceived += advanceAmount;
-        
-        // Add remaining payment only for completed bookings
-        if (status === 'completed') {
-          const remainingAmount = Number(remaining_payment_amount) || 0;
-          totalReceived += remainingAmount;
-        }
-      }
-    });
-    
-    return totalReceived;
-  };
-
-  /** ✅ ACTUAL TOTAL REVENUE (only received payments from approved/completed bookings) */
-  const totalActualRevenue = useMemo(() => {
-    return calculateActualRevenue();
+  
+  /** ✅ ACTUAL TOTAL REVENUE (from backend SQL) */
+  const totalRevenue = useMemo(() => {
+    return data?.revenue?.total_revenue || 0;
   }, [data]);
 
-  /** ✅ CURRENT MONTH PAYMENT BREAKDOWN */
+  /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
   const currentMonthName = useMemo(() => {
     if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
     return data.monthly_summary[0]?.month_name || '';
   }, [data]);
+  const totalCashOnline = useMemo(() => {
+    if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
+    const result = calculatePaymentSummaryForMonth(currentMonthName);
+    return {
+      totalCash: result?.totalCash ?? 0,
+      totalOnline: result?.totalOnline ?? 0,
+    };
+  }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
+  const totalCash = totalCashOnline.totalCash;
+  const totalOnline = totalCashOnline.totalOnline;
 
-  const currentMonthPayments = useMemo(() => {
-    if (!currentMonthName) return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0, totalReceived: 0 };
-    return calculatePaymentSummaryForMonth(currentMonthName);
-  }, [currentMonthName, data]);
+  /** ✅ LAST 7 DAYS REVENUE */
+  const last7DaysRevenue = useMemo(() => {
+    if (!data?.daily_revenue_chart) return 0;
+
+    return data.daily_revenue_chart.reduce(
+      (sum, d) => sum + d.advance_received + d.remaining_payment,
+      0
+    );
+  }, [data]);
 
   /** ✅ PENDING APPROVALS COUNT */
   const pendingApprovalsCount = useMemo(() => {
@@ -379,50 +329,7 @@ export default function AdminDashboardPage() {
     return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
   }, [data]);
 
-  /** ✅ LAST 7 DAYS ACTUAL REVENUE */
-  const last7DaysActualRevenue = useMemo(() => {
-    return calculateLast7DaysActualRevenue();
-  }, [data]);
 
-  /** ✅ TODAY'S ACTUAL REVENUE (only from approved/completed) */
-  const todayActualRevenue = useMemo(() => {
-    if (!data?.recent_bookings) return 0;
-    
-    const today = new Date().toISOString().split('T')[0];
-    let totalReceived = 0;
-    
-    data.recent_bookings.forEach((booking) => {
-      if (!booking || typeof booking !== 'object') return;
-      
-      const {
-        status,
-        booking_date,
-        advance_payment,
-        remaining_payment_amount
-      } = booking;
-      
-      if (!status || !booking_date) return;
-      
-      // Check if booking is for today
-      const bookingDate = new Date(booking_date).toISOString().split('T')[0];
-      if (bookingDate !== today) return;
-      
-      // Only count approved and completed bookings
-      if (status === 'approved' || status === 'completed') {
-        // Add advance payment
-        const advanceAmount = Number(advance_payment) || 0;
-        totalReceived += advanceAmount;
-        
-        // Add remaining payment only for completed bookings
-        if (status === 'completed') {
-          const remainingAmount = Number(remaining_payment_amount) || 0;
-          totalReceived += remainingAmount;
-        }
-      }
-    });
-    
-    return totalReceived;
-  }, [data]);
 
   if (loading) {
     return (
@@ -535,12 +442,11 @@ export default function AdminDashboardPage() {
                     <Table.Th>Total Online</Table.Th>
                     <Table.Th>Easypaisa</Table.Th>
                     <Table.Th>SadaPay</Table.Th>
-                    <Table.Th>Total Received</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
                   {data.monthly_summary.map((month, idx) => {
-                    const { totalCash, totalOnline, totalEasypaisa, totalSadaPay, totalReceived } = calculatePaymentSummaryForMonth(month.month_name);
+                    const { totalCash, totalOnline, totalEasypaisa, totalSadaPay } = calculatePaymentSummaryForMonth(month.month_name);
                     
                     return (
                       <Table.Tr key={idx}>
@@ -549,7 +455,6 @@ export default function AdminDashboardPage() {
                         <Table.Td><Text size="sm" c="#227be6" fw={700}>Rs {totalOnline.toLocaleString()}</Text></Table.Td>
                         <Table.Td><Text size="sm" c="#1976d2">Rs {totalEasypaisa.toLocaleString()}</Text></Table.Td>
                         <Table.Td><Text size="sm" c="#00bcd4">Rs {totalSadaPay.toLocaleString()}</Text></Table.Td>
-                        <Table.Td><Text size="sm" c="teal" fw={700}>Rs {totalReceived.toLocaleString()}</Text></Table.Td>
                       </Table.Tr>
                     );
                   })}
@@ -557,7 +462,7 @@ export default function AdminDashboardPage() {
               </Table>
             </Box>
             <Text size="xs" c="dimmed" mt="sm">
-              Note: Based on received payments from approved and completed bookings only.
+              Note: Based on recent bookings data. For complete payment history, check detailed reports.
             </Text>
           </Paper>
         )}
@@ -571,11 +476,10 @@ export default function AdminDashboardPage() {
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 6 }} spacing={{ base: 'sm', sm: 'lg' }}>
           <StatCard
             title="Total Revenue"
-            value={formatCurrency(totalActualRevenue)}
+            value={formatCurrency(totalRevenue)}
             icon={<IconCurrencyRupee size={24} />}
             color="yellow"
-            description="Received payments only"
-            tooltip="Sum of all advance payments (approved/completed) + remaining payments (completed)"
+            description="Only received payments"
           />
           <StatCard
             title="Pending Approvals"
@@ -591,32 +495,28 @@ export default function AdminDashboardPage() {
             value={data.today_bookings.total_bookings}
             icon={<IconCalendarEvent size={24} />}
             color="success"
-            description={`${formatCurrency(todayActualRevenue)} received`}
-            tooltip="Total bookings for today with actual revenue received"
+            description={`${data.today_bookings.total_hours} hours booked`}
           />
           <StatCard
             title="Last 7 Days Revenue"
-            value={formatCurrency(last7DaysActualRevenue)}
-            icon={<IconTrendingUp size={24} />}
+            value={formatCurrency(last7DaysRevenue)}
+            icon={<IconAlertCircle size={24} />}
             color="blue"
-            description="Received payments only"
-            tooltip="Actual revenue received in last 7 days"
+            description="Total revenue collected"
           />
           <StatCard
-            title="Cash Payments"
-            value={formatCurrency(currentMonthPayments.totalCash)}
-            icon={<IconCoin size={24} />}
+            title="Total Cash Payments"
+            value={formatCurrency(totalCash)}
+            icon={<IconCurrencyRupee size={24} />}
             color="green"
-            description="This month"
-            tooltip="Total cash received this month (advance + remaining)"
+            description="Cash received this month"
           />
           <StatCard
-            title="Online Payments"
-            value={formatCurrency(currentMonthPayments.totalOnline)}
-            icon={<IconCreditCard size={24} />}
+            title="Total Online Payments"
+            value={formatCurrency(totalOnline)}
+            icon={<IconCurrencyRupee size={24} />}
             color="blue"
-            description="Easypaisa + SadaPay"
-            tooltip="Total online payments received this month"
+            description="Easypaisa + SadaPay this month"
           />
         </SimpleGrid>
 
@@ -653,13 +553,13 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={5}>
-                Revenue Received
+                Revenue
               </Text>
               <Text fw={700} size="xl" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
-                {formatCurrency(last7DaysActualRevenue)}
+                {formatCurrency(data.last_7_days.total_revenue)}
               </Text>
               <Text size="xs" c="dimmed" mt={5}>
-                Actual payments collected
+                Avg: {formatCurrency(data.last_7_days.average_booking_value)}
               </Text>
             </div>
             <div>
@@ -723,27 +623,15 @@ export default function AdminDashboardPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {data.monthly_summary.map((month, index) => {
-                    // Calculate actual revenue for this month
-                    const monthPayments = calculatePaymentSummaryForMonth(month.month_name);
-                    
-                    return (
-                      <Table.Tr key={index}>
-                        <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
-                        <Table.Td><Text size="sm">{month.total_bookings}</Text></Table.Td>
-                        <Table.Td><Text size="sm">{month.total_hours}</Text></Table.Td>
-                        <Table.Td>
-                          <Text size="sm" fw={600} c="teal">
-                            {formatCurrency(monthPayments.totalReceived)}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            Actual received
-                          </Text>
-                        </Table.Td>
-                        <Table.Td><Text size="sm">{formatCurrency(month.average_booking_value)}</Text></Table.Td>
-                      </Table.Tr>
-                    );
-                  })}
+                  {data.monthly_summary.map((month, index) => (
+                    <Table.Tr key={index}>
+                      <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{month.total_bookings}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{month.total_hours}</Text></Table.Td>
+                      <Table.Td><Text size="sm" fw={600}>{formatCurrency(month.total_revenue)}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{formatCurrency(month.average_booking_value)}</Text></Table.Td>
+                    </Table.Tr>
+                  ))}
                 </Table.Tbody>
               </Table>
             </Box>
@@ -775,95 +663,77 @@ export default function AdminDashboardPage() {
                 <Table highlightOnHover striped style={{ minWidth: 700 }}>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Timings</Table.Th>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
-                      <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {data.recent_bookings.slice(0, 10).map((booking) => {
-                      // Calculate received amount based on status
-                      let received = 0;
-                      let paymentMethods = [];
-                      
-                      if (booking.status === 'approved' || booking.status === 'completed') {
-                        // Advance payment always received
-                        received += booking.advance_payment || 0;
-                        
-                        if (booking.advance_payment_method) {
-                          paymentMethods.push(`${booking.advance_payment_method} (advance)`);
-                        }
-                        
-                        // Remaining payment only for completed bookings
-                        if (booking.status === 'completed' && booking.remaining_payment_amount) {
-                          received += booking.remaining_payment_amount || 0;
-                          
-                          if (booking.remaining_payment_method) {
-                            paymentMethods.push(`${booking.remaining_payment_method} (remaining)`);
-                          }
-                        }
-                      }
-                      
-                      return (
-                        <Table.Tr key={booking.id}>
-                          <Table.Td>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Booking #</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Customer</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Date</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Timings</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Amount</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Status</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {data.recent_bookings.slice(0, 10).map((booking) => {
+                    const received =
+                      booking.advance_payment +
+                      (booking.status === 'completed' ? booking.remaining_payment_amount || 0 : 0);
+                    
+                    return (
+                      <Table.Tr key={booking.id}>
+                        <Table.Td>
+                          <Text size="sm" fw={500}>
+                            {booking.booking_number}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <div>
+                            <Text size="sm">{booking.customer_name}</Text>
+                            <Text size="xs" c="dimmed">
+                              {booking.customer_phone}
+                            </Text>
+                          </div>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">
+                            {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">
+                            {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <div>
                             <Text size="sm" fw={500}>
-                              {booking.booking_number}
+                              {formatCurrency(received)}
                             </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <div>
-                              <Text size="sm">{booking.customer_name}</Text>
-                              <Text size="xs" c="dimmed">
-                                {booking.customer_phone}
-                              </Text>
-                            </div>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm">
-                              {new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            <Text size="xs" c="dimmed">
+                              Paid only
                             </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm">
-                              {booking.slots ? formatSlotRange(booking.slots) : `${booking.total_hours}h`}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <div>
-                              <Text size="sm" fw={500}>
-                                {formatCurrency(received)}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                {paymentMethods.join(', ') || 'No payment received'}
-                              </Text>
-                            </div>
-                          </Table.Td>
-                          <Table.Td>
-                            <Badge
-                              color={
-                                booking.status === 'approved'
-                                  ? 'green'
-                                  : booking.status === 'pending'
-                                  ? 'orange'
-                                  : booking.status === 'completed'
-                                  ? 'teal'
-                                  : 'red'
-                              }
-                              variant="light"
-                              size="sm"
-                            >
-                              {booking.status}
-                            </Badge>
-                          </Table.Td>
-                        </Table.Tr>
-                      );
-                    })}
-                  </Table.Tbody>
-                </Table>
+                          </div>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            color={
+                              booking.status === 'approved'
+                                ? 'green'
+                                : booking.status === 'pending'
+                                ? 'orange'
+                                : booking.status === 'completed'
+                                ? 'teal'
+                                : 'red'
+                            }
+                            variant="light"
+                            size="sm"
+                          >
+                            {booking.status}
+                          </Badge>
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
               </Box>
             </>
           )}
