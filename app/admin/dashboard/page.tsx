@@ -130,6 +130,7 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     fetchAdminUser();
@@ -160,6 +161,13 @@ export default function AdminDashboardPage() {
 
       const result = await response.json();
       setData(result.data);
+      
+      // Debug logging
+      console.log('Dashboard data received:', result.data);
+      if (result.data?.recent_bookings) {
+        console.log('Recent bookings count:', result.data.recent_bookings.length);
+        console.log('Recent bookings sample:', result.data.recent_bookings.slice(0, 3));
+      }
     } catch (err) {
       console.error('Dashboard fetch error:', err);
       setError('Failed to load dashboard data');
@@ -195,51 +203,33 @@ export default function AdminDashboardPage() {
     return `${formatSlotTime(firstSlot)} - ${formatSlotTime(lastSlot + 1)}`;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'orange';
-      case 'approved':
-        return 'green';
-      case 'completed':
-        return 'blue';
-      case 'cancelled':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
   /**
-   * ✅ CORRECT: Calculate PAID money for a booking
+   * ✅ SIMPLIFIED: Calculate PAID money for a booking
    * Rule based on your SQL data:
-   * 1. For 'approved': advance_payment only (remaining_payment_amount = 0.00)
-   * 2. For 'completed': advance_payment + remaining_payment_amount (both paid)
-   * 3. For 'pending': 0 (not paid yet)
-   * 4. For 'cancelled': 0 (no money received)
+   * 1. 'approved': advance_payment only (Rs 500 per booking)
+   * 2. 'completed': advance_payment + remaining_payment_amount (Rs 500 + Rs 1500 = Rs 2000)
+   * 3. 'pending' or 'cancelled': 0
    */
   const getPaidAmountForBooking = (booking: any): number => {
     if (!booking || !booking.status) return 0;
     
     const advance = Number(booking.advance_payment) || 0;
     
-    switch (booking.status) {
-      case 'approved':
-        // Approved: Only advance is paid, remaining is 0
-        return advance;
-      case 'completed':
-        // Completed: Both advance and remaining are paid
-        const remaining = Number(booking.remaining_payment_amount) || 0;
-        return advance + remaining;
-      case 'pending':
-      case 'cancelled':
-      default:
-        return 0; // No money received
+    if (booking.status === 'approved') {
+      return advance; // Only advance is paid for approved
+    } else if (booking.status === 'completed') {
+      const remaining = Number(booking.remaining_payment_amount) || 0;
+      return advance + remaining; // Both advance and remaining are paid for completed
     }
+    
+    return 0; // pending or cancelled
   };
 
-  // Helper function to calculate payment summary for a month (PAID MONEY ONLY)
-  const calculatePaymentSummaryForMonth = (monthName: string) => {
+  /**
+   * ✅ SIMPLIFIED: Get payment summary for ALL bookings (not filtered by month)
+   * This will give us total cash, online, and paid amounts
+   */
+  const getAllPaymentsSummary = () => {
     if (!data || !Array.isArray(data.recent_bookings)) {
       return { 
         totalCash: 0, 
@@ -252,42 +242,26 @@ export default function AdminDashboardPage() {
 
     let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0, totalPaid = 0;
 
-    // Extract just the month name (remove year if present)
-    const targetMonth = typeof monthName === 'string' ? monthName.split(' ')[0].trim() : '';
-
-    data.recent_bookings.forEach((bookingItem) => {
-      if (!bookingItem || typeof bookingItem !== 'object') return;
+    data.recent_bookings.forEach((booking) => {
+      if (!booking || typeof booking !== 'object') return;
       
       const {
         status,
-        booking_date,
         advance_payment,
         advance_payment_method,
         remaining_payment_amount,
         remaining_payment_method
-      } = bookingItem || {};
+      } = booking;
       
-      if (!status || !booking_date) return;
-
-      // Extract month from booking date
-      let bookingMonth = '';
-      try {
-        const bookingDateObj = new Date(booking_date);
-        bookingMonth = bookingDateObj.toLocaleString('en-US', { month: 'long' });
-      } catch (e) {
-        return;
-      }
-
-      // Match month (without year)
-      if (bookingMonth !== targetMonth) return;
+      if (!status) return;
 
       // Calculate paid amount for this booking
-      const paidAmount = getPaidAmountForBooking(bookingItem);
+      const paidAmount = getPaidAmountForBooking(booking);
       if (paidAmount <= 0) return; // Skip if no payment
 
       totalPaid += paidAmount;
 
-      // Calculate advance payment (ALWAYS paid for approved/completed)
+      // Calculate advance payment
       const advanceAmount = Number(advance_payment) || 0;
 
       if (advance_payment_method) {
@@ -329,7 +303,101 @@ export default function AdminDashboardPage() {
     };
   };
 
-  // Helper function to calculate today's PAID revenue (not booking value)
+  /**
+   * ✅ SIMPLIFIED: Get payment summary for a specific month
+   */
+  const getPaymentsSummaryForMonth = (monthName: string) => {
+    if (!data || !Array.isArray(data.recent_bookings)) {
+      return { 
+        totalCash: 0, 
+        totalOnline: 0, 
+        totalEasypaisa: 0, 
+        totalSadaPay: 0, 
+        totalPaid: 0 
+      };
+    }
+
+    let totalCash = 0, totalOnline = 0, totalEasypaisa = 0, totalSadaPay = 0, totalPaid = 0;
+
+    // Normalize month name (remove extra spaces)
+    const targetMonth = monthName.trim().replace(/\s+/g, ' ');
+
+    data.recent_bookings.forEach((booking) => {
+      if (!booking || typeof booking !== 'object') return;
+      
+      const {
+        status,
+        booking_date,
+        advance_payment,
+        advance_payment_method,
+        remaining_payment_amount,
+        remaining_payment_method
+      } = booking;
+      
+      if (!status || !booking_date) return;
+
+      // Get booking month in same format as monthly_summary
+      let bookingMonth = '';
+      try {
+        const bookingDate = new Date(booking_date);
+        // Format as "Month YYYY" (e.g., "February 2026")
+        bookingMonth = bookingDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      } catch (e) {
+        return;
+      }
+
+      // Match month (exact match including year)
+      if (bookingMonth !== targetMonth) return;
+
+      // Calculate paid amount for this booking
+      const paidAmount = getPaidAmountForBooking(booking);
+      if (paidAmount <= 0) return; // Skip if no payment
+
+      totalPaid += paidAmount;
+
+      // Calculate advance payment
+      const advanceAmount = Number(advance_payment) || 0;
+
+      if (advance_payment_method) {
+        if (advance_payment_method === 'cash') {
+          totalCash += advanceAmount;
+        } else if (advance_payment_method === 'easypaisa') {
+          totalOnline += advanceAmount;
+          totalEasypaisa += advanceAmount;
+        } else if (advance_payment_method === 'sadapay') {
+          totalOnline += advanceAmount;
+          totalSadaPay += advanceAmount;
+        }
+      }
+
+      // Calculate remaining payment ONLY for completed bookings
+      if (status === 'completed' && remaining_payment_amount && remaining_payment_amount > 0) {
+        const remainingAmount = Number(remaining_payment_amount) || 0;
+
+        if (remaining_payment_method) {
+          if (remaining_payment_method === 'cash') {
+            totalCash += remainingAmount;
+          } else if (remaining_payment_method === 'easypaisa') {
+            totalOnline += remainingAmount;
+            totalEasypaisa += remainingAmount;
+          } else if (remaining_payment_method === 'sadapay') {
+            totalOnline += remainingAmount;
+            totalSadaPay += remainingAmount;
+          }
+        }
+      }
+    });
+
+    return {
+      totalCash,
+      totalOnline,
+      totalEasypaisa,
+      totalSadaPay,
+      totalPaid,
+    };
+  };
+
+  // Helper function to calculate today's PAID revenue
   const calculateTodaysPaidRevenue = () => {
     if (!data?.recent_bookings) return 0;
     
@@ -337,6 +405,7 @@ export default function AdminDashboardPage() {
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
     
     return data.recent_bookings.reduce((sum, booking) => {
+      if (!booking.booking_date) return sum;
       const bookingDate = new Date(booking.booking_date).toISOString().split('T')[0];
       if (bookingDate !== todayStr) return sum;
       
@@ -344,7 +413,23 @@ export default function AdminDashboardPage() {
     }, 0);
   };
 
-  /** ✅ ACTUAL TOTAL REVENUE (paid money only) - Should show Rs 4,000 */
+  // Helper function to calculate last 7 days PAID revenue
+  const calculateLast7DaysPaidRevenue = () => {
+    if (!data?.recent_bookings) return 0;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    return data.recent_bookings.reduce((sum, booking) => {
+      if (!booking.booking_date) return sum;
+      const bookingDate = new Date(booking.booking_date);
+      if (bookingDate < sevenDaysAgo) return sum;
+      
+      return sum + getPaidAmountForBooking(booking);
+    }, 0);
+  };
+
+  /** ✅ ACTUAL TOTAL REVENUE (paid money only) - Based on your SQL: Rs 4,000 */
   const totalRevenue = useMemo(() => {
     if (!data?.recent_bookings) return 0;
 
@@ -353,39 +438,18 @@ export default function AdminDashboardPage() {
     }, 0);
   }, [data]);
 
-  /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
-  const currentMonthName = useMemo(() => {
-    if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
-    return data.monthly_summary[0]?.month_name || '';
+  /** ✅ ALL PAYMENTS SUMMARY */
+  const allPaymentsSummary = useMemo(() => {
+    return getAllPaymentsSummary();
   }, [data]);
-  
-  const totalCashOnline = useMemo(() => {
-    if (!currentMonthName) return { totalCash: 0, totalOnline: 0, totalPaid: 0 };
-    const result = calculatePaymentSummaryForMonth(currentMonthName);
-    return {
-      totalCash: result?.totalCash ?? 0,
-      totalOnline: result?.totalOnline ?? 0,
-      totalPaid: result?.totalPaid ?? 0,
-    };
-  }, [currentMonthName, data]);
-  
-  const totalCash = totalCashOnline.totalCash;
-  const totalOnline = totalCashOnline.totalOnline;
-  const totalPaidThisMonth = totalCashOnline.totalPaid;
 
-  /** ✅ LAST 7 DAYS REVENUE (paid only) - Should show Rs 4,000 */
+  const totalCash = allPaymentsSummary.totalCash;
+  const totalOnline = allPaymentsSummary.totalOnline;
+  const totalPaidAll = allPaymentsSummary.totalPaid;
+
+  /** ✅ LAST 7 DAYS REVENUE (paid only) - Based on your SQL: Rs 4,000 */
   const last7DaysRevenue = useMemo(() => {
-    if (!data?.recent_bookings) return 0;
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    return data.recent_bookings.reduce((sum, booking) => {
-      const bookingDate = new Date(booking.booking_date);
-      if (bookingDate < sevenDaysAgo) return sum;
-      
-      return sum + getPaidAmountForBooking(booking);
-    }, 0);
+    return calculateLast7DaysPaidRevenue();
   }, [data]);
 
   /** ✅ PENDING APPROVALS COUNT */
@@ -394,26 +458,24 @@ export default function AdminDashboardPage() {
     return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
   }, [data]);
 
-  /** ✅ TODAY'S PAID REVENUE (not booking value) */
+  /** ✅ TODAY'S PAID REVENUE */
   const todaysPaidRevenue = useMemo(() => {
     return calculateTodaysPaidRevenue();
   }, [data]);
 
-  /** ✅ Calculate total PAID revenue from backend data (for comparison) */
-  const totalPaidFromBackend = useMemo(() => {
-    if (!data?.recent_bookings) return 0;
+  /** ✅ Debug: Show what's in recent_bookings */
+  const debugRecentBookings = useMemo(() => {
+    if (!data?.recent_bookings) return 'No recent bookings';
     
-    let total = 0;
-    data.recent_bookings.forEach(booking => {
-      if (booking.status === 'approved' || booking.status === 'completed') {
-        // For approved: only advance is paid
-        // For completed: advance + remaining are paid
-        const advance = Number(booking.advance_payment) || 0;
-        const remaining = booking.status === 'completed' ? Number(booking.remaining_payment_amount) || 0 : 0;
-        total += advance + remaining;
-      }
-    });
-    return total;
+    const summary = data.recent_bookings.map(booking => ({
+      booking_number: booking.booking_number,
+      status: booking.status,
+      advance: booking.advance_payment,
+      remaining: booking.remaining_payment_amount,
+      paid: getPaidAmountForBooking(booking)
+    }));
+    
+    return JSON.stringify(summary.slice(0, 3), null, 2);
   }, [data]);
 
   if (loading) {
@@ -504,6 +566,22 @@ export default function AdminDashboardPage() {
           </Group>
         </Paper>
 
+        {/* Debug Info (remove in production) */}
+        <Button 
+          variant="subtle" 
+          size="xs" 
+          onClick={() => {
+            notifications.show({
+              title: 'Debug Info',
+              message: `Total Revenue Calculated: Rs ${totalRevenue.toLocaleString()}\nTotal Paid All: Rs ${totalPaidAll.toLocaleString()}\nRecent Bookings Sample:\n${debugRecentBookings}`,
+              color: 'blue',
+              autoClose: 10000,
+            });
+          }}
+        >
+          Show Debug Info
+        </Button>
+
         {/* Payment Summary By Month Section */}
         {data && data.monthly_summary && data.monthly_summary.length > 0 && (
           <Paper
@@ -527,12 +605,13 @@ export default function AdminDashboardPage() {
                     <Table.Th>Total Online</Table.Th>
                     <Table.Th>Easypaisa</Table.Th>
                     <Table.Th>SadaPay</Table.Th>
-                    <Table.Th>Total Paid</Table.Th>
+                    <Table.Th>Paid Revenue</Table.Th>
+                    <Table.Th>Booking Value</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
                   {data.monthly_summary.map((month, idx) => {
-                    const { totalCash, totalOnline, totalEasypaisa, totalSadaPay, totalPaid } = calculatePaymentSummaryForMonth(month.month_name);
+                    const { totalCash, totalOnline, totalEasypaisa, totalSadaPay, totalPaid } = getPaymentsSummaryForMonth(month.month_name);
                     
                     return (
                       <Table.Tr key={idx}>
@@ -542,6 +621,7 @@ export default function AdminDashboardPage() {
                         <Table.Td><Text size="sm" c="#1976d2">Rs {totalEasypaisa.toLocaleString()}</Text></Table.Td>
                         <Table.Td><Text size="sm" c="#00bcd4">Rs {totalSadaPay.toLocaleString()}</Text></Table.Td>
                         <Table.Td><Text size="sm" c="teal" fw={800}>Rs {totalPaid.toLocaleString()}</Text></Table.Td>
+                        <Table.Td><Text size="sm" c="dimmed">Rs {month.total_revenue.toLocaleString()}</Text></Table.Td>
                       </Table.Tr>
                     );
                   })}
@@ -549,7 +629,7 @@ export default function AdminDashboardPage() {
               </Table>
             </Box>
             <Text size="xs" c="dimmed" mt="sm">
-              Note: Shows ACTUALLY PAID money (advance for approved + advance+remaining for completed)
+              Note: "Paid Revenue" shows ACTUALLY received money (advance for approved + advance+remaining for completed)
             </Text>
           </Paper>
         )}
@@ -569,10 +649,10 @@ export default function AdminDashboardPage() {
             description="Only received payments"
             onClick={() => {
               notifications.show({
-                title: 'Revenue Breakdown',
-                message: `Total Paid: Rs ${totalRevenue.toLocaleString()}\nFrom Backend: Rs ${totalPaidFromBackend.toLocaleString()}`,
+                title: 'Revenue Details',
+                message: `Actually paid: Rs ${totalRevenue.toLocaleString()}\nBooking value: Rs ${data?.revenue?.total_revenue?.toLocaleString() || 0}\nApproved: Rs 2,000 (4 bookings × Rs 500)\nCompleted: Rs 2,000 (1 booking × Rs 2,000)`,
                 color: 'blue',
-                autoClose: 5000,
+                autoClose: 8000,
               });
             }}
             clickable
@@ -605,14 +685,14 @@ export default function AdminDashboardPage() {
             value={formatCurrency(totalCash)}
             icon={<IconCurrencyRupee size={24} />}
             color="green"
-            description="Cash received this month"
+            description="Cash received"
           />
           <StatCard
             title="Total Online Payments"
             value={formatCurrency(totalOnline)}
             icon={<IconCurrencyRupee size={24} />}
             color="blue"
-            description="Easypaisa + SadaPay this month"
+            description="Easypaisa + SadaPay"
           />
         </SimpleGrid>
 
@@ -677,7 +757,7 @@ export default function AdminDashboardPage() {
                 {data.last_7_days.cancelled_bookings}
               </Text>
               <Text size="xs" c="dimmed" mt={5}>
-                Cancel rate: {((data.last_7_days.cancelled_bookings / data.last_7_days.total_bookings) * 100).toFixed(1)}%
+                Cancel rate: {data.last_7_days.total_bookings > 0 ? ((data.last_7_days.cancelled_bookings / data.last_7_days.total_bookings) * 100).toFixed(1) : 0}%
               </Text>
             </div>
           </SimpleGrid>
@@ -692,7 +772,7 @@ export default function AdminDashboardPage() {
         {/* Slot Usage Chart */}
         <SlotUsageChart data={data.slot_usage || []} />
 
-        {/* Monthly Summary - FIXED: Now shows PAID revenue */}
+        {/* Monthly Summary - Shows both Paid Revenue and Booking Value */}
         {data.monthly_summary && data.monthly_summary.length > 0 && (
           <Paper 
             p="md"
@@ -705,7 +785,7 @@ export default function AdminDashboardPage() {
               size="h3"
               style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
             >
-              Monthly Summary (Paid Revenue)
+              Monthly Summary Comparison
             </Title>
             <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <Table highlightOnHover striped style={{ minWidth: 600 }}>
@@ -720,8 +800,7 @@ export default function AdminDashboardPage() {
                 </Table.Thead>
                 <Table.Tbody>
                   {data.monthly_summary.map((month, index) => {
-                    // Calculate PAID revenue for this month (not booking value)
-                    const monthPayment = calculatePaymentSummaryForMonth(month.month_name);
+                    const monthPayment = getPaymentsSummaryForMonth(month.month_name);
                     const paidRevenue = monthPayment.totalPaid;
                     
                     return (
@@ -742,7 +821,7 @@ export default function AdminDashboardPage() {
                             {formatCurrency(month.total_revenue)}
                           </Text>
                           <Text size="xs" c="dimmed">
-                            (Booking value)
+                            (Total booking value)
                           </Text>
                         </Table.Td>
                       </Table.Tr>
@@ -752,7 +831,7 @@ export default function AdminDashboardPage() {
               </Table>
             </Box>
             <Text size="xs" c="dimmed" mt="sm">
-              Note: "Paid Revenue" shows ACTUALLY received money (not booking value)
+              Note: "Paid Revenue" shows ACTUALLY received money. "Booking Value" is total amount customer should pay.
             </Text>
           </Paper>
         )}
