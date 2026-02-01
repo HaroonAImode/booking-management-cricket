@@ -98,6 +98,7 @@ interface Booking {
     slot_hour: number;
     is_night_rate: boolean;
   }>;
+  extra_charges?: number; // total extra charges for this booking
 }
 export default function AdminBookingsPage() {
     // Export modal state
@@ -170,274 +171,87 @@ export default function AdminBookingsPage() {
       easypaisa: { label: 'Easypaisa', color: 'blue' },
       sadapay: { label: 'SadaPay', color: 'cyan' },
     };
-    
     return methodMap[method] || { label: method, color: 'gray' };
   };
 
-  useEffect(() => {
-    fetchBookings();
-  }, [statusFilter, paymentFilter, debouncedSearch, dateFrom, dateTo]);
-
-  const fetchBookings = async () => {
-    try {
-      setLoading(true);
-
-      const params = new URLSearchParams({
-        status: statusFilter,
-        paymentStatus: paymentFilter,
-      });
-
-      if (debouncedSearch) {
-        params.append('search', debouncedSearch);
-      }
-      
-      // Add date range filters
-      if (dateFrom) {
-        params.append('dateFrom', dateFrom.toISOString().split('T')[0]);
-      }
-      if (dateTo) {
-        params.append('dateTo', dateTo.toISOString().split('T')[0]);
-      }
-      
-      // Ground managers only see bookings with remaining payment
-      if (isGroundManager) {
-        params.append('remainingOnly', 'true');
-      }
-
-      const response = await fetch(`/api/admin/bookings?${params}`);
-      const result = await response.json();
-
-      if (result.success) {
-        setBookings(result.bookings || []);
-        setSummary(result.summary);
-      } else {
-        notifications.show({
-          title: '❌ Loading Error',
-          message: 'Could not load bookings. Please try again.',
-          color: 'red',
-          autoClose: 4000,
-          icon: <IconAlertCircle size={18} />,
-        });
-      }
-    } catch (error) {
-      console.error('Fetch bookings error:', error);
-      notifications.show({
-        title: '❌ Network Error',
-        message: 'Failed to connect. Please check your connection.',
-        color: 'red',
-        autoClose: 5000,
-        icon: <IconAlertCircle size={18} />,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleApprove = async (bookingId: string) => {
-    try {
-      const response = await fetch(`/api/admin/calendar/${bookingId}/approve`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminNotes: null }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        notifications.show({
-          title: '✅ Booking Approved',
-          message: `Booking #${result.bookingNumber} has been confirmed`,
-          color: 'green',
-          autoClose: 4000,
-          icon: <IconCheck size={18} />,
-        });
-        fetchBookings();
-      } else {
-        notifications.show({
-          title: '❌ Approval Failed',
-          message: result.error || 'Could not approve booking',
-          color: 'red',
-          autoClose: 4000,
-          icon: <IconAlertCircle size={18} />,
-        });
-      }
-    } catch (error) {
-      notifications.show({
-        title: '❌ Error',
-        message: 'Failed to approve booking',
-        color: 'red',
-        autoClose: 4000,
-        icon: <IconAlertCircle size={18} />,
-      });
-    }
-  };
-
-  const handleReject = async (bookingId: string, reason: string) => {
-    try {
-      const response = await fetch(`/api/admin/calendar/${bookingId}/reject`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        notifications.show({
-          title: '⚠️ Booking Rejected',
-          message: `Booking #${result.bookingNumber} has been cancelled`,
-          color: 'orange',
-          autoClose: 4000,
-          icon: <IconX size={18} />,
-        });
-        fetchBookings();
-      } else {
-        notifications.show({
-          title: '❌ Rejection Failed',
-          message: result.error || 'Could not reject booking',
-          color: 'red',
-          autoClose: 4000,
-          icon: <IconAlertCircle size={18} />,
-        });
-      }
-    } catch (error) {
-      notifications.show({
-        title: '❌ Error',
-        message: 'Failed to reject booking',
-        color: 'red',
-        autoClose: 4000,
-        icon: <IconAlertCircle size={18} />,
-      });
-    }
-  };
-
-  const handleDelete = async (bookingId: string, bookingNumber: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        notifications.show({
-          title: '✅ Booking Deleted',
-          message: `Booking #${bookingNumber} deleted successfully`,
-          color: 'green',
-          autoClose: 4000,
-          icon: <IconTrash size={18} />,
-        });
-        fetchBookings();
-      } else {
-        throw new Error(result.error || 'Failed to delete booking');
-      }
-    } catch (error: any) {
-      notifications.show({
-        title: '❌ Delete Failed',
-        message: error.message || 'Failed to delete booking',
-        color: 'red',
-        autoClose: 4000,
-        icon: <IconAlertCircle size={18} />,
-      });
-    }
-  };
-
-  const downloadInvoice = async (bookingId: string, bookingNumber: string) => {
-    try {
-      notifications.show({
-        title: 'Generating Invoice',
-        message: 'Please wait...',
-        color: 'blue',
-        loading: true,
-        autoClose: false,
-        id: `invoice-${bookingId}`,
-      });
-
-      const response = await fetch(`/api/invoices/${bookingId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate invoice');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-        : `${bookingNumber}_Invoice.pdf`;
-      
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      notifications.update({
-        id: `invoice-${bookingId}`,
-        title: '✅ Invoice Downloaded',
-        message: `Invoice for ${bookingNumber} downloaded successfully`,
-        color: 'green',
-        loading: false,
-        autoClose: 3000,
-        icon: <IconFileInvoice size={18} />,
-      });
-    } catch (error) {
-      console.error('Invoice download error:', error);
-      notifications.update({
-        id: `invoice-${bookingId}`,
-        title: '❌ Download Failed',
-        message: 'Failed to download invoice',
-        color: 'red',
-        loading: false,
-        autoClose: 3000,
-        icon: <IconAlertCircle size={18} />,
-      });
-    }
-  };
-
-  const handlePDFExport = (dateRange?: [Date | null, Date | null] | null) => {
-    // --- Timeline/Date Range ---
-    let timelineText = 'All Bookings';
-    let filteredBookings = bookings;
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const from = dateRange[0];
-      const to = dateRange[1];
-      filteredBookings = bookings.filter(b => {
-        const d = new Date(b.booking_date);
-        return d >= from && d <= to;
-      });
-      timelineText = `Timeline: ${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
-    }
-
-    // --- Calculate total cash and online (excluding pending) ---
-    let totalCash = 0;
-    let totalOnline = 0;
-    let totalEasypaisa = 0;
-    let totalSadaPay = 0;
-    filteredBookings.forEach((b) => {
-      if (b.status === 'pending') return;
-      // Advance
-      if (b.advance_payment_method === 'cash') {
-        totalCash += b.advance_payment;
-      } else if (b.advance_payment_method === 'easypaisa') {
-        totalOnline += b.advance_payment;
-        totalEasypaisa += b.advance_payment;
-      } else if (b.advance_payment_method === 'sadapay') {
-        totalOnline += b.advance_payment;
-        totalSadaPay += b.advance_payment;
-      }
-      // Remaining (only if paid)
-      if ((b.status === 'completed' || b.status === 'approved') && b.remaining_payment_method && b.remaining_payment_amount) {
-        if (b.remaining_payment_method === 'cash') {
-          totalCash += b.remaining_payment_amount;
-        } else if (b.remaining_payment_method === 'easypaisa') {
+  return (
+    <Container 
+      size="xl" 
+      py="md" 
+      px="sm"
+      className="animate-fade-in"
+    >
+      <Stack gap="xl">
+        {/* ...existing code for header, filters, etc... */}
+        {/* Bookings Table */}
+        <ScrollArea>
+          <Table striped highlightOnHover withTableBorder withColumnBorders verticalSpacing="xs" fontSize="sm" miw={1200}>
+            <thead>
+              <tr>
+                <th>Booking #</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Cash</th>
+                <th>Online</th>
+                <th>Extra Charges</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableSkeleton rows={8} cols={12} />
+              ) : bookings.length === 0 ? (
+                <tr>
+                  <td colSpan={12} style={{ textAlign: 'center', color: '#888' }}>
+                    <EmptyState message="No bookings found." />
+                  </td>
+                </tr>
+              ) : (
+                bookings.map((b) => {
+                  const { cash, online } = getPaymentBreakdown(b);
+                  const totalPaid = b.advance_payment + (b.remaining_payment_amount || 0);
+                  const slotHours = b.slots.map((s: any) => s.slot_hour);
+                  const slotRange = formatSlotRanges(slotHours);
+                  return (
+                    <tr key={b.id}>
+                      <td>{b.booking_number}</td>
+                      <td>{b.customer.name}</td>
+                      <td>{b.customer.phone}</td>
+                      <td>{new Date(b.booking_date).toLocaleDateString()}</td>
+                      <td>{slotRange}</td>
+                      <td>Rs {b.total_amount.toLocaleString()}</td>
+                      <td>Rs {totalPaid.toLocaleString()}</td>
+                      <td>Rs {cash.toLocaleString()}</td>
+                      <td>Rs {online.toLocaleString()}</td>
+                      <td>
+                        {b.extra_charges && b.extra_charges > 0
+                          ? `Rs ${b.extra_charges.toLocaleString()}`
+                          : <span style={{ color: '#bbb' }}>–</span>}
+                      </td>
+                      <td>
+                        <Badge color={getStatusColor(b.status)} variant="light">
+                          {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td>
+                        {/* Actions here */}
+                        ...existing code...
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </Table>
+        </ScrollArea>
+        {/* ...existing code... */}
+      </Stack>
+    </Container>
           totalOnline += b.remaining_payment_amount;
           totalEasypaisa += b.remaining_payment_amount;
         } else if (b.remaining_payment_method === 'sadapay') {

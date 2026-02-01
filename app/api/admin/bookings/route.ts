@@ -76,20 +76,43 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
+    // Fetch extra charges for all bookings in one query
+    const bookingIds = bookings.map((b: any) => b.id);
+    let extraChargesMap: Record<string, number> = {};
+    if (bookingIds.length > 0) {
+      const { data: extraChargesData, error: extraChargesError } = await supabase
+        .from('extra_charges')
+        .select('booking_id, amount');
+      if (!extraChargesError && extraChargesData) {
+        // Sum extra charges per booking
+        for (const ec of extraChargesData) {
+          if (!ec.booking_id) continue;
+          if (!extraChargesMap[ec.booking_id]) extraChargesMap[ec.booking_id] = 0;
+          extraChargesMap[ec.booking_id] += Number(ec.amount) || 0;
+        }
+      }
+    }
+
+    // Attach extra_charges to each booking
+    const bookingsWithExtras = bookings.map((b: any) => ({
+      ...b,
+      extra_charges: extraChargesMap[b.id] || 0,
+    }));
+
     // Calculate summary statistics
     const summary = {
       total: count || 0,
-      pending: bookings?.filter(b => b.status === 'pending').length || 0,
-      approved: bookings?.filter(b => b.status === 'approved').length || 0,
-      completed: bookings?.filter(b => b.status === 'completed').length || 0,
-      cancelled: bookings?.filter(b => b.status === 'cancelled').length || 0,
-      fullyPaid: bookings?.filter(b => b.remaining_payment === 0).length || 0,
-      partiallyPaid: bookings?.filter(b => b.remaining_payment > 0).length || 0,
+      pending: bookingsWithExtras?.filter((b: any) => b.status === 'pending').length || 0,
+      approved: bookingsWithExtras?.filter((b: any) => b.status === 'approved').length || 0,
+      completed: bookingsWithExtras?.filter((b: any) => b.status === 'completed').length || 0,
+      cancelled: bookingsWithExtras?.filter((b: any) => b.status === 'cancelled').length || 0,
+      fullyPaid: bookingsWithExtras?.filter((b: any) => b.remaining_payment === 0).length || 0,
+      partiallyPaid: bookingsWithExtras?.filter((b: any) => b.remaining_payment > 0).length || 0,
     };
 
     return NextResponse.json({
       success: true,
-      bookings,
+      bookings: bookingsWithExtras,
       summary,
       pagination: {
         total: count || 0,
