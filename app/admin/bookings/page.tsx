@@ -305,14 +305,9 @@ export default function AdminBookingsPage() {
       const response = await fetch(`/api/admin/bookings?${params}`);
       const result = await response.json();
 
+      console.log('API Response:', result); // Debug log
+
       if (result.success) {
-        // Debug: Show raw API response for troubleshooting
-        notifications.show({
-          title: 'API Response Debug',
-          message: `Raw bookings: ${JSON.stringify(result.bookings)}`,
-          color: 'gray',
-          autoClose: 10000,
-        });
         // Ensure bookings have proper structure
         const safeBookings = (result.bookings || []).map((booking: any) => ({
           ...booking,
@@ -325,6 +320,8 @@ export default function AdminBookingsPage() {
           advance_payment: booking.advance_payment || 0,
           remaining_payment: booking.remaining_payment || 0,
         }));
+        
+        console.log('Processed bookings:', safeBookings); // Debug log
         
         setBookings(safeBookings);
         setSummary(result.summary);
@@ -606,56 +603,113 @@ export default function AdminBookingsPage() {
     doc.text(`Total Extra Charges: Rs ${totalExtraCharges.toLocaleString()}`, 18, statY);
     statY += 8;
 
-    // ... rest of the PDF export function remains similar but update table columns ...
-
-    // Export to Excel updated to include extra charges
-    const exportToExcel = () => {
-      const data = bookings.map(b => {
-        const { cash, online } = getPaymentBreakdown(b);
-        const totalPaid = (b.advance_payment || 0) + (b.status === 'completed' ? (b.remaining_payment_amount || 0) : 0);
-        
-        // Safely get extra charges
-        const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
-        const extraChargesTotal = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
-        const extraChargesList = extraCharges.map(c => `${c.category || ''}: Rs ${c.amount || 0}`).join(', ') || '';
-        
-        return {
-          'Booking Number': b.booking_number || '',
-          'Customer Name': b.customer?.name || '',
-          'Phone': b.customer?.phone || '',
-          'Email': b.customer?.email || '',
-          'Booking Date': new Date(b.booking_date).toLocaleDateString(),
-          'Total Hours': b.total_hours || 0,
-          'Total Amount': b.total_amount || 0,
-          'Extra Charges': extraChargesTotal,
-          'Extra Charges Details': extraChargesList,
-          'Total Payable': (b.total_amount || 0) + extraChargesTotal,
-          'Total Paid': totalPaid,
-          'Cash Payments': cash,
-          'Online Payments': online,
-          'Advance Payment': b.advance_payment || 0,
-          'Advance Method': b.advance_payment_method || '',
-          'Remaining Payment': b.remaining_payment || 0,
-          'Remaining Method': b.remaining_payment_method || '',
-          'Status': b.status || '',
-          'Created At': new Date(b.created_at).toLocaleString(),
-          'Slots': formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
-        };
-      });
-
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+    // Table data for PDF
+    const tableData = filteredBookings.map(b => {
+      const { cash, online } = getPaymentBreakdown(b);
+      const totalPaid = (b.advance_payment || 0) + (b.status === 'completed' ? (b.remaining_payment_amount || 0) : 0);
+      const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
+      const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
       
-      XLSX.writeFile(wb, `bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
-      notifications.show({
-        title: '✅ Export Successful',
-        message: 'Excel spreadsheet has been downloaded',
-        color: 'green',
-        autoClose: 3000,
-        icon: <IconFileSpreadsheet size={18} />,
-      });
-    };
+      return [
+        b.booking_number || '',
+        b.customer?.name || '',
+        b.customer?.phone || '',
+        new Date(b.booking_date).toLocaleDateString(),
+        formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
+        `Rs ${(b.total_amount || 0).toLocaleString()}`,
+        `Rs ${totalExtraCharges.toLocaleString()}`,
+        `Rs ${totalPaid.toLocaleString()}`,
+        `Rs ${cash.toLocaleString()}`,
+        `Rs ${online.toLocaleString()}`,
+        b.status?.charAt(0).toUpperCase() + b.status?.slice(1) || '',
+      ];
+    });
+
+    // Table headers for PDF
+    const headers = [
+      ['Booking #', 'Customer', 'Phone', 'Date', 'Slots', 'Amount', 'Extra', 'Paid', 'Cash', 'Online', 'Status']
+    ];
+
+    // Add table to PDF
+    autoTable(doc, {
+      head: headers,
+      body: tableData,
+      startY: statY,
+      theme: 'grid',
+      headStyles: { fillColor: [34, 139, 230], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      styles: { fontSize: 8, cellPadding: 3 },
+      margin: { left: 10, right: 10 },
+    });
+
+    // Save PDF
+    doc.save(`bookings-report-${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    notifications.show({
+      title: '✅ PDF Export Successful',
+      message: 'PDF report has been downloaded',
+      color: 'green',
+      autoClose: 3000,
+      icon: <IconFileTypePdf size={18} />,
+    });
+  };
+
+  // Export to Excel updated to include extra charges
+  const exportToExcel = () => {
+    const data = bookings.map(b => {
+      const { cash, online } = getPaymentBreakdown(b);
+      const totalPaid = (b.advance_payment || 0) + (b.status === 'completed' ? (b.remaining_payment_amount || 0) : 0);
+      
+      // Safely get extra charges
+      const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
+      const extraChargesTotal = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+      const extraChargesList = extraCharges.map(c => `${c.category || ''}: Rs ${c.amount || 0}`).join(', ') || '';
+      
+      return {
+        'Booking Number': b.booking_number || '',
+        'Customer Name': b.customer?.name || '',
+        'Phone': b.customer?.phone || '',
+        'Email': b.customer?.email || '',
+        'Booking Date': new Date(b.booking_date).toLocaleDateString(),
+        'Total Hours': b.total_hours || 0,
+        'Total Amount': b.total_amount || 0,
+        'Extra Charges': extraChargesTotal,
+        'Extra Charges Details': extraChargesList,
+        'Total Payable': (b.total_amount || 0) + extraChargesTotal,
+        'Total Paid': totalPaid,
+        'Cash Payments': cash,
+        'Online Payments': online,
+        'Advance Payment': b.advance_payment || 0,
+        'Advance Method': b.advance_payment_method || '',
+        'Remaining Payment': b.remaining_payment || 0,
+        'Remaining Method': b.remaining_payment_method || '',
+        'Status': b.status || '',
+        'Created At': new Date(b.created_at).toLocaleString(),
+        'Slots': formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+    
+    XLSX.writeFile(wb, `bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
+    notifications.show({
+      title: '✅ Export Successful',
+      message: 'Excel spreadsheet has been downloaded',
+      color: 'green',
+      autoClose: 3000,
+      icon: <IconFileSpreadsheet size={18} />,
+    });
+  };
+
+  // Add this for debugging
+  useEffect(() => {
+    if (bookings.length > 0) {
+      console.log('Current bookings state:', bookings);
+      console.log('First booking for table:', bookings[0]);
+    }
+  }, [bookings]);
 
   return (
     <Container 
@@ -877,293 +931,308 @@ export default function AdminBookingsPage() {
           </Stack>
         </Paper>
 
+        {/* Debug Info - Temporary */}
+        <Paper withBorder p="md">
+          <Text fw={600}>Debug Info:</Text>
+          <Text>Total bookings: {bookings.length}</Text>
+          <Text>Loading: {loading ? 'Yes' : 'No'}</Text>
+          {bookings.length > 0 && (
+            <div>
+              <Text>First booking ID: {bookings[0].id}</Text>
+              <Text>First booking number: {bookings[0].booking_number}</Text>
+              <Text>First booking extra_charges type: {typeof bookings[0].extra_charges}</Text>
+              <Text>Is extra_charges array? {Array.isArray(bookings[0].extra_charges) ? 'Yes' : 'No'}</Text>
+              <Text>extra_charges value: {JSON.stringify(bookings[0].extra_charges)}</Text>
+            </div>
+          )}
+        </Paper>
+
         {/* Table */}
         {loading ? (
           <TableSkeleton rows={8} />
         ) : (
           <Paper withBorder radius="md">
-          
-          <Table.ScrollContainer minWidth={900}>
-            <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Booking #</Table.Th>
-                  <Table.Th>Customer</Table.Th>
-                  <Table.Th>Date</Table.Th>
-                  <Table.Th>Slots</Table.Th>
-                  <Table.Th>Amount</Table.Th>
-                  <Table.Th>Total Paid</Table.Th>
-                  <Table.Th>Cash</Table.Th>
-                  <Table.Th>Online</Table.Th>
-                  <Table.Th>Extra Charges</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {bookings.map((booking) => {
-                  const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
-                  const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
-                    ? (booking.total_amount || 0) - totalPaid
-                    : 0;
-                  const { cash, online } = getPaymentBreakdown(booking);
-                  
-                  // Safely get extra charges
-                  const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
-                  const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
-                  
-                  // Safely get slots
-                  const slots = Array.isArray(booking.slots) ? booking.slots : [];
-                  
-                  return (
-                    <Table.Tr
-                      key={booking.id}
-                      className={booking.status === 'completed' ? 'completed-row' : ''}
-                    >
-                      <Table.Td>
-                        <Text size="sm" fw={500}>
-                          {booking.booking_number || ''}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {new Date(booking.created_at).toLocaleDateString()}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{booking.customer?.name || ''}</Text>
-                        <Text size="xs" c="dimmed">
-                          {booking.customer?.phone || ''}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">
-                          {new Date(booking.booking_date).toLocaleDateString()}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={500}>
-                          {formatSlotRanges(slots.map(s => s.slot_hour))}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Stack gap={2}>
-                          <Text size="sm" fw={600}>
-                            Rs {(booking.total_amount || 0).toLocaleString()}
+            <Table.ScrollContainer minWidth={900}>
+              <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Booking #</Table.Th>
+                    <Table.Th>Customer</Table.Th>
+                    <Table.Th>Date</Table.Th>
+                    <Table.Th>Slots</Table.Th>
+                    <Table.Th>Amount</Table.Th>
+                    <Table.Th>Total Paid</Table.Th>
+                    <Table.Th>Cash</Table.Th>
+                    <Table.Th>Online</Table.Th>
+                    <Table.Th>Extra Charges</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {bookings.map((booking) => {
+                    const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
+                    const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
+                      ? (booking.total_amount || 0) - totalPaid
+                      : 0;
+                    const { cash, online } = getPaymentBreakdown(booking);
+                    
+                    // Safely get extra charges
+                    const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+                    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+                    
+                    // Safely get slots
+                    const slots = Array.isArray(booking.slots) ? booking.slots : [];
+                    
+                    return (
+                      <Table.Tr
+                        key={booking.id}
+                        className={booking.status === 'completed' ? 'completed-row' : ''}
+                      >
+                        <Table.Td>
+                          <Text size="sm" fw={500}>
+                            {booking.booking_number || ''}
                           </Text>
-                          {totalExtraCharges > 0 && (
-                            <Text size="xs" c="blue" fw={500}>
-                              (+Rs {totalExtraCharges.toLocaleString()})
-                            </Text>
-                          )}
                           <Text size="xs" c="dimmed">
-                            {booking.total_hours || 0} hours
+                            {new Date(booking.created_at).toLocaleDateString()}
                           </Text>
-                        </Stack>
-                      </Table.Td>
-                      <Table.Td>
-                        <Stack gap={4}>
-                          <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
-                            Rs {totalPaid.toLocaleString()}
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">{booking.customer?.name || ''}</Text>
+                          <Text size="xs" c="dimmed">
+                            {booking.customer?.phone || ''}
                           </Text>
-                          {discount > 0 ? (
-                            <Text size="xs" c="green" fw={600}>
-                              Discount: Rs {discount.toLocaleString()}
-                            </Text>
-                          ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
-                            <Text size="xs" c="red">
-                              Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
-                            </Text>
-                          ) : null}
-                        </Stack>
-                      </Table.Td>
-                      <Table.Td>
-                        {cash === 0 ? (
-                          <Text size="xs" c="dimmed">-</Text>
-                        ) : (
-                          <Stack gap={4}>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">
+                            {new Date(booking.booking_date).toLocaleDateString()}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={500}>
+                            {formatSlotRanges(slots.map(s => s.slot_hour))}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Stack gap={2}>
                             <Text size="sm" fw={600}>
-                              Rs {cash.toLocaleString()}
+                              Rs {(booking.total_amount || 0).toLocaleString()}
                             </Text>
-                            <Group gap={4} wrap="nowrap">
-                              {booking.advance_payment_method === 'cash' && (
-                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
-                              )}
-                              {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
-                                <Badge size="xs" color="green" variant="dot">Cash</Badge>
-                              )}
-                            </Group>
+                            {totalExtraCharges > 0 && (
+                              <Text size="xs" c="blue" fw={500}>
+                                (+Rs {totalExtraCharges.toLocaleString()})
+                              </Text>
+                            )}
+                            <Text size="xs" c="dimmed">
+                              {booking.total_hours || 0} hours
+                            </Text>
                           </Stack>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        {online === 0 ? (
-                          <Text size="xs" c="dimmed">-</Text>
-                        ) : (
+                        </Table.Td>
+                        <Table.Td>
                           <Stack gap={4}>
-                            <Text size="sm" fw={600}>
-                              Rs {online.toLocaleString()}
+                            <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
+                              Rs {totalPaid.toLocaleString()}
                             </Text>
-                            <Group gap={4} wrap="nowrap">
-                              {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
-                                <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
-                                  {getPaymentMethodBadge(booking.advance_payment_method).label}
-                                </Badge>
-                              )}
-                              {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
-                                <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
-                                  {getPaymentMethodBadge(booking.remaining_payment_method).label}
-                                </Badge>
-                              )}
-                            </Group>
+                            {discount > 0 ? (
+                              <Text size="xs" c="green" fw={600}>
+                                Discount: Rs {discount.toLocaleString()}
+                              </Text>
+                            ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
+                              <Text size="xs" c="red">
+                                Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
+                              </Text>
+                            ) : null}
                           </Stack>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        {getExtraChargesDisplay(booking)}
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge
-                          color={getStatusColor(booking.status)}
-                          variant="light"
-                          size="md"
-                          style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
-                        >
-                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                        </Badge>
-                        {booking.remaining_payment > 0 && booking.status === 'approved' && (
-                          <Text size="xs" c="red" fw={500} mt={4}>
-                            Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
-                          </Text>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap="xs" wrap="nowrap">
-                          {/* Invoice Download Button */}
-                          <Tooltip label="Download Invoice">
-                            <ActionIcon
-                              variant="light"
-                              color="yellow"
-                              onClick={() => downloadInvoice(booking.id, booking.booking_number)}
-                            >
-                              <IconFileInvoice size={16} />
-                            </ActionIcon>
-                          </Tooltip>
-                          
-                          {booking.status === 'pending' && (
-                            <>
-                              <Button
-                                size="xs"
-                                color="green"
-                                variant="light"
-                                leftSection={<IconCheck size={16} />}
-                                onClick={() => handleApprove(booking.id)}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="xs"
-                                color="red"
-                                variant="light"
-                                leftSection={<IconX size={16} />}
-                                onClick={() => {
-                                  const reason = prompt('Reason for rejection:');
-                                  if (reason) handleReject(booking.id, reason);
-                                }}
-                              >
-                                Reject
-                              </Button>
-                            </>
+                        </Table.Td>
+                        <Table.Td>
+                          {cash === 0 ? (
+                            <Text size="xs" c="dimmed">-</Text>
+                          ) : (
+                            <Stack gap={4}>
+                              <Text size="sm" fw={600}>
+                                Rs {cash.toLocaleString()}
+                              </Text>
+                              <Group gap={4} wrap="nowrap">
+                                {booking.advance_payment_method === 'cash' && (
+                                  <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                )}
+                                {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
+                                  <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                )}
+                              </Group>
+                            </Stack>
                           )}
-                          {booking.status === 'approved' && booking.remaining_payment > 0 && (
-                            <Button
-                              size="xs"
-                              color="blue"
-                              variant="filled"
-                              leftSection={<IconCurrencyRupee size={16} />}
-                              onClick={() => {
-                                setSelectedPaymentBooking({
-                                  id: booking.id,
-                                  number: booking.booking_number,
-                                  remaining: booking.remaining_payment || 0,
-                                });
-                                setCompletePaymentOpened(true);
-                              }}
-                            >
-                              Complete Payment
-                            </Button>
+                        </Table.Td>
+                        <Table.Td>
+                          {online === 0 ? (
+                            <Text size="xs" c="dimmed">-</Text>
+                          ) : (
+                            <Stack gap={4}>
+                              <Text size="sm" fw={600}>
+                                Rs {online.toLocaleString()}
+                              </Text>
+                              <Group gap={4} wrap="nowrap">
+                                {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
+                                  <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
+                                    {getPaymentMethodBadge(booking.advance_payment_method).label}
+                                  </Badge>
+                                )}
+                                {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
+                                  <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
+                                    {getPaymentMethodBadge(booking.remaining_payment_method).label}
+                                  </Badge>
+                                )}
+                              </Group>
+                            </Stack>
                           )}
-                          <Menu shadow="md">
-                            <Menu.Target>
-                              <ActionIcon variant="subtle">
-                                <IconDots size={16} />
+                        </Table.Td>
+                        <Table.Td>
+                          {getExtraChargesDisplay(booking)}
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            color={getStatusColor(booking.status)}
+                            variant="light"
+                            size="md"
+                            style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
+                          >
+                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                          </Badge>
+                          {booking.remaining_payment > 0 && booking.status === 'approved' && (
+                            <Text size="xs" c="red" fw={500} mt={4}>
+                              Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
+                            </Text>
+                          )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs" wrap="nowrap">
+                            {/* Invoice Download Button */}
+                            <Tooltip label="Download Invoice">
+                              <ActionIcon
+                                variant="light"
+                                color="yellow"
+                                onClick={() => downloadInvoice(booking.id, booking.booking_number)}
+                              >
+                                <IconFileInvoice size={16} />
                               </ActionIcon>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              <Menu.Item
-                                leftSection={<IconEye size={16} />}
+                            </Tooltip>
+                            
+                            {booking.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="xs"
+                                  color="green"
+                                  variant="light"
+                                  leftSection={<IconCheck size={16} />}
+                                  onClick={() => handleApprove(booking.id)}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  color="red"
+                                  variant="light"
+                                  leftSection={<IconX size={16} />}
+                                  onClick={() => {
+                                    const reason = prompt('Reason for rejection:');
+                                    if (reason) handleReject(booking.id, reason);
+                                  }}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            {booking.status === 'approved' && booking.remaining_payment > 0 && (
+                              <Button
+                                size="xs"
+                                color="blue"
+                                variant="filled"
+                                leftSection={<IconCurrencyRupee size={16} />}
                                 onClick={() => {
-                                  setSelectedBookingId(booking.id);
-                                  setDetailsModalOpened(true);
+                                  setSelectedPaymentBooking({
+                                    id: booking.id,
+                                    number: booking.booking_number,
+                                    remaining: booking.remaining_payment || 0,
+                                  });
+                                  setCompletePaymentOpened(true);
                                 }}
                               >
-                                View Details
-                              </Menu.Item>
-                              
-                              {/* Only admins can edit and delete */}
-                              {canEditBookings && (
-                                <>
-                                  <Menu.Item
-                                    leftSection={<IconEdit size={16} />}
-                                    color="blue"
-                                    onClick={() => {
-                                      setSelectedBookingId(booking.id);
-                                      setEditModalOpened(true);
-                                    }}
-                                  >
-                                    Edit Booking
-                                  </Menu.Item>
-                                  <Menu.Divider />
-                                </>
-                              )}
-                              
-                              {canDeleteBookings && (
+                                Complete Payment
+                              </Button>
+                            )}
+                            <Menu shadow="md">
+                              <Menu.Target>
+                                <ActionIcon variant="subtle">
+                                  <IconDots size={16} />
+                                </ActionIcon>
+                              </Menu.Target>
+                              <Menu.Dropdown>
                                 <Menu.Item
-                                  leftSection={<IconTrash size={16} />}
-                                  color="red"
-                                  onClick={() => handleDelete(booking.id, booking.booking_number)}
+                                  leftSection={<IconEye size={16} />}
+                                  onClick={() => {
+                                    setSelectedBookingId(booking.id);
+                                    setDetailsModalOpened(true);
+                                  }}
                                 >
-                                  Delete Booking
+                                  View Details
                                 </Menu.Item>
-                              )}
-                            </Menu.Dropdown>
-                          </Menu>
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                                
+                                {/* Only admins can edit and delete */}
+                                {canEditBookings && (
+                                  <>
+                                    <Menu.Item
+                                      leftSection={<IconEdit size={16} />}
+                                      color="blue"
+                                      onClick={() => {
+                                        setSelectedBookingId(booking.id);
+                                        setEditModalOpened(true);
+                                      }}
+                                    >
+                                      Edit Booking
+                                    </Menu.Item>
+                                    <Menu.Divider />
+                                  </>
+                                )}
+                                
+                                {canDeleteBookings && (
+                                  <Menu.Item
+                                    leftSection={<IconTrash size={16} />}
+                                    color="red"
+                                    onClick={() => handleDelete(booking.id, booking.booking_number)}
+                                  >
+                                    Delete Booking
+                                  </Menu.Item>
+                                )}
+                              </Menu.Dropdown>
+                            </Menu>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
 
-          {bookings.length === 0 && !loading && (
-            <EmptyState
-              icon={<IconCalendarEvent size={64} />}
-              title="No Bookings Found"
-              description="Try adjusting your filters or search query to find bookings."
-              action={{
-                label: 'Clear Filters',
-                onClick: () => {
-                  setStatusFilter('all');
-                  setPaymentFilter('all');
-                  setSearchQuery('');
-                },
-              }}
-            />
-          )}
-        </Paper>
+            {bookings.length === 0 && !loading && (
+              <EmptyState
+                icon={<IconCalendarEvent size={64} />}
+                title="No Bookings Found"
+                description="Try adjusting your filters or search query to find bookings."
+                action={{
+                  label: 'Clear Filters',
+                  onClick: () => {
+                    setStatusFilter('all');
+                    setPaymentFilter('all');
+                    setSearchQuery('');
+                  },
+                }}
+              />
+            )}
+          </Paper>
         )}
       </Stack>
 
@@ -1226,5 +1295,4 @@ export default function AdminBookingsPage() {
 
     </Container>
   );
-}
 }
