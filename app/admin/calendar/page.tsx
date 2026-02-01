@@ -3,8 +3,10 @@
  * 
  * Purpose: Interactive calendar view of all bookings with mobile-first design
  * Features:
- * - Responsive calendar with mobile-optimized views
- * - Collapsible booking cards for multiple bookings per day
+ * - Calendar view first (default on mobile)
+ * - Professional, compact event display with full names and times
+ * - Month/Week/Day view buttons on mobile
+ * - Collapsible list view option
  * - Touch-friendly interactions
  * - Color-coded by status
  * - Click to view booking details
@@ -33,6 +35,11 @@ import {
   ScrollArea,
   Card,
   Divider,
+  SegmentedControl,
+  Tabs,
+  Tooltip,
+  Modal,
+  useMantineTheme,
 } from '@mantine/core';
 import { 
   IconCalendar, 
@@ -44,9 +51,14 @@ import {
   IconClock,
   IconUser,
   IconCurrencyRupee,
+  IconList,
+  IconCalendarMonth,
+  IconCalendarWeek,
+  IconCalendarEvent,
+  IconX,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useMediaQuery } from '@mantine/hooks';
+import { useMediaQuery, useDisclosure } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -63,18 +75,41 @@ export default function AdminCalendarPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [mobileView, setMobileView] = useState<'list' | 'calendar'>('list');
+  const [mobileView, setMobileView] = useState<'calendar' | 'list'>('calendar');
+  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('month');
   const [dateRange, setDateRange] = useState({
     start: new Date().toISOString().split('T')[0],
     end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   });
+  const [quickFilters, setQuickFilters] = useState<string[]>([]);
+  const [eventModalOpened, setEventModalOpened] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
+  const theme = useMantineTheme();
 
   useEffect(() => {
     fetchCalendarEvents();
   }, [statusFilter, dateRange]);
+
+  useEffect(() => {
+    if (calendarRef.current && calendarRef.current.getApi) {
+      const calendarApi = calendarRef.current.getApi();
+      
+      switch (calendarView) {
+        case 'month':
+          calendarApi.changeView('dayGridMonth');
+          break;
+        case 'week':
+          calendarApi.changeView('timeGridWeek');
+          break;
+        case 'day':
+          calendarApi.changeView('timeGridDay');
+          break;
+      }
+    }
+  }, [calendarView]);
 
   const fetchCalendarEvents = async () => {
     try {
@@ -98,6 +133,13 @@ export default function AdminCalendarPage() {
 
       const result = await response.json();
       setEvents(result.events || []);
+      
+      // Update quick filters based on fetched events
+      const statuses = new Set<string>();
+      result.events?.forEach((event: any) => {
+        statuses.add(event.extendedProps.status);
+      });
+      setQuickFilters(Array.from(statuses));
     } catch (err) {
       console.error('Calendar fetch error:', err);
       setError('Failed to load calendar data');
@@ -112,9 +154,23 @@ export default function AdminCalendarPage() {
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const bookingId = clickInfo.event.extendedProps.bookingId;
-    setSelectedBookingId(bookingId);
-    setModalOpened(true);
+    const eventData = clickInfo.event;
+    if (isMobile) {
+      // On mobile, show a modal with full details
+      setSelectedEvent({
+        id: eventData.id,
+        title: eventData.title,
+        start: eventData.start,
+        end: eventData.end,
+        extendedProps: eventData.extendedProps,
+      });
+      setEventModalOpened(true);
+    } else {
+      // On desktop, show the full booking details modal
+      const bookingId = eventData.extendedProps.bookingId;
+      setSelectedBookingId(bookingId);
+      setModalOpened(true);
+    }
   };
 
   const handleDatesSet = (dateInfo: DatesSetArg) => {
@@ -147,39 +203,168 @@ export default function AdminCalendarPage() {
     setExpandedDates(newExpanded);
   };
 
-  // Mobile-optimized event content
+  // Mobile-optimized event content - COMPACT AND PROFESSIONAL
   const eventContent = (eventInfo: any) => {
     const props = eventInfo.event.extendedProps;
+    const startTime = eventInfo.event.start;
+    const endTime = eventInfo.event.end;
     
-    if (isMobile) {
+    // Format time for display
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+    
+    const timeText = formatTime(startTime);
+    const isNightRate = props.isNightRate;
+    
+    if (isMobile && calendarView === 'month') {
+      // Ultra-compact month view for mobile
+      return (
+        <Box 
+          p={2}
+          style={{ 
+            overflow: 'hidden',
+            fontSize: '10px',
+            lineHeight: 1,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <Text 
+            size="10px" 
+            fw={600} 
+            lineClamp={1} 
+            style={{ 
+              color: 'white',
+              letterSpacing: '-0.1px',
+            }}
+          >
+            {props.customerName.split(' ')[0]}
+          </Text>
+          <Text 
+            size="9px" 
+            fw={500} 
+            lineClamp={1}
+            style={{ 
+              color: 'rgba(255, 255, 255, 0.95)',
+              letterSpacing: '-0.1px',
+            }}
+          >
+            {timeText}{isNightRate && ' 🌙'}
+          </Text>
+        </Box>
+      );
+    }
+
+    if (isMobile && (calendarView === 'week' || calendarView === 'day')) {
+      // More detailed view for week/day on mobile
       return (
         <Box 
           p={4}
           style={{ 
             overflow: 'hidden',
             fontSize: '11px',
-            lineHeight: 1.2,
+            lineHeight: 1.1,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
           }}
         >
-          <Text size="xs" fw={600} lineClamp={1} style={{ color: 'white' }}>
+          <Text 
+            size="11px" 
+            fw={700} 
+            lineClamp={1}
+            style={{ 
+              color: 'white',
+              letterSpacing: '-0.1px',
+            }}
+          >
             {props.customerName}
           </Text>
-          <Text size="xs" fw={500} style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-            {eventInfo.timeText} {props.isNightRate && '🌙'}
-          </Text>
+          <Group gap={2} wrap="nowrap">
+            <IconClock size={10} style={{ minWidth: '10px', color: 'rgba(255, 255, 255, 0.9)' }} />
+            <Text 
+              size="10px" 
+              fw={500} 
+              lineClamp={1}
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                letterSpacing: '-0.1px',
+              }}
+            >
+              {timeText}{isNightRate && ' 🌙'}
+            </Text>
+          </Group>
+          {props.totalAmount && (
+            <Group gap={2} wrap="nowrap">
+              <IconCurrencyRupee size={10} style={{ minWidth: '10px', color: 'rgba(255, 255, 255, 0.9)' }} />
+              <Text 
+                size="10px" 
+                fw={500}
+                style={{ 
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  letterSpacing: '-0.1px',
+                }}
+              >
+                ₹{props.totalAmount}
+              </Text>
+            </Group>
+          )}
         </Box>
       );
     }
 
+    // Desktop view
     return (
-      <Box p={6} style={{ overflow: 'hidden' }}>
-        <Text size="sm" fw={600} lineClamp={1} style={{ color: 'white' }}>
+      <Box 
+        p={6} 
+        style={{ 
+          overflow: 'hidden',
+          fontSize: '13px',
+          lineHeight: 1.2,
+        }}
+      >
+        <Text 
+          size="sm" 
+          fw={600} 
+          lineClamp={1} 
+          style={{ 
+            color: 'white',
+            marginBottom: '2px',
+          }}
+        >
           {props.customerName}
         </Text>
-        <Text size="xs" fw={500} style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+        <Text 
+          size="xs" 
+          fw={500} 
+          lineClamp={1}
+          style={{ 
+            color: 'rgba(255, 255, 255, 0.95)',
+            marginBottom: '2px',
+          }}
+        >
           {eventInfo.timeText}
-          {props.isNightRate && ' 🌙'}
+          {isNightRate && ' 🌙'}
         </Text>
+        {props.totalAmount && (
+          <Text 
+            size="xs" 
+            fw={500}
+            style={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+            }}
+          >
+            ₹{props.totalAmount}
+          </Text>
+        )}
       </Box>
     );
   };
@@ -224,44 +409,129 @@ export default function AdminCalendarPage() {
     });
   };
 
+  const handleQuickFilter = (status: string) => {
+    setStatusFilter(statusFilter === status ? null : status);
+  };
+
   const eventsByDate = getEventsByDate();
   const sortedDates = Object.keys(eventsByDate).sort();
 
   return (
     <Container 
       size={isMobile ? "xs" : isTablet ? "md" : "xl"} 
-      py={{ base: 'sm', sm: 'md', md: 'xl' }}
-      px={{ base: 'xs', sm: 'sm', md: 'md' }}
+      py={{ base: 'xs', sm: 'md', md: 'xl' }}
+      px={{ base: 'xs', sm: 'xs', md: 'md' }}
+      style={{ paddingTop: '0px' }}
     >
-      <Stack gap={{ base: 'sm', sm: 'md', md: 'xl' }}>
-        {/* Header */}
+      <Stack gap={{ base: 'xs', sm: 'sm', md: 'md' }}>
+        {/* Header - Compact on mobile */}
         <Stack gap="xs">
-          <Group justify="space-between" wrap="wrap">
-            <div>
-              <Title order={isMobile ? 2 : 1} size={isMobile ? 'h2' : 'h1'}>
+          <Group justify="space-between" wrap="wrap" gap="xs">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title order={isMobile ? 3 : 2} size={isMobile ? 'h3' : 'h2'}>
                 Calendar
               </Title>
-              <Group gap="xs" mt="xs">
+              <Group gap="xs" mt={4}>
                 <IconCalendar size={isMobile ? 14 : 16} />
-                <Badge size={isMobile ? "sm" : "md"} variant="light">
+                <Badge size={isMobile ? "xs" : "sm"} variant="light" color="yellow">
                   {events.length} bookings
                 </Badge>
               </Group>
             </div>
 
-            <Button
-              variant="light"
-              leftSection={<IconRefresh size={16} />}
-              onClick={handleRefresh}
-              loading={loading}
-              size={isMobile ? "sm" : "md"}
-            >
-              {isMobile ? '' : 'Refresh'}
-            </Button>
+            <Group gap="xs">
+              <Button
+                variant="light"
+                size={isMobile ? "xs" : "sm"}
+                leftSection={<IconRefresh size={14} />}
+                onClick={handleRefresh}
+                loading={loading}
+              >
+                {!isMobile && 'Refresh'}
+              </Button>
+              
+              {/* Mobile View Toggle */}
+              {isMobile && (
+                <Button
+                  variant={mobileView === 'list' ? 'filled' : 'light'}
+                  size="xs"
+                  onClick={() => setMobileView(mobileView === 'list' ? 'calendar' : 'list')}
+                  leftSection={mobileView === 'list' ? <IconCalendar size={14} /> : <IconList size={14} />}
+                >
+                  {mobileView === 'list' ? 'Calendar' : 'List'}
+                </Button>
+              )}
+            </Group>
           </Group>
 
-          {/* Filters */}
-          <Group gap="xs">
+          {/* Quick Status Filters */}
+          {quickFilters.length > 0 && (
+            <ScrollArea type="hover" scrollbars="x">
+              <Group gap="xs" wrap="nowrap" style={{ padding: '2px 0' }}>
+                <Text size="xs" fw={500} c="dimmed">Filters:</Text>
+                <Button
+                  size="xs"
+                  variant={statusFilter === null ? 'filled' : 'light'}
+                  onClick={() => setStatusFilter(null)}
+                >
+                  All
+                </Button>
+                {quickFilters.map((status) => (
+                  <Button
+                    key={status}
+                    size="xs"
+                    variant={statusFilter === status ? 'filled' : 'light'}
+                    color={getStatusColor(status)}
+                    onClick={() => handleQuickFilter(status)}
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </Group>
+            </ScrollArea>
+          )}
+
+          {/* Calendar View Controls - ALWAYS VISIBLE ON MOBILE */}
+          {isMobile && mobileView === 'calendar' && (
+            <SegmentedControl
+              size="xs"
+              fullWidth
+              value={calendarView}
+              onChange={(value: 'month' | 'week' | 'day') => setCalendarView(value)}
+              data={[
+                {
+                  value: 'month',
+                  label: (
+                    <Group gap={4}>
+                      <IconCalendarMonth size={14} />
+                      <Text size="xs">Month</Text>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'week',
+                  label: (
+                    <Group gap={4}>
+                      <IconCalendarWeek size={14} />
+                      <Text size="xs">Week</Text>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'day',
+                  label: (
+                    <Group gap={4}>
+                      <IconCalendarEvent size={14} />
+                      <Text size="xs">Day</Text>
+                    </Group>
+                  ),
+                },
+              ]}
+            />
+          )}
+
+          {/* Status Filter Select */}
+          {!isMobile && (
             <Select
               placeholder="Filter by status"
               leftSection={<IconFilter size={16} />}
@@ -270,61 +540,49 @@ export default function AdminCalendarPage() {
                 { value: 'pending', label: 'Pending' },
                 { value: 'approved', label: 'Approved' },
                 { value: 'completed', label: 'Completed' },
+                { value: 'cancelled', label: 'Cancelled' },
               ]}
               value={statusFilter || ''}
               onChange={(value) => setStatusFilter(value || null)}
               clearable
-              size={isMobile ? "sm" : "md"}
-              style={{ flex: 1 }}
+              size="sm"
+              style={{ maxWidth: '200px' }}
             />
-            
-            {/* Mobile View Toggle */}
-            {isMobile && (
-              <Button
-                variant={mobileView === 'calendar' ? 'filled' : 'light'}
-                size="sm"
-                onClick={() => setMobileView(mobileView === 'list' ? 'calendar' : 'list')}
-                leftSection={<IconCalendar size={16} />}
-              >
-                {mobileView === 'list' ? 'Calendar' : 'List'}
-              </Button>
-            )}
-          </Group>
+          )}
         </Stack>
 
-        {/* Legend - Compact on mobile */}
-        <Paper withBorder p={isMobile ? "xs" : "sm"}>
-          <ScrollArea>
-            <Group gap={isMobile ? "xs" : "md"} wrap="nowrap">
-              <Group gap={4}>
-                <div style={{ width: 16, height: 16, backgroundColor: '#fd7e14', borderRadius: 4 }} />
-                <Text size={isMobile ? "xs" : "sm"}>Pending</Text>
-              </Group>
-              <Group gap={4}>
-                <div style={{ width: 16, height: 16, backgroundColor: '#40c057', borderRadius: 4 }} />
-                <Text size={isMobile ? "xs" : "sm"}>Approved</Text>
-              </Group>
-              <Group gap={4}>
-                <div style={{ width: 16, height: 16, backgroundColor: '#228be6', borderRadius: 4 }} />
-                <Text size={isMobile ? "xs" : "sm"}>Completed</Text>
-              </Group>
-              <Text size={isMobile ? "xs" : "sm"}>🌙 Night</Text>
+        {/* Legend - Ultra Compact on Mobile */}
+        <Paper withBorder p={isMobile ? "xs" : "sm"} radius="md">
+          <Group gap={isMobile ? "xs" : "sm"} wrap="nowrap">
+            <Text size={isMobile ? "xs" : "sm"} fw={500}>Legend:</Text>
+            <Group gap={4}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#fd7e14', borderRadius: 3 }} />
+              <Text size={isMobile ? "xs" : "sm"}>Pending</Text>
             </Group>
-          </ScrollArea>
+            <Group gap={4}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#40c057', borderRadius: 3 }} />
+              <Text size={isMobile ? "xs" : "sm"}>Approved</Text>
+            </Group>
+            <Group gap={4}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#228be6', borderRadius: 3 }} />
+              <Text size={isMobile ? "xs" : "sm"}>Completed</Text>
+            </Group>
+            <Text size={isMobile ? "xs" : "sm"}>🌙 Night</Text>
+          </Group>
         </Paper>
 
         {/* Error Alert */}
         {error && (
-          <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
+          <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red" size="sm">
             {error}
           </Alert>
         )}
 
-        {/* Mobile List View or Desktop Calendar */}
+        {/* Mobile List View or Calendar View */}
         {isMobile && mobileView === 'list' ? (
           <Stack gap="xs">
             {sortedDates.length === 0 && !loading && (
-              <Paper p="xl" withBorder>
+              <Paper p="xl" withBorder radius="md">
                 <Text ta="center" c="dimmed">
                   No bookings found
                 </Text>
@@ -338,7 +596,7 @@ export default function AdminCalendarPage() {
               const hasMore = dateEvents.length > 3;
 
               return (
-                <Card key={dateKey} withBorder shadow="sm">
+                <Card key={dateKey} withBorder radius="md" shadow="xs">
                   {/* Date Header */}
                   <Group justify="space-between" mb="xs">
                     <div>
@@ -353,9 +611,10 @@ export default function AdminCalendarPage() {
                     {hasMore && (
                       <ActionIcon
                         variant="subtle"
+                        size="sm"
                         onClick={() => toggleDateExpansion(dateKey)}
                       >
-                        {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+                        {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                       </ActionIcon>
                     )}
                   </Group>
@@ -369,27 +628,35 @@ export default function AdminCalendarPage() {
                         key={idx}
                         p="xs"
                         withBorder
+                        radius="sm"
                         style={{
                           borderLeft: `4px solid ${event.backgroundColor}`,
                           cursor: 'pointer',
+                          backgroundColor: theme.colors.gray[0],
                         }}
                         onClick={() => {
-                          setSelectedBookingId(event.extendedProps.bookingId);
-                          setModalOpened(true);
+                          setSelectedEvent({
+                            id: event.id,
+                            title: event.title,
+                            start: event.start,
+                            end: event.end,
+                            extendedProps: event.extendedProps,
+                          });
+                          setEventModalOpened(true);
                         }}
                       >
                         <Group justify="space-between" wrap="nowrap">
                           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                            <Group gap="xs">
+                            <Group gap="xs" wrap="nowrap">
                               <IconUser size={14} />
                               <Text size="sm" fw={600} lineClamp={1}>
                                 {event.extendedProps.customerName}
                               </Text>
                             </Group>
                             
-                            <Group gap="xs">
+                            <Group gap="xs" wrap="nowrap">
                               <IconClock size={12} />
-                              <Text size="xs" c="dimmed">
+                              <Text size="xs" c="dimmed" lineClamp={1}>
                                 {new Date(event.start).toLocaleTimeString('en-US', {
                                   hour: 'numeric',
                                   minute: '2-digit',
@@ -400,7 +667,7 @@ export default function AdminCalendarPage() {
                             </Group>
 
                             {event.extendedProps.totalAmount && (
-                              <Group gap="xs">
+                              <Group gap="xs" wrap="nowrap">
                                 <IconCurrencyRupee size={12} />
                                 <Text size="xs" c="dimmed">
                                   ₹{event.extendedProps.totalAmount}
@@ -410,7 +677,7 @@ export default function AdminCalendarPage() {
                           </Stack>
 
                           <Badge
-                            size="sm"
+                            size="xs"
                             color={getStatusColor(event.extendedProps.status)}
                             variant="light"
                           >
@@ -436,13 +703,16 @@ export default function AdminCalendarPage() {
             })}
           </Stack>
         ) : (
-          // Calendar View (Desktop or Mobile Calendar Mode)
+          // Calendar View (Default on mobile)
           <Paper 
             withBorder 
             p={isMobile ? "xs" : isTablet ? "sm" : "md"} 
             radius="md" 
             pos="relative" 
-            style={{ minHeight: isMobile ? '400px' : '600px' }}
+            style={{ 
+              minHeight: isMobile ? '450px' : '600px',
+              backgroundColor: 'white',
+            }}
           >
             <LoadingOverlay visible={loading} />
             
@@ -451,16 +721,16 @@ export default function AdminCalendarPage() {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView={isMobile ? "dayGridMonth" : "dayGridMonth"}
               headerToolbar={{
-                left: isMobile ? 'prev,next' : 'prev,next today',
+                left: isMobile ? '' : 'prev,next today',
                 center: 'title',
-                right: isMobile ? '' : isTablet ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,timeGridDay',
+                right: isMobile ? '' : 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
               events={events}
               eventClick={handleEventClick}
               datesSet={handleDatesSet}
               eventContent={eventContent}
               height="auto"
-              slotMinTime="00:00:00"
+              slotMinTime="06:00:00"
               slotMaxTime="24:00:00"
               allDaySlot={false}
               nowIndicator={true}
@@ -477,8 +747,9 @@ export default function AdminCalendarPage() {
               eventDisplay="block"
               displayEventTime={true}
               displayEventEnd={false}
-              eventMaxStack={isMobile ? 1 : isTablet ? 2 : 3}
-              dayMaxEvents={true}
+              eventMaxStack={isMobile ? 2 : isTablet ? 3 : 4}
+              dayMaxEvents={isMobile ? 3 : true}
+              moreLinkText={isMobile ? "+more" : "more"}
               moreLinkClick="popover"
               navLinks={!isMobile}
               selectable={false}
@@ -486,12 +757,117 @@ export default function AdminCalendarPage() {
               weekends={true}
               editable={false}
               droppable={false}
+              dayCellContent={(args) => {
+                // Compact day numbers on mobile
+                return (
+                  <div style={{ 
+                    fontSize: isMobile ? '12px' : '14px',
+                    fontWeight: 600,
+                    padding: isMobile ? '2px' : '4px',
+                  }}>
+                    {args.dayNumberText}
+                  </div>
+                );
+              }}
+              eventClassNames="calendar-event"
+              eventBorderColor="transparent"
             />
           </Paper>
         )}
       </Stack>
 
-      {/* Booking Details Modal */}
+      {/* Event Details Modal for Mobile */}
+      <Modal
+        opened={eventModalOpened}
+        onClose={() => setEventModalOpened(false)}
+        title="Booking Details"
+        size="md"
+        centered
+        padding="md"
+      >
+        {selectedEvent && (
+          <Stack gap="md">
+            <Group justify="space-between">
+              <div>
+                <Text fw={700} size="lg">
+                  {selectedEvent.extendedProps.customerName}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {selectedEvent.extendedProps.customerPhone}
+                </Text>
+              </div>
+              <Badge
+                size="lg"
+                color={getStatusColor(selectedEvent.extendedProps.status)}
+              >
+                {selectedEvent.extendedProps.status}
+              </Badge>
+            </Group>
+            
+            <Divider />
+            
+            <Stack gap="xs">
+              <Group>
+                <IconCalendar size={16} />
+                <Text size="sm">
+                  {new Date(selectedEvent.start).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </Text>
+              </Group>
+              
+              <Group>
+                <IconClock size={16} />
+                <Text size="sm">
+                  {new Date(selectedEvent.start).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                  {selectedEvent.extendedProps.isNightRate && ' 🌙 (Night Rate)'}
+                </Text>
+              </Group>
+              
+              <Group>
+                <IconCurrencyRupee size={16} />
+                <Text size="sm">
+                  Total: ₹{selectedEvent.extendedProps.totalAmount}
+                </Text>
+              </Group>
+              
+              <Group>
+                <Badge variant="light" color="green">
+                  Advance: ₹{selectedEvent.extendedProps.advancePayment}
+                </Badge>
+                <Badge variant="light" color="blue">
+                  Remaining: ₹{selectedEvent.extendedProps.totalAmount - selectedEvent.extendedProps.advancePayment}
+                </Badge>
+              </Group>
+            </Stack>
+            
+            <Divider />
+            
+            <Group justify="right">
+              <Button
+                variant="light"
+                color="blue"
+                onClick={() => {
+                  setSelectedBookingId(selectedEvent.extendedProps.bookingId);
+                  setEventModalOpened(false);
+                  setModalOpened(true);
+                }}
+              >
+                Full Details
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
+
+      {/* Full Booking Details Modal */}
       {selectedBookingId && (
         <BookingDetailsModal
           bookingId={selectedBookingId}

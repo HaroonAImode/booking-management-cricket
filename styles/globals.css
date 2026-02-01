@@ -754,3 +754,28 @@ body {
 .mantine-Notifications-notification {
   pointer-events: auto !important;
 }
+
+
+/* Add to your global.css */
+.calendar-event {
+  border-radius: 4px !important;
+  margin: 1px !important;
+  padding: 0 !important;
+}
+
+/* Mobile-specific event styling */
+@media (max-width: 768px) {
+  .calendar-event {
+    border-radius: 3px !important;
+    margin: 0.5px !important;
+  }
+  
+  .fc-daygrid-day-events {
+    min-height: 20px !important;
+  }
+  
+  .fc-daygrid-event {
+    font-size: 10px !important;
+    line-height: 1 !important;
+  }
+}
