@@ -18,7 +18,6 @@ import {
   Text,
   Button,
   Stack,
-  Paper,
   SimpleGrid,
   ThemeIcon,
   Group,
@@ -26,8 +25,8 @@ import {
   Box,
   Image,
   Card,
-  Flex,
   Anchor,
+  useMantineTheme,
 } from '@mantine/core';
 import {
   IconCalendarEvent,
@@ -49,6 +48,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 export default function HomePage() {
+  const theme = useMantineTheme();
   const [isVisible, setIsVisible] = useState(false);
   const heroRef = useRef(null);
 
@@ -144,7 +144,7 @@ export default function HomePage() {
         style={{
           position: 'relative',
           background: 'linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.95))',
-          minHeight: { base: '70vh', sm: '85vh' },
+          minHeight: '85vh',
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
@@ -203,8 +203,8 @@ export default function HomePage() {
                   background: '#F5B800',
                   color: '#1A1A1A',
                   fontWeight: 900,
-                  fontSize: { base: '0.8rem', sm: '1rem' },
-                  padding: { base: '8px 16px', sm: '12px 24px' },
+                  fontSize: theme.fontSizes.md,
+                  padding: '12px 24px',
                   width: 'fit-content',
                   boxShadow: '0 4px 20px rgba(245, 184, 0, 0.3)',
                 }}
@@ -215,7 +215,7 @@ export default function HomePage() {
               <Title
                 order={1}
                 c="white"
-                size={{ base: 'h1', sm: '3.5rem' }}
+                size="h1"
                 style={{
                   lineHeight: 1.1,
                   fontWeight: 900,
@@ -235,7 +235,7 @@ export default function HomePage() {
               </Title>
 
               <Text
-                size={{ base: 'md', sm: 'xl' }}
+                size="xl"
                 c="#D1D1D1"
                 style={{ lineHeight: 1.6 }}
               >
@@ -248,30 +248,21 @@ export default function HomePage() {
               <Group
                 gap="md"
                 mt={{ base: 'md', sm: 'xl' }}
-                wrap={{ base: 'wrap', sm: 'nowrap' }}
+                wrap="wrap"
               >
                 <Button
                   component={Link}
                   href="/bookings"
-                  size={{ base: 'md', sm: 'lg' }}
+                  size="lg"
                   rightSection={<IconArrowRight size={20} />}
-                  styles={{
-                    root: {
-                      height: { base: '48px', sm: '56px' },
-                      fontSize: { base: '16px', sm: '18px' },
-                      fontWeight: 700,
-                      background: '#F5B800',
-                      color: '#1A1A1A',
-                      borderRadius: '12px',
-                      padding: '0 32px',
-                      flex: { base: '1', sm: 'none' },
-                      '&:hover': {
-                        background: '#FFDD80',
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 8px 25px rgba(245, 184, 0, 0.4)',
-                      },
-                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    },
+                  style={{
+                    height: '56px',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    background: '#F5B800',
+                    color: '#1A1A1A',
+                    borderRadius: '12px',
+                    padding: '0 32px',
                   }}
                 >
                   Book Now
@@ -280,25 +271,17 @@ export default function HomePage() {
                 <Button
                   component={Link}
                   href="/bookings/check"
-                  size={{ base: 'md', sm: 'lg' }}
+                  size="lg"
                   variant="outline"
-                  styles={{
-                    root: {
-                      height: { base: '48px', sm: '56px' },
-                      fontSize: { base: '16px', sm: '18px' },
-                      fontWeight: 700,
-                      borderWidth: '2px',
-                      borderColor: '#F5B800',
-                      color: '#F5B800',
-                      borderRadius: '12px',
-                      padding: '0 32px',
-                      flex: { base: '1', sm: 'none' },
-                      '&:hover': {
-                        background: 'rgba(245, 184, 0, 0.1)',
-                        transform: 'translateY(-2px)',
-                      },
-                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    },
+                  style={{
+                    height: '56px',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    borderWidth: '2px',
+                    borderColor: '#F5B800',
+                    color: '#F5B800',
+                    borderRadius: '12px',
+                    padding: '0 32px',
                   }}
                 >
                   Check Booking
@@ -355,10 +338,11 @@ export default function HomePage() {
             {/* Right Content - Stats Cards */}
             <Box
               style={{
-                display: { base: 'none', lg: 'grid' },
+                display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
                 gap: '24px',
               }}
+              visibleFrom="lg"
             >
               {[
                 { value: '24/7', label: 'Hours Available', icon: IconClock24 },
@@ -426,13 +410,13 @@ export default function HomePage() {
               <Title
                 order={2}
                 c="white"
-                size={{ base: 'h2', sm: '2.5rem' }}
+                size="h2"
                 style={{ fontWeight: 800 }}
               >
                 Premium Cricket Experience
               </Title>
               <Text
-                size={{ base: 'md', sm: 'lg' }}
+                size="lg"
                 c="#D1D1D1"
                 maw={600}
                 mx="auto"
@@ -451,15 +435,10 @@ export default function HomePage() {
                   padding={{ base: 'lg', sm: 'xl' }}
                   radius="lg"
                   className="scroll-animate"
+                  withBorder
                   style={{
                     background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(245, 184, 0, 0.1)',
-                    transition: 'all 300ms ease',
-                    '&:hover': {
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      borderColor: feature.color,
-                      transform: 'translateY(-8px)',
-                    },
+                    borderColor: 'rgba(245, 184, 0, 0.1)',
                   }}
                 >
                   <Stack gap="md">
@@ -469,8 +448,6 @@ export default function HomePage() {
                       style={{
                         background: `linear-gradient(135deg, ${feature.color} 0%, ${feature.color}80 100%)`,
                         color: '#1A1A1A',
-                        width: '60px',
-                        height: '60px',
                       }}
                     >
                       <feature.icon size={28} />
@@ -510,7 +487,7 @@ export default function HomePage() {
               <Title
                 order={2}
                 c="white"
-                size={{ base: 'h2', sm: '2.5rem' }}
+                size="h2"
                 style={{ fontWeight: 800 }}
               >
                 Competitive Rates, Premium Quality
@@ -529,11 +506,6 @@ export default function HomePage() {
                 style={{
                   background: 'linear-gradient(135deg, #F5B800 0%, #FFD700 100%)',
                   border: '2px solid #1A1A1A',
-                  transition: 'all 300ms ease',
-                  '&:hover': {
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: '0 20px 40px rgba(245, 184, 0, 0.3)',
-                  },
                 }}
               >
                 <Stack gap="md" align="center" ta="center">
@@ -543,8 +515,6 @@ export default function HomePage() {
                     style={{
                       background: '#1A1A1A',
                       color: '#F5B800',
-                      width: '70px',
-                      height: '70px',
                     }}
                   >
                     <IconClock24 size={32} />
@@ -559,7 +529,7 @@ export default function HomePage() {
                   </div>
                   <Box>
                     <Text
-                      size={{ base: '3rem', sm: '3.5rem' }}
+                      size="3.5rem"
                       fw={900}
                       c="#1A1A1A"
                       style={{ lineHeight: 1 }}
@@ -577,11 +547,9 @@ export default function HomePage() {
                     variant="filled"
                     color="dark"
                     mt="md"
-                    styles={{
-                      root: {
-                        fontWeight: 700,
-                        padding: '12px 32px',
-                      },
+                    style={{
+                      fontWeight: 700,
+                      padding: '12px 32px',
                     }}
                   >
                     Book Day Slot
@@ -597,11 +565,6 @@ export default function HomePage() {
                 style={{
                   background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
                   border: '2px solid #F5B800',
-                  transition: 'all 300ms ease',
-                  '&:hover': {
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: '0 20px 40px rgba(245, 184, 0, 0.2)',
-                  },
                 }}
               >
                 <Stack gap="md" align="center" ta="center">
@@ -611,8 +574,6 @@ export default function HomePage() {
                     style={{
                       background: '#F5B800',
                       color: '#1A1A1A',
-                      width: '70px',
-                      height: '70px',
                     }}
                   >
                     <IconStar size={32} />
@@ -627,7 +588,7 @@ export default function HomePage() {
                   </div>
                   <Box>
                     <Text
-                      size={{ base: '3rem', sm: '3.5rem' }}
+                      size="3.5rem"
                       fw={900}
                       c="white"
                       style={{ lineHeight: 1 }}
@@ -645,11 +606,9 @@ export default function HomePage() {
                     variant="filled"
                     color="yellow"
                     mt="md"
-                    styles={{
-                      root: {
-                        fontWeight: 700,
-                        padding: '12px 32px',
-                      },
+                    style={{
+                      fontWeight: 700,
+                      padding: '12px 32px',
                     }}
                   >
                     Book Night Slot
@@ -690,10 +649,6 @@ export default function HomePage() {
                     width: '100%',
                     height: '400px',
                     objectFit: 'cover',
-                    transition: 'transform 500ms ease',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                    },
                   }}
                 />
               </Box>
@@ -713,12 +668,12 @@ export default function HomePage() {
                 <Title
                   order={2}
                   c="white"
-                  size={{ base: 'h2', sm: '2.5rem' }}
+                  size="h2"
                   style={{ fontWeight: 800 }}
                 >
                   World-Class Amenities
                 </Title>
-                <Text size={{ base: 'md', sm: 'lg' }} c="#D1D1D1">
+                <Text size="lg" c="#D1D1D1">
                   Everything you need for a perfect cricket experience
                 </Text>
               </Stack>
@@ -786,12 +741,12 @@ export default function HomePage() {
                 <Title
                   order={2}
                   c="white"
-                  size={{ base: 'h2', sm: '2.5rem' }}
+                  size="h2"
                   style={{ fontWeight: 800 }}
                 >
                   Follow Our Journey
                 </Title>
-                <Text size={{ base: 'md', sm: 'lg' }} c="#D1D1D1">
+                <Text size="lg" c="#D1D1D1">
                   Join our community for updates, tournaments, and cricket tips
                 </Text>
               </Stack>
@@ -805,16 +760,11 @@ export default function HomePage() {
                     component="a"
                     href={social.link}
                     target="_blank"
+                    withBorder
                     style={{
                       background: 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${social.color}40`,
+                      borderColor: `${social.color}40`,
                       cursor: 'pointer',
-                      transition: 'all 300ms ease',
-                      '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        borderColor: social.color,
-                        transform: 'translateY(-4px)',
-                      },
                     }}
                   >
                     <Stack gap="sm" align="center" ta="center">
@@ -824,8 +774,6 @@ export default function HomePage() {
                         style={{
                           background: social.color,
                           color: 'white',
-                          width: '50px',
-                          height: '50px',
                         }}
                       >
                         <social.icon size={24} />
@@ -851,11 +799,9 @@ export default function HomePage() {
                 variant="outline"
                 color="green"
                 leftSection={<IconPhone size={20} />}
-                styles={{
-                  root: {
-                    fontWeight: 700,
-                    borderWidth: '2px',
-                  },
+                style={{
+                  fontWeight: 700,
+                  borderWidth: '2px',
                 }}
               >
                 Chat on WhatsApp
@@ -876,12 +822,12 @@ export default function HomePage() {
                 <Title
                   order={2}
                   c="white"
-                  size={{ base: 'h2', sm: '2.5rem' }}
+                  size="h2"
                   style={{ fontWeight: 800 }}
                 >
                   Visit Our Arena
                 </Title>
-                <Text size={{ base: 'md', sm: 'lg' }} c="#D1D1D1">
+                <Text size="lg" c="#D1D1D1">
                   Located at a prime location with easy access
                 </Text>
               </Stack>
@@ -889,9 +835,10 @@ export default function HomePage() {
               <Card
                 padding="lg"
                 radius="lg"
+                withBorder
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(245, 184, 0, 0.2)',
+                  borderColor: 'rgba(245, 184, 0, 0.2)',
                 }}
               >
                 <Stack gap="md">
@@ -922,10 +869,8 @@ export default function HomePage() {
                     variant="filled"
                     color="yellow"
                     leftSection={<IconMapPin size={20} />}
-                    styles={{
-                      root: {
-                        fontWeight: 700,
-                      },
+                    style={{
+                      fontWeight: 700,
                     }}
                   >
                     Open in Google Maps
@@ -968,9 +913,11 @@ export default function HomePage() {
             padding={{ base: 'xl', sm: '60px' }}
             radius="xl"
             className="scroll-animate"
+            withBorder
             style={{
               background: 'linear-gradient(135deg, rgba(245, 184, 0, 0.1) 0%, rgba(245, 184, 0, 0.05) 100%)',
-              border: '2px solid rgba(245, 184, 0, 0.3)',
+              borderColor: 'rgba(245, 184, 0, 0.3)',
+              borderWidth: '2px',
               backdropFilter: 'blur(10px)',
               textAlign: 'center',
             }}
@@ -979,14 +926,14 @@ export default function HomePage() {
               <Title
                 order={2}
                 c="white"
-                size={{ base: 'h2', sm: '2.5rem' }}
+                size="h2"
                 style={{ fontWeight: 900 }}
               >
                 Ready to <Text component="span" c="#F5B800">Book Your Slot</Text>?
               </Title>
               
               <Text
-                size={{ base: 'md', sm: 'lg' }}
+                size="lg"
                 c="#D1D1D1"
                 maw={600}
                 style={{ lineHeight: 1.6 }}
@@ -998,30 +945,21 @@ export default function HomePage() {
               <Group
                 gap="md"
                 justify="center"
-                wrap={{ base: 'wrap', sm: 'nowrap' }}
+                wrap="wrap"
               >
                 <Button
                   component={Link}
                   href="/bookings"
                   size="xl"
                   rightSection={<IconArrowRight size={24} />}
-                  styles={{
-                    root: {
-                      height: '60px',
-                      fontSize: '18px',
-                      fontWeight: 800,
-                      background: '#F5B800',
-                      color: '#1A1A1A',
-                      borderRadius: '12px',
-                      padding: '0 40px',
-                      flex: { base: '1', sm: 'none' },
-                      '&:hover': {
-                        background: '#FFDD80',
-                        transform: 'translateY(-3px)',
-                        boxShadow: '0 10px 30px rgba(245, 184, 0, 0.4)',
-                      },
-                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    },
+                  style={{
+                    height: '60px',
+                    fontSize: '18px',
+                    fontWeight: 800,
+                    background: '#F5B800',
+                    color: '#1A1A1A',
+                    borderRadius: '12px',
+                    padding: '0 40px',
                   }}
                 >
                   Book Your Slot
@@ -1033,23 +971,15 @@ export default function HomePage() {
                   size="xl"
                   variant="outline"
                   leftSection={<IconPhone size={24} />}
-                  styles={{
-                    root: {
-                      height: '60px',
-                      fontSize: '18px',
-                      fontWeight: 800,
-                      borderWidth: '2px',
-                      borderColor: '#F5B800',
-                      color: '#F5B800',
-                      borderRadius: '12px',
-                      padding: '0 40px',
-                      flex: { base: '1', sm: 'none' },
-                      '&:hover': {
-                        background: 'rgba(245, 184, 0, 0.1)',
-                        transform: 'translateY(-3px)',
-                      },
-                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    },
+                  style={{
+                    height: '60px',
+                    fontSize: '18px',
+                    fontWeight: 800,
+                    borderWidth: '2px',
+                    borderColor: '#F5B800',
+                    color: '#F5B800',
+                    borderRadius: '12px',
+                    padding: '0 40px',
                   }}
                 >
                   Call Now
