@@ -291,11 +291,22 @@ export default function AdminDashboardPage() {
     };
   };
 
-  
-  /** ✅ ACTUAL TOTAL REVENUE (from backend SQL) */
-  const totalRevenue = useMemo(() => {
-    return data?.revenue?.total_revenue || 0;
-  }, [data]);
+ /** ✅ ACTUAL TOTAL REVENUE (paid money only) */
+const totalRevenue = useMemo(() => {
+  if (!data?.recent_bookings) return 0;
+
+  return data.recent_bookings.reduce((sum, booking) => {
+    if (booking.status === 'pending') return sum;
+
+    const advance = Number(booking.advance_payment) || 0;
+    const remaining =
+      booking.status === 'completed'
+        ? Number(booking.remaining_payment_amount) || 0
+        : 0;
+
+    return sum + advance + remaining;
+  }, 0);
+}, [data]);
 
   /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
   const currentMonthName = useMemo(() => {
@@ -313,15 +324,30 @@ export default function AdminDashboardPage() {
   const totalCash = totalCashOnline.totalCash;
   const totalOnline = totalCashOnline.totalOnline;
 
-  /** ✅ LAST 7 DAYS REVENUE */
-  const last7DaysRevenue = useMemo(() => {
-    if (!data?.daily_revenue_chart) return 0;
 
-    return data.daily_revenue_chart.reduce(
-      (sum, d) => sum + d.advance_received + d.remaining_payment,
-      0
-    );
-  }, [data]);
+/** ✅ LAST 7 DAYS REVENUE (paid only) */
+const last7DaysRevenue = useMemo(() => {
+  if (!data?.recent_bookings) return 0;
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  return data.recent_bookings.reduce((sum, booking) => {
+    const bookingDate = new Date(booking.booking_date);
+    if (bookingDate < sevenDaysAgo) return sum;
+    if (booking.status === 'pending') return sum;
+
+    const advance = Number(booking.advance_payment) || 0;
+    const remaining =
+      booking.status === 'completed'
+        ? Number(booking.remaining_payment_amount) || 0
+        : 0;
+
+    return sum + advance + remaining;
+  }, 0);
+}, [data]);
+ 
+
 
   /** ✅ PENDING APPROVALS COUNT */
   const pendingApprovalsCount = useMemo(() => {
