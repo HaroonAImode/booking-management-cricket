@@ -306,6 +306,13 @@ export default function AdminBookingsPage() {
       const result = await response.json();
 
       if (result.success) {
+        // Debug: Show raw API response for troubleshooting
+        notifications.show({
+          title: 'API Response Debug',
+          message: `Raw bookings: ${JSON.stringify(result.bookings)}`,
+          color: 'gray',
+          autoClose: 10000,
+        });
         // Ensure bookings have proper structure
         const safeBookings = (result.bookings || []).map((booking: any) => ({
           ...booking,
@@ -323,11 +330,9 @@ export default function AdminBookingsPage() {
         setSummary(result.summary);
       } else {
         notifications.show({
-          title: '❌ Loading Error',
-          message: 'Could not load bookings. Please try again.',
+          title: 'Error',
+          message: result.error || 'Failed to fetch bookings',
           color: 'red',
-          autoClose: 4000,
-          icon: <IconAlertCircle size={18} />,
         });
       }
     } catch (error) {
@@ -1221,5 +1226,4 @@ export default function AdminBookingsPage() {
 
     </Container>
   );
-}
 }
