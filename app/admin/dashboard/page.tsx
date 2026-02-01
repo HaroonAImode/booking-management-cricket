@@ -191,7 +191,7 @@ export default function AdminDashboardPage() {
   };
 
   const formatCurrency = (amount?: number) => {
-    return `₹ ${(amount ?? 0).toLocaleString()}`;
+    return `Rs ${(amount ?? 0).toLocaleString()}`;
   };
 
   const formatSlotTime = (slot_hour: number) => {
@@ -356,9 +356,9 @@ export default function AdminDashboardPage() {
       message: `Total Cash Received: ${formatCurrency(totalCash)}
       
 Breakdown:
-Advance Cash: ₹500 (5 bookings × ₹500 each)
-Remaining Cash: ₹11,500
-Total Cash: ₹12,000
+Advance Cash: Rs 500 (5 bookings × Rs 500 each)
+Remaining Cash: Rs 11,500
+Total Cash: Rs 12,000
 
 Cash represents ${Math.round((totalCash / totalActuallyReceived) * 100)}% of total revenue`,
       color: 'green',
