@@ -346,7 +346,7 @@ export default function HomePage() {
             >
               {[
                 { value: '24/7', label: 'Hours Available', icon: IconClock24 },
-                { value: 'Rs 1,500', label: 'Day Rate Per Hour', icon: IconCurrencyRupee },
+                { value: 'Rs 1,500', label: 'Day Rate Per Hour', icon: IconCalendarEvent }, // Or any other icon you prefer
                 { value: 'Rs 2,000', label: 'Night Rate Per Hour', icon: IconStar },
                 { value: '100+', label: 'Teams Played', icon: IconUsers },
               ].map((stat, index) => (
@@ -877,7 +877,7 @@ export default function HomePage() {
                   </Button>
 
                   <Text size="sm" c="#D1D1D1" ta="center">
-                    Open daily from 7:00 AM to 12:00 AM
+                    Open daily 24/7
                   </Text>
                 </Stack>
               </Card>
