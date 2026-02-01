@@ -1199,3 +1199,4 @@ export default function AdminBookingsPage() {
     </Container>
   );
 }
+}
