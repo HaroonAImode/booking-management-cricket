@@ -3,7 +3,7 @@
  * 
  * Purpose: Comprehensive admin dashboard with statistics, charts, and insights
  * Features:
- * - Revenue statistics
+ * - Revenue statistics (PAID MONEY ONLY)
  * - Pending approvals count
  * - Today's bookings
  * - Last 7 days performance
@@ -210,8 +210,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-
-    // Helper function to calculate payment summary for a month
+  // Helper function to calculate payment summary for a month
   const calculatePaymentSummaryForMonth = (monthName: string) => {
     if (!data || !Array.isArray(data.recent_bookings)) {
       return { totalCash: 0, totalOnline: 0, totalEasypaisa: 0, totalSadaPay: 0 };
@@ -291,28 +290,48 @@ export default function AdminDashboardPage() {
     };
   };
 
- /** ✅ ACTUAL TOTAL REVENUE (paid money only) */
-const totalRevenue = useMemo(() => {
-  if (!data?.recent_bookings) return 0;
+  // Helper function to calculate today's PAID revenue (not booking value)
+  const calculateTodaysPaidRevenue = () => {
+    if (!data?.recent_bookings) return 0;
+    
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    return data.recent_bookings.reduce((sum, booking) => {
+      const bookingDate = new Date(booking.booking_date).toISOString().split('T')[0];
+      if (bookingDate !== todayStr) return sum;
+      if (booking.status === 'pending') return sum;
+      
+      const advance = Number(booking.advance_payment) || 0;
+      const remaining = booking.status === 'completed' ? Number(booking.remaining_payment_amount) || 0 : 0;
+      
+      return sum + advance + remaining;
+    }, 0);
+  };
 
-  return data.recent_bookings.reduce((sum, booking) => {
-    if (booking.status === 'pending') return sum;
+  /** ✅ ACTUAL TOTAL REVENUE (paid money only) */
+  const totalRevenue = useMemo(() => {
+    if (!data?.recent_bookings) return 0;
 
-    const advance = Number(booking.advance_payment) || 0;
-    const remaining =
-      booking.status === 'completed'
-        ? Number(booking.remaining_payment_amount) || 0
-        : 0;
+    return data.recent_bookings.reduce((sum, booking) => {
+      if (booking.status === 'pending') return sum;
 
-    return sum + advance + remaining;
-  }, 0);
-}, [data]);
+      const advance = Number(booking.advance_payment) || 0;
+      const remaining =
+        booking.status === 'completed'
+          ? Number(booking.remaining_payment_amount) || 0
+          : 0;
+
+      return sum + advance + remaining;
+    }, 0);
+  }, [data]);
 
   /** ✅ TOTAL CASH & ONLINE PAYMENTS (current month) */
   const currentMonthName = useMemo(() => {
     if (!data?.monthly_summary || data.monthly_summary.length === 0) return '';
     return data.monthly_summary[0]?.month_name || '';
   }, [data]);
+  
   const totalCashOnline = useMemo(() => {
     if (!currentMonthName) return { totalCash: 0, totalOnline: 0 };
     const result = calculatePaymentSummaryForMonth(currentMonthName);
@@ -321,33 +340,31 @@ const totalRevenue = useMemo(() => {
       totalOnline: result?.totalOnline ?? 0,
     };
   }, [currentMonthName, data]) || { totalCash: 0, totalOnline: 0 };
+  
   const totalCash = totalCashOnline.totalCash;
   const totalOnline = totalCashOnline.totalOnline;
 
+  /** ✅ LAST 7 DAYS REVENUE (paid only) */
+  const last7DaysRevenue = useMemo(() => {
+    if (!data?.recent_bookings) return 0;
 
-/** ✅ LAST 7 DAYS REVENUE (paid only) */
-const last7DaysRevenue = useMemo(() => {
-  if (!data?.recent_bookings) return 0;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return data.recent_bookings.reduce((sum, booking) => {
+      const bookingDate = new Date(booking.booking_date);
+      if (bookingDate < sevenDaysAgo) return sum;
+      if (booking.status === 'pending') return sum;
 
-  return data.recent_bookings.reduce((sum, booking) => {
-    const bookingDate = new Date(booking.booking_date);
-    if (bookingDate < sevenDaysAgo) return sum;
-    if (booking.status === 'pending') return sum;
+      const advance = Number(booking.advance_payment) || 0;
+      const remaining =
+        booking.status === 'completed'
+          ? Number(booking.remaining_payment_amount) || 0
+          : 0;
 
-    const advance = Number(booking.advance_payment) || 0;
-    const remaining =
-      booking.status === 'completed'
-        ? Number(booking.remaining_payment_amount) || 0
-        : 0;
-
-    return sum + advance + remaining;
-  }, 0);
-}, [data]);
- 
-
+      return sum + advance + remaining;
+    }, 0);
+  }, [data]);
 
   /** ✅ PENDING APPROVALS COUNT */
   const pendingApprovalsCount = useMemo(() => {
@@ -355,7 +372,10 @@ const last7DaysRevenue = useMemo(() => {
     return data.recent_bookings.filter(booking => booking && booking.status === 'pending').length;
   }, [data]);
 
-
+  /** ✅ TODAY'S PAID REVENUE (not booking value) */
+  const todaysPaidRevenue = useMemo(() => {
+    return calculateTodaysPaidRevenue();
+  }, [data]);
 
   if (loading) {
     return (
@@ -521,7 +541,7 @@ const last7DaysRevenue = useMemo(() => {
             value={data.today_bookings.total_bookings}
             icon={<IconCalendarEvent size={24} />}
             color="success"
-            description={`${data.today_bookings.total_hours} hours booked`}
+            description={`${formatCurrency(todaysPaidRevenue)} collected`}
           />
           <StatCard
             title="Last 7 Days Revenue"
@@ -582,10 +602,10 @@ const last7DaysRevenue = useMemo(() => {
                 Revenue
               </Text>
               <Text fw={700} size="xl" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>
-                {formatCurrency(data.last_7_days.total_revenue)}
+                {formatCurrency(last7DaysRevenue)}
               </Text>
               <Text size="xs" c="dimmed" mt={5}>
-                Avg: {formatCurrency(data.last_7_days.average_booking_value)}
+                Paid only (actual cash)
               </Text>
             </div>
             <div>
@@ -622,7 +642,7 @@ const last7DaysRevenue = useMemo(() => {
         {/* Slot Usage Chart */}
         <SlotUsageChart data={data.slot_usage || []} />
 
-        {/* Monthly Summary */}
+        {/* Monthly Summary - FIXED: Now shows PAID revenue */}
         {data.monthly_summary && data.monthly_summary.length > 0 && (
           <Paper 
             p="md"
@@ -635,7 +655,7 @@ const last7DaysRevenue = useMemo(() => {
               size="h3"
               style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)' }}
             >
-              Monthly Summary
+              Monthly Summary (Paid Revenue)
             </Title>
             <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <Table highlightOnHover striped style={{ minWidth: 600 }}>
@@ -644,20 +664,33 @@ const last7DaysRevenue = useMemo(() => {
                     <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Month</Table.Th>
                     <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Bookings</Table.Th>
                     <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Hours</Table.Th>
-                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Revenue</Table.Th>
-                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Avg. Value</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Paid Revenue</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Avg. Booking Value</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {data.monthly_summary.map((month, index) => (
-                    <Table.Tr key={index}>
-                      <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
-                      <Table.Td><Text size="sm">{month.total_bookings}</Text></Table.Td>
-                      <Table.Td><Text size="sm">{month.total_hours}</Text></Table.Td>
-                      <Table.Td><Text size="sm" fw={600}>{formatCurrency(month.total_revenue)}</Text></Table.Td>
-                      <Table.Td><Text size="sm">{formatCurrency(month.average_booking_value)}</Text></Table.Td>
-                    </Table.Tr>
-                  ))}
+                  {data.monthly_summary.map((month, index) => {
+                    // Calculate PAID revenue for this month (not booking value)
+                    const monthPayment = calculatePaymentSummaryForMonth(month.month_name);
+                    const paidRevenue = monthPayment.totalCash + monthPayment.totalOnline;
+                    
+                    return (
+                      <Table.Tr key={index}>
+                        <Table.Td><Text size="sm">{month.month_name}</Text></Table.Td>
+                        <Table.Td><Text size="sm">{month.total_bookings}</Text></Table.Td>
+                        <Table.Td><Text size="sm">{month.total_hours}</Text></Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>
+                            {formatCurrency(paidRevenue)}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Cash: Rs {monthPayment.totalCash.toLocaleString()} | Online: Rs {monthPayment.totalOnline.toLocaleString()}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td><Text size="sm">{formatCurrency(month.average_booking_value)}</Text></Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
                 </Table.Tbody>
               </Table>
             </Box>
