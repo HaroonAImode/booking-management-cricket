@@ -756,11 +756,14 @@ body {
 }
 
 
-/* Add to your global.css */
+/* Calendar Event Styling */
 .calendar-event {
   border-radius: 4px !important;
   margin: 1px !important;
   padding: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  overflow: hidden !important;
 }
 
 /* Mobile-specific event styling */
@@ -768,14 +771,123 @@ body {
   .calendar-event {
     border-radius: 3px !important;
     margin: 0.5px !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
   }
   
   .fc-daygrid-day-events {
-    min-height: 20px !important;
+    min-height: 18px !important;
   }
   
   .fc-daygrid-event {
-    font-size: 10px !important;
+    font-size: 9px !important;
     line-height: 1 !important;
+  }
+  
+  /* Week View improvements for mobile */
+  .fc-timegrid-slot-label {
+    font-size: 10px !important;
+    padding: 2px !important;
+  }
+  
+  .fc-timegrid-slot {
+    height: 25px !important;
+  }
+  
+  .fc-timegrid-event {
+    font-size: 9px !important;
+    margin: 1px 2px !important;
+  }
+  
+  .fc-timegrid-col-events {
+    margin: 0 2px !important;
+  }
+  
+  /* Day header improvements */
+  .fc-col-header-cell {
+    padding: 4px 2px !important;
+  }
+  
+  .fc-col-header-cell-cushion {
+    font-size: 10px !important;
+    padding: 2px !important;
+  }
+}
+
+/* Desktop improvements */
+@media (min-width: 769px) {
+  .fc-timegrid-slot-label {
+    font-size: 12px !important;
+  }
+  
+  .fc-timegrid-slot {
+    height: 30px !important;
+  }
+  
+  .fc-timegrid-event {
+    font-size: 11px !important;
+  }
+}
+
+/* Fix for week view column headers */
+.fc-col-header-cell {
+  padding: 8px 4px !important;
+  text-align: center !important;
+}
+
+.fc-col-header-cell-cushion {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ensure slot labels are readable */
+.fc-timegrid-slot-label {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #666 !important;
+  padding: 4px !important;
+}
+
+/* Improve time slot spacing */
+.fc-timegrid-slot {
+  border-bottom: 1px solid #eee !important;
+}
+
+/* Better event hover effects */
+.fc-event:hover {
+  opacity: 0.9 !important;
+  transform: scale(1.01) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Compact month view */
+.fc-daygrid-day-frame {
+  min-height: 60px !important;
+}
+
+@media (max-width: 768px) {
+  .fc-daygrid-day-frame {
+    min-height: 50px !important;
+  }
+  
+  .fc-daygrid-day-number {
+    font-size: 11px !important;
+    padding: 2px !important;
+  }
+}
+
+/* Hide unnecessary elements on mobile */
+@media (max-width: 768px) {
+  .fc-header-toolbar .fc-toolbar-chunk:last-child {
+    display: none !important;
+  }
+  
+  .fc-toolbar-title {
+    font-size: 14px !important;
   }
 }

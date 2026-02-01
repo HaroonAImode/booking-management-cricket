@@ -3,7 +3,7 @@
  * 
  * Purpose: Header for admin panel pages.
  * Features:
- * - Admin branding
+ * - Admin branding with logo
  * - User profile display
  * - Logout functionality
  */
@@ -14,7 +14,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Group, 
-  Title, 
   Container, 
   Menu, 
   Avatar, 
@@ -23,14 +22,13 @@ import {
   rem,
   Burger,
   Box,
-  ThemeIcon,
+  Image,
 } from '@mantine/core';
 import { 
   IconChevronDown, 
   IconLogout, 
   IconUser,
   IconShield,
-  IconTrophy,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { getAdminProfile, signOutAdmin, type AdminProfile } from '@/lib/supabase/auth';
@@ -153,18 +151,27 @@ export default function AdminHeader({
               style={{
                 width: '40px',
                 height: '40px',
-                background: '#F5B800',
+                background: '#FFFFFF',
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 900,
-                fontSize: '20px',
-                color: '#1A1A1A',
+                border: '2px solid #F5B800',
                 boxShadow: '0 2px 8px rgba(245, 184, 0, 0.3)',
+                overflow: 'hidden',
+                padding: '3px',
               }}
             >
-              P
+              <Image
+                src="/logoo.png"
+                alt="PowerPlay Cricket Arena Logo"
+                width={34}
+                height={34}
+                fit="contain"
+                style={{
+                  objectFit: 'contain',
+                }}
+              />
             </Box>
             <Box visibleFrom="xs">
               <Text size="sm" c="white" fw={900} style={{ lineHeight: 1, marginBottom: '2px', letterSpacing: '0.5px' }}>

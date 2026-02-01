@@ -1,15 +1,11 @@
 /**
  * Calendar API Routes
  * GET /api/admin/calendar - Get calendar events
- * GET /api/admin/calendar/[id] - Get booking details
- * PATCH /api/admin/calendar/[id]/approve - Approve booking
- * PATCH /api/admin/calendar/[id]/reject - Reject booking
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 // GET /api/admin/calendar - Fetch calendar bookings
@@ -37,22 +33,37 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-
-    // Use new slot_hours array from SQL, no grouping needed
+    // Transform bookings to calendar events with proper start and end times
     const events = (bookings || []).map((booking: any) => {
-      const sortedSlots = [...booking.slot_hours].sort((a, b) => a - b);
-      const firstSlot = sortedSlots[0];
-      const lastSlot = sortedSlots[sortedSlots.length - 1];
+      // Get slot hours array
+      const slotHours = booking.slot_hours || [];
+      
+      // Sort slots and get first and last
+      const sortedSlots = [...slotHours].sort((a: number, b: number) => a - b);
+      const firstSlot = sortedSlots[0] || 8; // Default to 8 AM if no slots
+      const lastSlot = sortedSlots[sortedSlots.length - 1] || 9; // Default to 9 AM if no slots
+      
+      // Format slot ranges for display
       const slotRanges = formatSlotRanges(sortedSlots);
+      
+      // Check if it's a night rate booking
+      const hasNightRate = sortedSlots.some((slot: number) => slot >= 19 || slot < 6);
+      
+      // Calculate start and end times
+      const startHour = String(firstSlot).padStart(2, '0');
+      const endHour = String(lastSlot + 1).padStart(2, '0'); // Add 1 hour for end time
+      
       return {
         id: booking.booking_id,
         bookingId: booking.booking_id,
         title: `${booking.customer_name} - ${slotRanges}`,
-        start: `${booking.booking_date}T${String(firstSlot).padStart(2, '0')}:00:00`,
-        end: `${booking.booking_date}T${String(lastSlot + 1).padStart(2, '0')}:00:00`,
+        start: `${booking.booking_date}T${startHour}:00:00`,
+        end: `${booking.booking_date}T${endHour}:00:00`,
         backgroundColor: getStatusColor(booking.status),
         borderColor: getStatusColor(booking.status),
+        textColor: '#ffffff',
         extendedProps: {
+          bookingId: booking.booking_id,
           bookingNumber: booking.booking_number,
           customerName: booking.customer_name,
           customerPhone: booking.customer_phone,
@@ -65,6 +76,9 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
           pendingExpiresAt: booking.pending_expires_at,
           customerNotes: booking.customer_notes,
           adminNotes: booking.admin_notes,
+          slotRanges: slotRanges,
+          nightRate: hasNightRate,
+          isNightRate: hasNightRate,
         },
       };
     });

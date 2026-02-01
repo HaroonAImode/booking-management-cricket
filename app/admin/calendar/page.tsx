@@ -6,6 +6,8 @@
  * - Calendar view first (default on mobile)
  * - Professional, compact event display with full names and times
  * - Month/Week/Day view buttons on mobile
+ * - Improved week view with proper time slots
+ * - Proper start and end times for each booking
  * - Collapsible list view option
  * - Touch-friendly interactions
  * - Color-coded by status
@@ -36,8 +38,6 @@ import {
   Card,
   Divider,
   SegmentedControl,
-  Tabs,
-  Tooltip,
   Modal,
   useMantineTheme,
 } from '@mantine/core';
@@ -50,15 +50,13 @@ import {
   IconChevronUp,
   IconClock,
   IconUser,
-  IconCurrencyRupee,
   IconList,
   IconCalendarMonth,
   IconCalendarWeek,
   IconCalendarEvent,
-  IconX,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useMediaQuery, useDisclosure } from '@mantine/hooks';
+import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -203,13 +201,8 @@ export default function AdminCalendarPage() {
     setExpandedDates(newExpanded);
   };
 
-  // Mobile-optimized event content - COMPACT AND PROFESSIONAL
-  const eventContent = (eventInfo: any) => {
-    const props = eventInfo.event.extendedProps;
-    const startTime = eventInfo.event.start;
-    const endTime = eventInfo.event.end;
-    
-    // Format time for display
+  // Format time range for display
+  const formatTimeRange = (start: Date, end: Date) => {
     const formatTime = (date: Date) => {
       return date.toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -218,26 +211,35 @@ export default function AdminCalendarPage() {
       });
     };
     
-    const timeText = formatTime(startTime);
-    const isNightRate = props.isNightRate;
+    return `${formatTime(start)} - ${formatTime(end)}`;
+  };
+
+  // Mobile-optimized event content - COMPACT AND PROFESSIONAL
+  const eventContent = (eventInfo: any) => {
+    const props = eventInfo.event.extendedProps;
+    const startTime = eventInfo.event.start;
+    const endTime = eventInfo.event.end;
+    const timeRange = formatTimeRange(startTime, endTime);
+    const isNightRate = props.isNightRate || props.nightRate;
     
     if (isMobile && calendarView === 'month') {
       // Ultra-compact month view for mobile
       return (
         <Box 
-          p={2}
+          p={1}
           style={{ 
             overflow: 'hidden',
-            fontSize: '10px',
+            fontSize: '9px',
             lineHeight: 1,
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
+            padding: '1px 2px',
           }}
         >
           <Text 
-            size="10px" 
+            size="9px" 
             fw={600} 
             lineClamp={1} 
             style={{ 
@@ -245,10 +247,10 @@ export default function AdminCalendarPage() {
               letterSpacing: '-0.1px',
             }}
           >
-            {props.customerName.split(' ')[0]}
+            {props.customerName?.split(' ')[0] || 'Customer'}
           </Text>
           <Text 
-            size="9px" 
+            size="8px" 
             fw={500} 
             lineClamp={1}
             style={{ 
@@ -256,7 +258,8 @@ export default function AdminCalendarPage() {
               letterSpacing: '-0.1px',
             }}
           >
-            {timeText}{isNightRate && ' 🌙'}
+            {timeRange.split(' - ')[0]}
+            {isNightRate && ' 🌙'}
           </Text>
         </Box>
       );
@@ -266,19 +269,20 @@ export default function AdminCalendarPage() {
       // More detailed view for week/day on mobile
       return (
         <Box 
-          p={4}
+          p={2}
           style={{ 
             overflow: 'hidden',
-            fontSize: '11px',
+            fontSize: '10px',
             lineHeight: 1.1,
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: '2px',
+            gap: '1px',
+            padding: '2px 3px',
           }}
         >
           <Text 
-            size="11px" 
+            size="10px" 
             fw={700} 
             lineClamp={1}
             style={{ 
@@ -286,12 +290,12 @@ export default function AdminCalendarPage() {
               letterSpacing: '-0.1px',
             }}
           >
-            {props.customerName}
+            {props.customerName || 'Customer'}
           </Text>
-          <Group gap={2} wrap="nowrap">
-            <IconClock size={10} style={{ minWidth: '10px', color: 'rgba(255, 255, 255, 0.9)' }} />
+          <Group gap={1} wrap="nowrap">
+            <IconClock size={8} style={{ minWidth: '8px', color: 'rgba(255, 255, 255, 0.9)' }} />
             <Text 
-              size="10px" 
+              size="9px" 
               fw={500} 
               lineClamp={1}
               style={{ 
@@ -299,24 +303,10 @@ export default function AdminCalendarPage() {
                 letterSpacing: '-0.1px',
               }}
             >
-              {timeText}{isNightRate && ' 🌙'}
+              {timeRange}
+              {isNightRate && ' 🌙'}
             </Text>
           </Group>
-          {props.totalAmount && (
-            <Group gap={2} wrap="nowrap">
-              <IconCurrencyRupee size={10} style={{ minWidth: '10px', color: 'rgba(255, 255, 255, 0.9)' }} />
-              <Text 
-                size="10px" 
-                fw={500}
-                style={{ 
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  letterSpacing: '-0.1px',
-                }}
-              >
-                ₹{props.totalAmount}
-              </Text>
-            </Group>
-          )}
         </Box>
       );
     }
@@ -324,11 +314,12 @@ export default function AdminCalendarPage() {
     // Desktop view
     return (
       <Box 
-        p={6} 
+        p={4} 
         style={{ 
           overflow: 'hidden',
-          fontSize: '13px',
+          fontSize: '12px',
           lineHeight: 1.2,
+          padding: '4px 6px',
         }}
       >
         <Text 
@@ -338,9 +329,10 @@ export default function AdminCalendarPage() {
           style={{ 
             color: 'white',
             marginBottom: '2px',
+            fontSize: '12px',
           }}
         >
-          {props.customerName}
+          {props.customerName || 'Customer'}
         </Text>
         <Text 
           size="xs" 
@@ -349,22 +341,12 @@ export default function AdminCalendarPage() {
           style={{ 
             color: 'rgba(255, 255, 255, 0.95)',
             marginBottom: '2px',
+            fontSize: '10px',
           }}
         >
-          {eventInfo.timeText}
+          {timeRange}
           {isNightRate && ' 🌙'}
         </Text>
-        {props.totalAmount && (
-          <Text 
-            size="xs" 
-            fw={500}
-            style={{ 
-              color: 'rgba(255, 255, 255, 0.9)',
-            }}
-          >
-            ₹{props.totalAmount}
-          </Text>
-        )}
       </Box>
     );
   };
@@ -623,69 +605,60 @@ export default function AdminCalendarPage() {
 
                   {/* Bookings List */}
                   <Stack gap="xs">
-                    {dateEvents.slice(0, displayCount).map((event, idx) => (
-                      <Paper
-                        key={idx}
-                        p="xs"
-                        withBorder
-                        radius="sm"
-                        style={{
-                          borderLeft: `4px solid ${event.backgroundColor}`,
-                          cursor: 'pointer',
-                          backgroundColor: theme.colors.gray[0],
-                        }}
-                        onClick={() => {
-                          setSelectedEvent({
-                            id: event.id,
-                            title: event.title,
-                            start: event.start,
-                            end: event.end,
-                            extendedProps: event.extendedProps,
-                          });
-                          setEventModalOpened(true);
-                        }}
-                      >
-                        <Group justify="space-between" wrap="nowrap">
-                          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                            <Group gap="xs" wrap="nowrap">
-                              <IconUser size={14} />
-                              <Text size="sm" fw={600} lineClamp={1}>
-                                {event.extendedProps.customerName}
-                              </Text>
-                            </Group>
-                            
-                            <Group gap="xs" wrap="nowrap">
-                              <IconClock size={12} />
-                              <Text size="xs" c="dimmed" lineClamp={1}>
-                                {new Date(event.start).toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
-                                {event.extendedProps.isNightRate && ' 🌙'}
-                              </Text>
-                            </Group>
-
-                            {event.extendedProps.totalAmount && (
+                    {dateEvents.slice(0, displayCount).map((event, idx) => {
+                      const timeRange = formatTimeRange(new Date(event.start), new Date(event.end));
+                      
+                      return (
+                        <Paper
+                          key={idx}
+                          p="xs"
+                          withBorder
+                          radius="sm"
+                          style={{
+                            borderLeft: `4px solid ${event.backgroundColor}`,
+                            cursor: 'pointer',
+                            backgroundColor: theme.colors.gray[0],
+                          }}
+                          onClick={() => {
+                            setSelectedEvent({
+                              id: event.id,
+                              title: event.title,
+                              start: event.start,
+                              end: event.end,
+                              extendedProps: event.extendedProps,
+                            });
+                            setEventModalOpened(true);
+                          }}
+                        >
+                          <Group justify="space-between" wrap="nowrap">
+                            <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
                               <Group gap="xs" wrap="nowrap">
-                                <IconCurrencyRupee size={12} />
-                                <Text size="xs" c="dimmed">
-                                  ₹{event.extendedProps.totalAmount}
+                                <IconUser size={14} />
+                                <Text size="sm" fw={600} lineClamp={1}>
+                                  {event.extendedProps.customerName}
                                 </Text>
                               </Group>
-                            )}
-                          </Stack>
+                              
+                              <Group gap="xs" wrap="nowrap">
+                                <IconClock size={12} />
+                                <Text size="xs" c="dimmed" lineClamp={1}>
+                                  {timeRange}
+                                  {event.extendedProps.nightRate && ' 🌙'}
+                                </Text>
+                              </Group>
+                            </Stack>
 
-                          <Badge
-                            size="xs"
-                            color={getStatusColor(event.extendedProps.status)}
-                            variant="light"
-                          >
-                            {event.extendedProps.status}
-                          </Badge>
-                        </Group>
-                      </Paper>
-                    ))}
+                            <Badge
+                              size="xs"
+                              color={getStatusColor(event.extendedProps.status)}
+                              variant="light"
+                            >
+                              {event.extendedProps.status}
+                            </Badge>
+                          </Group>
+                        </Paper>
+                      );
+                    })}
 
                     {hasMore && !isExpanded && (
                       <Button
@@ -712,6 +685,7 @@ export default function AdminCalendarPage() {
             style={{ 
               minHeight: isMobile ? '450px' : '600px',
               backgroundColor: 'white',
+              overflow: 'hidden',
             }}
           >
             <LoadingOverlay visible={loading} />
@@ -721,7 +695,7 @@ export default function AdminCalendarPage() {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView={isMobile ? "dayGridMonth" : "dayGridMonth"}
               headerToolbar={{
-                left: isMobile ? '' : 'prev,next today',
+                left: isMobile ? 'prev,next' : 'prev,next today',
                 center: 'title',
                 right: isMobile ? '' : 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
@@ -743,12 +717,16 @@ export default function AdminCalendarPage() {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true,
+                omitZeroMinute: false,
               }}
+              slotLabelInterval="01:00"
+              slotDuration="01:00:00"
+              slotEventOverlap={false}
               eventDisplay="block"
               displayEventTime={true}
-              displayEventEnd={false}
+              displayEventEnd={true}
               eventMaxStack={isMobile ? 2 : isTablet ? 3 : 4}
-              dayMaxEvents={isMobile ? 3 : true}
+              dayMaxEvents={isMobile ? 4 : true}
               moreLinkText={isMobile ? "+more" : "more"}
               moreLinkClick="popover"
               navLinks={!isMobile}
@@ -757,11 +735,12 @@ export default function AdminCalendarPage() {
               weekends={true}
               editable={false}
               droppable={false}
+              dayHeaderFormat={isMobile ? { weekday: 'short' } : { weekday: 'long' }}
               dayCellContent={(args) => {
                 // Compact day numbers on mobile
                 return (
                   <div style={{ 
-                    fontSize: isMobile ? '12px' : '14px',
+                    fontSize: isMobile ? '11px' : '14px',
                     fontWeight: 600,
                     padding: isMobile ? '2px' : '4px',
                   }}>
@@ -771,6 +750,11 @@ export default function AdminCalendarPage() {
               }}
               eventClassNames="calendar-event"
               eventBorderColor="transparent"
+              // Improved week view settings
+              slotLabelClassNames="calendar-slot-label"
+              dayHeaderClassNames="calendar-day-header"
+              // Set scroll time to 8 AM
+              scrollTime="08:00:00"
             />
           </Paper>
         )}
@@ -822,28 +806,14 @@ export default function AdminCalendarPage() {
               <Group>
                 <IconClock size={16} />
                 <Text size="sm">
-                  {new Date(selectedEvent.start).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                  {selectedEvent.extendedProps.isNightRate && ' 🌙 (Night Rate)'}
-                </Text>
-              </Group>
-              
-              <Group>
-                <IconCurrencyRupee size={16} />
-                <Text size="sm">
-                  Total: ₹{selectedEvent.extendedProps.totalAmount}
+                  {formatTimeRange(new Date(selectedEvent.start), new Date(selectedEvent.end))}
+                  {selectedEvent.extendedProps.nightRate && ' 🌙 (Night Rate)'}
                 </Text>
               </Group>
               
               <Group>
                 <Badge variant="light" color="green">
-                  Advance: ₹{selectedEvent.extendedProps.advancePayment}
-                </Badge>
-                <Badge variant="light" color="blue">
-                  Remaining: ₹{selectedEvent.extendedProps.totalAmount - selectedEvent.extendedProps.advancePayment}
+                  Booking #: {selectedEvent.extendedProps.bookingNumber}
                 </Badge>
               </Group>
             </Stack>
@@ -860,7 +830,7 @@ export default function AdminCalendarPage() {
                   setModalOpened(true);
                 }}
               >
-                Full Details
+                Full Details & Actions
               </Button>
             </Group>
           </Stack>
