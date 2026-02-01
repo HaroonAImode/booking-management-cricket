@@ -45,8 +45,6 @@ import {
   Collapse,
   Drawer,
   rem,
-  Flex,
-  Divider,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -75,7 +73,7 @@ import {
   IconChevronUp,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useDebouncedValue, useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -128,10 +126,6 @@ interface Booking {
 }
 
 export default function AdminBookingsPage() {
-  // Media query for responsive design
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(max-width: 1024px)');
-  
   // Export modal state
   const [exportModalOpened, setExportModalOpened] = useState(false);
   // Mantine DatesRangeValue<Date> is [Date | null, Date | null]
@@ -932,321 +926,6 @@ export default function AdminBookingsPage() {
     );
   };
 
-  // Render desktop table or mobile cards based on screen size
-  const renderBookingsList = () => {
-    if (isMobile) {
-      return (
-        <Stack>
-          {bookings.length === 0 ? (
-            <EmptyState
-              icon={<IconCalendarEvent size={64} />}
-              title="No Bookings Found"
-              description="Try adjusting your filters or search query to find bookings."
-              action={{
-                label: 'Clear Filters',
-                onClick: () => {
-                  setStatusFilter('all');
-                  setPaymentFilter('all');
-                  setSearchQuery('');
-                },
-              }}
-            />
-          ) : (
-            bookings.map((booking) => (
-              <MobileBookingCard key={booking.id} booking={booking} />
-            ))
-          )}
-        </Stack>
-      );
-    }
-
-    // Desktop table view
-    return (
-      <Paper withBorder radius="md">
-        <Table.ScrollContainer minWidth={900}>
-          <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Booking #</Table.Th>
-                <Table.Th>Customer</Table.Th>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Slots</Table.Th>
-                <Table.Th>Amount</Table.Th>
-                <Table.Th>Total Paid</Table.Th>
-                <Table.Th>Cash</Table.Th>
-                <Table.Th>Online</Table.Th>
-                <Table.Th>Extra Charges</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {bookings.map((booking) => {
-                const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
-                const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
-                  ? (booking.total_amount || 0) - totalPaid
-                  : 0;
-                const { cash, online } = getPaymentBreakdown(booking);
-                
-                // Safely get extra charges
-                const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
-                const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
-                
-                // Safely get slots
-                const slots = Array.isArray(booking.slots) ? booking.slots : [];
-                
-                return (
-                  <Table.Tr
-                    key={booking.id}
-                    className={booking.status === 'completed' ? 'completed-row' : ''}
-                  >
-                    <Table.Td>
-                      <Text size="sm" fw={500}>
-                        {booking.booking_number || ''}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {new Date(booking.created_at).toLocaleDateString()}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{booking.customer?.name || ''}</Text>
-                      <Text size="xs" c="dimmed">
-                        {booking.customer?.phone || ''}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">
-                        {new Date(booking.booking_date).toLocaleDateString()}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={500}>
-                        {formatSlotRanges(slots.map(s => s.slot_hour))}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={2}>
-                        <Text size="sm" fw={600}>
-                          Rs {(booking.total_amount || 0).toLocaleString()}
-                        </Text>
-                        {totalExtraCharges > 0 && (
-                          <Text size="xs" c="blue" fw={500}>
-                            (+Rs {totalExtraCharges.toLocaleString()})
-                          </Text>
-                        )}
-                        <Text size="xs" c="dimmed">
-                          {booking.total_hours || 0} hours
-                        </Text>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={4}>
-                        <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
-                          Rs {totalPaid.toLocaleString()}
-                        </Text>
-                        {discount > 0 ? (
-                          <Text size="xs" c="green" fw={600}>
-                            Discount: Rs {discount.toLocaleString()}
-                          </Text>
-                        ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
-                          <Text size="xs" c="red">
-                            Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
-                          </Text>
-                        ) : null}
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      {cash === 0 ? (
-                        <Text size="xs" c="dimmed">-</Text>
-                      ) : (
-                        <Stack gap={4}>
-                          <Text size="sm" fw={600}>
-                            Rs {cash.toLocaleString()}
-                          </Text>
-                          <Group gap={4} wrap="nowrap">
-                            {booking.advance_payment_method === 'cash' && (
-                              <Badge size="xs" color="green" variant="dot">Cash</Badge>
-                            )}
-                            {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
-                              <Badge size="xs" color="green" variant="dot">Cash</Badge>
-                            )}
-                          </Group>
-                        </Stack>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      {online === 0 ? (
-                        <Text size="xs" c="dimmed">-</Text>
-                      ) : (
-                        <Stack gap={4}>
-                          <Text size="sm" fw={600}>
-                            Rs {online.toLocaleString()}
-                          </Text>
-                          <Group gap={4} wrap="nowrap">
-                            {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
-                              <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
-                                {getPaymentMethodBadge(booking.advance_payment_method).label}
-                              </Badge>
-                            )}
-                            {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
-                              <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
-                                {getPaymentMethodBadge(booking.remaining_payment_method).label}
-                              </Badge>
-                            )}
-                          </Group>
-                        </Stack>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      {getExtraChargesDisplay(booking)}
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={getStatusColor(booking.status)}
-                        variant="light"
-                        size="md"
-                        style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
-                      >
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </Badge>
-                      {booking.remaining_payment > 0 && booking.status === 'approved' && (
-                        <Text size="xs" c="red" fw={500} mt={4}>
-                          Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs" wrap="nowrap">
-                        {/* Invoice Download Button */}
-                        <Tooltip label="Download Invoice">
-                          <ActionIcon
-                            variant="light"
-                            color="yellow"
-                            onClick={() => downloadInvoice(booking.id, booking.booking_number)}
-                          >
-                            <IconFileInvoice size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                        
-                        {booking.status === 'pending' && (
-                          <>
-                            <Tooltip label="Approve">
-                              <ActionIcon
-                                color="green"
-                                variant="light"
-                                onClick={() => handleApprove(booking.id)}
-                              >
-                                <IconCheck size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                            <Tooltip label="Reject">
-                              <ActionIcon
-                                color="red"
-                                variant="light"
-                                onClick={() => {
-                                  const reason = prompt('Reason for rejection:');
-                                  if (reason) handleReject(booking.id, reason);
-                                }}
-                              >
-                                <IconX size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </>
-                        )}
-                        {booking.status === 'approved' && booking.remaining_payment > 0 && (
-                          <Tooltip label="Complete Payment">
-                            <ActionIcon
-                              color="blue"
-                              variant="filled"
-                              onClick={() => {
-                                setSelectedPaymentBooking({
-                                  id: booking.id,
-                                  number: booking.booking_number,
-                                  remaining: booking.remaining_payment || 0,
-                                });
-                                setCompletePaymentOpened(true);
-                              }}
-                            >
-                              <IconCurrencyRupee size={16} />
-                            </ActionIcon>
-                          </Tooltip>
-                        )}
-                        <Menu shadow="md">
-                          <Menu.Target>
-                            <ActionIcon variant="subtle">
-                              <IconDots size={16} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item
-                              leftSection={<IconEye size={16} />}
-                              onClick={() => {
-                                setSelectedBookingId(booking.id);
-                                setDetailsModalOpened(true);
-                              }}
-                            >
-                              View Details
-                            </Menu.Item>
-                            
-                            {/* Only admins can edit and delete */}
-                            {canEditBookings && (
-                              <>
-                                <Menu.Item
-                                  leftSection={<IconEdit size={16} />}
-                                  color="blue"
-                                  onClick={() => {
-                                    setSelectedBookingId(booking.id);
-                                    setEditModalOpened(true);
-                                  }}
-                                >
-                                  Edit Booking
-                                </Menu.Item>
-                                <Menu.Divider />
-                              </>
-                            )}
-                            
-                            {canDeleteBookings && (
-                              <Menu.Item
-                                leftSection={<IconTrash size={16} />}
-                                color="red"
-                                onClick={() => handleDelete(booking.id, booking.booking_number)}
-                              >
-                                Delete Booking
-                              </Menu.Item>
-                            )}
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
-
-        {bookings.length === 0 && !loading && (
-          <EmptyState
-            icon={<IconCalendarEvent size={64} />}
-            title="No Bookings Found"
-            description="Try adjusting your filters or search query to find bookings."
-            action={{
-              label: 'Clear Filters',
-              onClick: () => {
-                setStatusFilter('all');
-                setPaymentFilter('all');
-                setSearchQuery('');
-              },
-            }}
-          />
-        )}
-      </Paper>
-    );
-  };
-
   return (
     <Container 
       size="xl" 
@@ -1287,26 +966,26 @@ export default function AdminBookingsPage() {
             </div>
 
             <Group wrap="wrap" gap="xs">
-              {isAdmin && !isMobile && (
+              {isAdmin && (
                 <Button
                   leftSection={<IconPlus size={16} />}
                   size="sm"
                   onClick={() => setManualBookingOpened(true)}
+                  visibleFrom="sm"
                 >
                   Add Booking
                 </Button>
               )}
               
-              {!isMobile && (
-                <Button
-                  variant="light"
-                  leftSection={<IconDownload size={16} />}
-                  size="sm"
-                  onClick={exportToExcel}
-                >
-                  Export
-                </Button>
-              )}
+              <Button
+                variant="light"
+                leftSection={<IconDownload size={16} />}
+                size="sm"
+                visibleFrom="sm"
+                onClick={exportToExcel}
+              >
+                Export
+              </Button>
               
               <Menu shadow="md">
                 <Menu.Target>
@@ -1314,7 +993,7 @@ export default function AdminBookingsPage() {
                     variant="light"
                     leftSection={<IconDownload size={16} />}
                     size="sm"
-                    style={{ display: isMobile ? 'flex' : 'none' }}
+                    hiddenFrom="sm"
                   >
                     Export
                   </Button>
@@ -1336,22 +1015,21 @@ export default function AdminBookingsPage() {
               </Menu>
 
               {/* Mobile filter button */}
-              {isMobile && (
-                <Button
-                  variant="light"
-                  leftSection={<IconFilter size={16} />}
-                  size="sm"
-                  onClick={openFilterDrawer}
-                >
-                  Filters
-                </Button>
-              )}
+              <Button
+                variant="light"
+                leftSection={<IconFilter size={16} />}
+                size="sm"
+                hiddenFrom="sm"
+                onClick={openFilterDrawer}
+              >
+                Filters
+              </Button>
             </Group>
           </Group>
 
           {/* Direct Status Filter Buttons - Desktop */}
-          {isAdmin && !isMobile && (
-            <Group gap="xs" mt="md" mb={-8}>
+          {isAdmin && (
+            <Group gap="xs" mt="md" mb={-8} visibleFrom="sm">
               {[
                 { value: 'all', label: 'All' },
                 { value: 'pending', label: 'Pending' },
@@ -1380,89 +1058,394 @@ export default function AdminBookingsPage() {
         </Stack>
 
         {/* Filters - Desktop */}
-        {!isMobile && (
-          <Paper withBorder p="sm">
-            <Stack gap="sm">
-              <TextInput
-                placeholder="Search by booking #, customer, phone..."
-                leftSection={<IconSearch size={16} />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+        <Paper withBorder p="sm" visibleFrom="sm">
+          <Stack gap="sm">
+            <TextInput
+              placeholder="Search by booking #, customer, phone..."
+              leftSection={<IconSearch size={16} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="sm"
+            />
+            <Group wrap="wrap">
+              {isAdmin && (
+                <>
+                  <Select
+                    placeholder="Status"
+                    leftSection={<IconFilter size={16} />}
+                    data={[
+                      { value: 'all', label: 'All Statuses' },
+                      { value: 'pending', label: 'Pending' },
+                      { value: 'approved', label: 'Approved' },
+                      { value: 'completed', label: 'Completed' },
+                      { value: 'cancelled', label: 'Cancelled' },
+                    ]}
+                    value={statusFilter}
+                    onChange={(value) => setStatusFilter(value || 'all')}
+                    style={{ flex: '1 1 120px', minWidth: 120 }}
+                    size="sm"
+                  />
+                  <Select
+                    placeholder="Payment"
+                    leftSection={<IconFilter size={16} />}
+                    data={[
+                      { value: 'all', label: 'All' },
+                      { value: 'paid', label: 'Paid' },
+                      { value: 'pending', label: 'Pending' },
+                    ]}
+                    value={paymentFilter}
+                    onChange={(value) => setPaymentFilter(value || 'all')}
+                    style={{ flex: '1 1 120px', minWidth: 120 }}
+                    size="sm"
+                  />
+                </>
+              )}
+              <DatePickerInput
+                placeholder="From Date"
+                leftSection={<IconCalendarEvent size={16} />}
+                value={dateFrom}
+                onChange={(value) => setDateFrom(value && typeof value !== 'string' ? value : null)}
+                clearable
+                style={{ flex: '1 1 140px', minWidth: 140 }}
                 size="sm"
+                maxDate={dateTo || undefined}
               />
-              <Group wrap="wrap">
-                {isAdmin && (
-                  <>
-                    <Select
-                      placeholder="Status"
-                      leftSection={<IconFilter size={16} />}
-                      data={[
-                        { value: 'all', label: 'All Statuses' },
-                        { value: 'pending', label: 'Pending' },
-                        { value: 'approved', label: 'Approved' },
-                        { value: 'completed', label: 'Completed' },
-                        { value: 'cancelled', label: 'Cancelled' },
-                      ]}
-                      value={statusFilter}
-                      onChange={(value) => setStatusFilter(value || 'all')}
-                      style={{ flex: '1 1 120px', minWidth: 120 }}
-                      size="sm"
-                    />
-                    <Select
-                      placeholder="Payment"
-                      leftSection={<IconFilter size={16} />}
-                      data={[
-                        { value: 'all', label: 'All' },
-                        { value: 'paid', label: 'Paid' },
-                        { value: 'pending', label: 'Pending' },
-                      ]}
-                      value={paymentFilter}
-                      onChange={(value) => setPaymentFilter(value || 'all')}
-                      style={{ flex: '1 1 120px', minWidth: 120 }}
-                      size="sm"
-                    />
-                  </>
-                )}
-                <DatePickerInput
-                  placeholder="From Date"
-                  leftSection={<IconCalendarEvent size={16} />}
-                  value={dateFrom}
-                  onChange={(value) => setDateFrom(value && typeof value !== 'string' ? value : null)}
-                  clearable
-                  style={{ flex: '1 1 140px', minWidth: 140 }}
-                  size="sm"
-                  maxDate={dateTo || undefined}
-                />
-                <DatePickerInput
-                  placeholder="To Date"
-                  leftSection={<IconCalendarEvent size={16} />}
-                  value={dateTo}
-                  onChange={(value) => setDateTo(value && typeof value !== 'string' ? value : null)}
-                  clearable
-                  style={{ flex: '1 1 140px', minWidth: 140 }}
-                  size="sm"
-                  minDate={dateFrom || undefined}
-                />
-                <Button
-                  variant="light"
-                  leftSection={<IconRefresh size={16} />}
-                  onClick={fetchBookings}
-                  loading={loading}
-                  size="sm"
-                  style={{ flex: '0 0 auto' }}
-                >
-                  Refresh
-                </Button>
-              </Group>
-            </Stack>
-          </Paper>
-        )}
+              <DatePickerInput
+                placeholder="To Date"
+                leftSection={<IconCalendarEvent size={16} />}
+                value={dateTo}
+                onChange={(value) => setDateTo(value && typeof value !== 'string' ? value : null)}
+                clearable
+                style={{ flex: '1 1 140px', minWidth: 140 }}
+                size="sm"
+                minDate={dateFrom || undefined}
+              />
+              <Button
+                variant="light"
+                leftSection={<IconRefresh size={16} />}
+                onClick={fetchBookings}
+                loading={loading}
+                size="sm"
+                style={{ flex: '0 0 auto' }}
+              >
+                Refresh
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
 
         {/* Table/Content */}
         {loading ? (
           <TableSkeleton rows={8} />
         ) : (
-          renderBookingsList()
+          <>
+            {/* Desktop Table */}
+            <Paper withBorder radius="md" visibleFrom="sm">
+              <Table.ScrollContainer minWidth={900}>
+                <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Booking #</Table.Th>
+                      <Table.Th>Customer</Table.Th>
+                      <Table.Th>Date</Table.Th>
+                      <Table.Th>Slots</Table.Th>
+                      <Table.Th>Amount</Table.Th>
+                      <Table.Th>Total Paid</Table.Th>
+                      <Table.Th>Cash</Table.Th>
+                      <Table.Th>Online</Table.Th>
+                      <Table.Th>Extra Charges</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {bookings.map((booking) => {
+                      const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
+                      const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
+                        ? (booking.total_amount || 0) - totalPaid
+                        : 0;
+                      const { cash, online } = getPaymentBreakdown(booking);
+                      
+                      // Safely get extra charges
+                      const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+                      const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+                      
+                      // Safely get slots
+                      const slots = Array.isArray(booking.slots) ? booking.slots : [];
+                      
+                      return (
+                        <Table.Tr
+                          key={booking.id}
+                          className={booking.status === 'completed' ? 'completed-row' : ''}
+                        >
+                          <Table.Td>
+                            <Text size="sm" fw={500}>
+                              {booking.booking_number || ''}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {new Date(booking.created_at).toLocaleDateString()}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm">{booking.customer?.name || ''}</Text>
+                            <Text size="xs" c="dimmed">
+                              {booking.customer?.phone || ''}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm">
+                              {new Date(booking.booking_date).toLocaleDateString()}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" fw={500}>
+                              {formatSlotRanges(slots.map(s => s.slot_hour))}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Stack gap={2}>
+                              <Text size="sm" fw={600}>
+                                Rs {(booking.total_amount || 0).toLocaleString()}
+                              </Text>
+                              {totalExtraCharges > 0 && (
+                                <Text size="xs" c="blue" fw={500}>
+                                  (+Rs {totalExtraCharges.toLocaleString()})
+                                </Text>
+                              )}
+                              <Text size="xs" c="dimmed">
+                                {booking.total_hours || 0} hours
+                              </Text>
+                            </Stack>
+                          </Table.Td>
+                          <Table.Td>
+                            <Stack gap={4}>
+                              <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
+                                Rs {totalPaid.toLocaleString()}
+                              </Text>
+                              {discount > 0 ? (
+                                <Text size="xs" c="green" fw={600}>
+                                  Discount: Rs {discount.toLocaleString()}
+                                </Text>
+                              ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
+                                <Text size="xs" c="red">
+                                  Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
+                                </Text>
+                              ) : null}
+                            </Stack>
+                          </Table.Td>
+                          <Table.Td>
+                            {cash === 0 ? (
+                              <Text size="xs" c="dimmed">-</Text>
+                            ) : (
+                              <Stack gap={4}>
+                                <Text size="sm" fw={600}>
+                                  Rs {cash.toLocaleString()}
+                                </Text>
+                                <Group gap={4} wrap="nowrap">
+                                  {booking.advance_payment_method === 'cash' && (
+                                    <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                  )}
+                                  {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
+                                    <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                  )}
+                                </Group>
+                              </Stack>
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            {online === 0 ? (
+                              <Text size="xs" c="dimmed">-</Text>
+                            ) : (
+                              <Stack gap={4}>
+                                <Text size="sm" fw={600}>
+                                  Rs {online.toLocaleString()}
+                                </Text>
+                                <Group gap={4} wrap="nowrap">
+                                  {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
+                                    <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
+                                      {getPaymentMethodBadge(booking.advance_payment_method).label}
+                                    </Badge>
+                                  )}
+                                  {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
+                                    <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
+                                      {getPaymentMethodBadge(booking.remaining_payment_method).label}
+                                    </Badge>
+                                  )}
+                                </Group>
+                              </Stack>
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            {getExtraChargesDisplay(booking)}
+                          </Table.Td>
+                          <Table.Td>
+                            <Badge
+                              color={getStatusColor(booking.status)}
+                              variant="light"
+                              size="md"
+                              style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
+                            >
+                              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                            </Badge>
+                            {booking.remaining_payment > 0 && booking.status === 'approved' && (
+                              <Text size="xs" c="red" fw={500} mt={4}>
+                                Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
+                              </Text>
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            <Group gap="xs" wrap="nowrap">
+                              {/* Invoice Download Button */}
+                              <Tooltip label="Download Invoice">
+                                <ActionIcon
+                                  variant="light"
+                                  color="yellow"
+                                  onClick={() => downloadInvoice(booking.id, booking.booking_number)}
+                                >
+                                  <IconFileInvoice size={16} />
+                                </ActionIcon>
+                              </Tooltip>
+                              
+                              {booking.status === 'pending' && (
+                                <>
+                                  <Tooltip label="Approve">
+                                    <ActionIcon
+                                      color="green"
+                                      variant="light"
+                                      onClick={() => handleApprove(booking.id)}
+                                    >
+                                      <IconCheck size={16} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                  <Tooltip label="Reject">
+                                    <ActionIcon
+                                      color="red"
+                                      variant="light"
+                                      onClick={() => {
+                                        const reason = prompt('Reason for rejection:');
+                                        if (reason) handleReject(booking.id, reason);
+                                      }}
+                                    >
+                                      <IconX size={16} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                </>
+                              )}
+                              {booking.status === 'approved' && booking.remaining_payment > 0 && (
+                                <Tooltip label="Complete Payment">
+                                  <ActionIcon
+                                    color="blue"
+                                    variant="filled"
+                                    onClick={() => {
+                                      setSelectedPaymentBooking({
+                                        id: booking.id,
+                                        number: booking.booking_number,
+                                        remaining: booking.remaining_payment || 0,
+                                      });
+                                      setCompletePaymentOpened(true);
+                                    }}
+                                  >
+                                    <IconCurrencyRupee size={16} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                              <Menu shadow="md">
+                                <Menu.Target>
+                                  <ActionIcon variant="subtle">
+                                    <IconDots size={16} />
+                                  </ActionIcon>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  <Menu.Item
+                                    leftSection={<IconEye size={16} />}
+                                    onClick={() => {
+                                      setSelectedBookingId(booking.id);
+                                      setDetailsModalOpened(true);
+                                    }}
+                                  >
+                                    View Details
+                                  </Menu.Item>
+                                  
+                                  {/* Only admins can edit and delete */}
+                                  {canEditBookings && (
+                                    <>
+                                      <Menu.Item
+                                        leftSection={<IconEdit size={16} />}
+                                        color="blue"
+                                        onClick={() => {
+                                          setSelectedBookingId(booking.id);
+                                          setEditModalOpened(true);
+                                        }}
+                                      >
+                                        Edit Booking
+                                      </Menu.Item>
+                                      <Menu.Divider />
+                                    </>
+                                  )}
+                                  
+                                  {canDeleteBookings && (
+                                    <Menu.Item
+                                      leftSection={<IconTrash size={16} />}
+                                      color="red"
+                                      onClick={() => handleDelete(booking.id, booking.booking_number)}
+                                    >
+                                      Delete Booking
+                                    </Menu.Item>
+                                  )}
+                                </Menu.Dropdown>
+                              </Menu>
+                            </Group>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+
+              {bookings.length === 0 && !loading && (
+                <EmptyState
+                  icon={<IconCalendarEvent size={64} />}
+                  title="No Bookings Found"
+                  description="Try adjusting your filters or search query to find bookings."
+                  action={{
+                    label: 'Clear Filters',
+                    onClick: () => {
+                      setStatusFilter('all');
+                      setPaymentFilter('all');
+                      setSearchQuery('');
+                    },
+                  }}
+                />
+              )}
+            </Paper>
+
+            {/* Mobile Cards */}
+            <Box hiddenFrom="sm">
+              {bookings.length === 0 ? (
+                <EmptyState
+                  icon={<IconCalendarEvent size={64} />}
+                  title="No Bookings Found"
+                  description="Try adjusting your filters or search query to find bookings."
+                  action={{
+                    label: 'Clear Filters',
+                    onClick: () => {
+                      setStatusFilter('all');
+                      setPaymentFilter('all');
+                      setSearchQuery('');
+                    },
+                  }}
+                />
+              ) : (
+                bookings.map((booking) => (
+                  <MobileBookingCard key={booking.id} booking={booking} />
+                ))
+              )}
+            </Box>
+          </>
         )}
       </Stack>
 
