@@ -423,7 +423,7 @@ export default function CalendarFirstBooking() {
                       <Group gap="xs" style={{ flexGrow: 1 }}>
                         <IconCheck size={24} color="#1A1A1A" />
                         <Title order={2} style={{ fontSize: 'clamp(1.2rem, 4vw, 1.75rem)' }} c="#1A1A1A" fw={900}>
-                          ⚡ AVAILABILITY CALENDAR
+                          AVAILABILITY CALENDAR
                         </Title>
                       </Group>
                       {/* Current Date Display */}
