@@ -182,15 +182,17 @@ async function handler(
     }
 
     // Call SQL function to verify payment and complete booking
+    // UPDATED: Now passing 7 parameters including p_created_by
     const { data: result, error: verifyError } = await supabase.rpc(
-      'verify_remaining_payment_with_extra_charges',  // Changed to new function
+      'verify_remaining_payment_with_extra_charges',
       {
-        p_booking_id: bookingId,
-        p_payment_method: paymentMethod,
-        p_payment_amount: paymentAmount,
-        p_payment_proof_path: uploadedProofPath,
         p_admin_notes: adminNotes,
+        p_booking_id: bookingId,
         p_extra_charges_total: totalExtraCharges,
+        p_payment_amount: paymentAmount,
+        p_payment_method: paymentMethod,
+        p_payment_proof_path: uploadedProofPath,
+        p_created_by: adminProfile.id, // ADDED: Admin user ID is required
       }
     );
 
@@ -215,7 +217,7 @@ async function handler(
       message: 'Payment verified and booking completed successfully',
       bookingNumber: result.booking_number,
       remainingAmount: result.new_remaining || 0,
-      totalExtraCharges,
+      totalExtraCharges: result.total_extra_charges || totalExtraCharges,
       newTotalAmount: result.new_total_amount || booking.total_amount,
       discountGiven: result.discount_given || 0,
     });

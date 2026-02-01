@@ -305,8 +305,6 @@ export default function AdminBookingsPage() {
       const response = await fetch(`/api/admin/bookings?${params}`);
       const result = await response.json();
 
-      console.log('API Response:', result); // Debug log
-
       if (result.success) {
         // Ensure bookings have proper structure
         const safeBookings = (result.bookings || []).map((booking: any) => ({
@@ -320,8 +318,6 @@ export default function AdminBookingsPage() {
           advance_payment: booking.advance_payment || 0,
           remaining_payment: booking.remaining_payment || 0,
         }));
-        
-        console.log('Processed bookings:', safeBookings); // Debug log
         
         setBookings(safeBookings);
         setSummary(result.summary);
@@ -703,14 +699,6 @@ export default function AdminBookingsPage() {
     });
   };
 
-  // Add this for debugging
-  useEffect(() => {
-    if (bookings.length > 0) {
-      console.log('Current bookings state:', bookings);
-      console.log('First booking for table:', bookings[0]);
-    }
-  }, [bookings]);
-
   return (
     <Container 
       size="xl" 
@@ -929,22 +917,6 @@ export default function AdminBookingsPage() {
               </Button>
             </Group>
           </Stack>
-        </Paper>
-
-        {/* Debug Info - Temporary */}
-        <Paper withBorder p="md">
-          <Text fw={600}>Debug Info:</Text>
-          <Text>Total bookings: {bookings.length}</Text>
-          <Text>Loading: {loading ? 'Yes' : 'No'}</Text>
-          {bookings.length > 0 && (
-            <div>
-              <Text>First booking ID: {bookings[0].id}</Text>
-              <Text>First booking number: {bookings[0].booking_number}</Text>
-              <Text>First booking extra_charges type: {typeof bookings[0].extra_charges}</Text>
-              <Text>Is extra_charges array? {Array.isArray(bookings[0].extra_charges) ? 'Yes' : 'No'}</Text>
-              <Text>extra_charges value: {JSON.stringify(bookings[0].extra_charges)}</Text>
-            </div>
-          )}
         </Paper>
 
         {/* Table */}
