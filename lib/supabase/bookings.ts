@@ -333,6 +333,8 @@ export async function createCompleteBooking(params: {
   }
 }
 
+
+
 /**
  * Cleanup expired pending bookings (call periodically)
  * Returns number of bookings released
@@ -545,3 +547,45 @@ export function formatDateForSQL(date: Date | string | null): string {
   
   return dateObj.toISOString().split('T')[0];
 }
+
+
+/**
+ * Format extra charges for display
+ */
+export const formatExtraCharges = (charges: Array<{ category: string; amount: number }>) => {
+  if (!charges || charges.length === 0) return '-';
+  
+  const total = charges.reduce((sum, charge) => sum + charge.amount, 0);
+  const categories = charges.map(charge => 
+    `${charge.category}: Rs ${charge.amount}`
+  ).join(', ');
+  
+  return `Rs ${total.toLocaleString()} (${categories})`;
+};
+
+/**
+ * Calculate total extra charges for a booking
+ */
+export const calculateTotalExtraCharges = (charges: Array<{ amount: number }>) => {
+  if (!charges || charges.length === 0) return 0;
+  
+  return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+};
+
+/**
+ * Get category label for extra charges
+ */
+export const getExtraChargeCategoryLabel = (category: string) => {
+  switch (category) {
+    case 'mineral water':
+      return 'Mineral Water';
+    case 'tape':
+      return 'Tape';
+    case 'ball':
+      return 'Ball';
+    case 'other':
+      return 'Other';
+    default:
+      return category;
+  }
+};

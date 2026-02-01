@@ -83,3 +83,71 @@ also add a option like when admin or ground manager click export then click expo
 should be proper UI and also user friendly UI for mobile screen also
 
 and then push to repo
+
+
+
+
+
+
+
+
+
+
+
+while ground manager or admin are adding complete payment for any booking from booking page 
+then they have add remaining payment amount and can enter any amount so currently we see
+like if for any booking suppose remaing are 5500
+and we enter 5700 so it should update these officially like should be add to revenue and should show as this paymeent in remaing payment as 5700
+and currently we are seeing the exact remaing amount which is calculated not the one which we enter 
+
+so please check this in all files so everything work properly 
+and also if want to verify anything then give me sql query i can run on supabsse and share result output 
+
+and why we are addign more than remaing because sometime customer buy a tape etc or water bottel anything from us so thats why we are entered this more than remaining
+
+
+
+
+
+
+
+
+
+
+
+
+so currently when ground manager or admin is adding remaing payment amount
+by completing payment of any booking 
+then we want to add new thing like currently can only enter remaining amount  and correct and good
+
+and we want to add new field which is enter extra charges
+and when we click that then it can ask us category 
+and we want categories as mineral water , tape , ball , other 
+and when sellect any then also to add payment amount of that 
+
+and for that no need to add payment proof the other prood which is off remaing payment will be used that is good and perfect
+
+
+and on booking page add new column after online column which says extra charges 
+and for any booking if there are extra charges then those will appear there 
+for those who have no extra charges add simple dash - there
+
+and also when after addign extra amount etc
+
+when click verify & complete booking then it should also update the amount which is like total amount  and also total paid 
+
+hope you understand this thing 
+and same as revenue will also get updated 
+
+and i think that will also get updated 
+but also check like revenue should be updated with these extra payment amounts 
+
+and like for that specific booking total amount should also get updated with adding extra amount and also remaing should be like remaing paid etc
+then i think dont need to add seperately extra payment in renenue 
+if remaing payment amount get updated if any booking has extra amount added
+
+
+
+so give me sql queries and also if want to verify anything then i can also run those sql in supabase and share output with you
+
+so please implement these professiaonlly 

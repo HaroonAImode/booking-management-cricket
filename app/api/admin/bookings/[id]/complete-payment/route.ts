@@ -1,11 +1,12 @@
 /**
  * Complete Payment API Route
  * 
- * Purpose: Handle remaining payment verification
+ * Purpose: Handle remaining payment verification with extra charges
  * Features:
  * - Upload remaining payment proof
  * - Verify payment and mark booking as completed
- * - Update payment records
+ * - Handle extra charges (mineral water, tape, ball, other)
+ * - Update booking totals with extra charges
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -36,15 +37,17 @@ async function handler(
     const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
     const paymentProof = formData.get('paymentProof') as File | null;
     const adminNotes = formData.get('adminNotes') as string | null;
-    // Parse extra charges (JSON stringified array)
-    let extraCharges: { category: string; amount: number }[] = [];
-    const extraChargesRaw = formData.get('extraCharges');
-    if (extraChargesRaw) {
+    const extraChargesJson = formData.get('extraCharges') as string | null;
+
+    // Parse extra charges if provided
+    let extraCharges: Array<{ category: string; amount: number }> = [];
+    if (extraChargesJson) {
       try {
-        extraCharges = JSON.parse(extraChargesRaw as string);
-      } catch (e) {
+        extraCharges = JSON.parse(extraChargesJson);
+      } catch (error) {
+        console.error('Error parsing extra charges:', error);
         return NextResponse.json(
-          { success: false, error: 'Invalid extra charges data' },
+          { success: false, error: 'Invalid extra charges format' },
           { status: 400 }
         );
       }
@@ -66,6 +69,27 @@ async function handler(
       );
     }
 
+    // Validate extra charges
+    if (extraCharges.length > 0) {
+      for (const charge of extraCharges) {
+        if (!charge.category || !charge.amount || charge.amount <= 0) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid extra charge data' },
+            { status: 400 }
+          );
+        }
+        
+        // Validate category
+        const validCategories = ['mineral water', 'tape', 'ball', 'other'];
+        if (!validCategories.includes(charge.category)) {
+          return NextResponse.json(
+            { success: false, error: `Invalid category: ${charge.category}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Payment proof is optional for cash payments, required for digital
     if (!paymentProof && paymentMethod !== 'cash') {
       return NextResponse.json(
@@ -77,7 +101,7 @@ async function handler(
     // Get booking details first to get booking number and date
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('booking_number, booking_date, remaining_payment, status, total_amount, remaining_payment_amount')
+      .select('booking_number, booking_date, remaining_payment, status, total_amount')
       .eq('id', bookingId)
       .single();
 
@@ -99,33 +123,19 @@ async function handler(
       );
     }
 
-    // Validate remaining payment exists
-    if (booking.remaining_payment <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'No remaining payment due for this booking' },
-        { status: 400 }
-      );
-    }
+    // Calculate total with extra charges
+    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
+    const totalPayable = booking.remaining_payment + totalExtraCharges;
 
-    // Validate payment amount doesn't exceed remaining
-    if (paymentAmount > booking.remaining_payment) {
+    // Validate payment amount doesn't exceed total payable
+    if (paymentAmount > totalPayable) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment amount (Rs ${paymentAmount}) cannot exceed remaining amount (Rs ${booking.remaining_payment})` 
+          error: `Payment amount (Rs ${paymentAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
         },
         { status: 400 }
       );
-    }
-
-    // Validate extra charges
-    for (const ec of extraCharges) {
-      if (!ec.category || !ec.amount || ec.amount <= 0) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid extra charge entry' },
-          { status: 400 }
-        );
-      }
     }
 
     // Upload payment proof to storage (if provided)
@@ -151,32 +161,21 @@ async function handler(
       uploadedProofPath = uploadResult.data;
     }
 
-    // Insert extra charges and update booking totals if any
-    let totalExtraCharges = 0;
+    // Add extra charges if any
     if (extraCharges.length > 0) {
-      // Insert each extra charge
-      for (const ec of extraCharges) {
-        const { error: ecError } = await supabase.from('extra_charges').insert({
-          booking_id: bookingId,
-          category: ec.category,
-          amount: ec.amount,
-        });
-        if (ecError) {
-          return NextResponse.json(
-            { success: false, error: `Failed to add extra charge: ${ecError.message}` },
-            { status: 500 }
-          );
+      const { error: extraChargesError } = await supabase.rpc(
+        'add_extra_charges_during_payment',
+        {
+          p_booking_id: bookingId,
+          p_extra_charges: JSON.stringify(extraCharges),
+          p_created_by: adminProfile.id,
         }
-        totalExtraCharges += ec.amount;
-      }
-      // Update booking's total_amount and remaining_payment_amount
-      const { error: updateError } = await supabase.from('bookings').update({
-        total_amount: booking.total_amount + totalExtraCharges,
-        remaining_payment_amount: booking.remaining_payment_amount + totalExtraCharges,
-      }).eq('id', bookingId);
-      if (updateError) {
+      );
+
+      if (extraChargesError) {
+        console.error('Add extra charges error:', extraChargesError);
         return NextResponse.json(
-          { success: false, error: `Failed to update booking with extra charges: ${updateError.message}` },
+          { success: false, error: `Failed to add extra charges: ${extraChargesError.message}` },
           { status: 500 }
         );
       }
@@ -188,6 +187,7 @@ async function handler(
       {
         p_booking_id: bookingId,
         p_payment_method: paymentMethod,
+        p_payment_amount: paymentAmount,
         p_payment_proof_path: uploadedProofPath,
         p_admin_notes: adminNotes,
       }
@@ -209,11 +209,21 @@ async function handler(
       );
     }
 
+    // Get updated booking with extra charges
+    const { data: updatedBooking } = await supabase
+      .from('bookings')
+      .select('total_amount, remaining_payment')
+      .eq('id', bookingId)
+      .single();
+
     return NextResponse.json({
       success: true,
       message: 'Payment verified and booking completed successfully',
       bookingNumber: result.booking_number,
-      remainingAmount: result.remaining_amount,
+      remainingAmount: result.new_remaining || 0,
+      totalExtraCharges,
+      newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
+      discountGiven: result.discount_given || 0,
     });
   } catch (error) {
     console.error('Complete payment error:', error);

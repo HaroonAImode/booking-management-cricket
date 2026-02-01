@@ -7,6 +7,7 @@
  * - File upload for payment proof
  * - Display remaining amount
  * - Admin notes field
+ * - Extra charges functionality
  * - Validation and submission
  */
 
@@ -25,12 +26,31 @@ import {
   Group,
   Badge,
   NumberInput,
+  Box,
+  Flex,
   ActionIcon,
-  Divider,
-  SelectItem,
+  ScrollArea,
+  Paper,
+  ThemeIcon,
 } from '@mantine/core';
-import { IconUpload, IconAlertCircle, IconCheck, IconCurrencyRupee, IconPlus, IconTrash } from '@tabler/icons-react';
+import {
+  IconUpload,
+  IconAlertCircle,
+  IconCheck,
+  IconCurrencyRupee,
+  IconPlus,
+  IconTrash,
+  IconBottle,
+  IconBallTennis,
+  IconBandage,
+  IconPackage,
+} from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+
+interface ExtraCharge {
+  category: 'mineral water' | 'tape' | 'ball' | 'other';
+  amount: number;
+}
 
 interface CompletePaymentModalProps {
   opened: boolean;
@@ -55,13 +75,14 @@ export default function CompletePaymentModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(remainingAmount);
-
-  // Extra charges state
-  type ExtraCharge = { category: string; amount: number };
-  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
   const [showExtraCharges, setShowExtraCharges] = useState(false);
-  const [newExtraCategory, setNewExtraCategory] = useState<string>('');
-  const [newExtraAmount, setNewExtraAmount] = useState<number>(0);
+  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [extraChargeAmount, setExtraChargeAmount] = useState<string>('');
+
+  // Calculate total with extra charges
+  const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
+  const totalPayable = remainingAmount + totalExtraCharges;
 
   const handleSubmit = async () => {
     // Validation
@@ -76,17 +97,9 @@ export default function CompletePaymentModal({
       return;
     }
 
-    if (paymentAmount > remainingAmount) {
-      setError(`Payment amount cannot exceed remaining amount (Rs ${remainingAmount.toLocaleString()})`);
+    if (paymentAmount > totalPayable) {
+      setError(`Payment amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
       return;
-    }
-
-    // Validate extra charges
-    for (const ec of extraCharges) {
-      if (!ec.category || !ec.amount || ec.amount <= 0) {
-        setError('Please enter valid extra charge category and amount');
-        return;
-      }
     }
 
     // Payment proof is optional for cash payments
@@ -104,16 +117,18 @@ export default function CompletePaymentModal({
       const formData = new FormData();
       formData.append('paymentMethod', paymentMethod);
       formData.append('paymentAmount', paymentAmount.toString());
+      
+      // Add extra charges if any
+      if (extraCharges.length > 0) {
+        formData.append('extraCharges', JSON.stringify(extraCharges));
+      }
+      
       // Only append proof if it exists (cash payments may not have proof)
       if (paymentProof) {
         formData.append('paymentProof', paymentProof);
       }
       if (adminNotes) {
         formData.append('adminNotes', adminNotes);
-      }
-      // Add extra charges as JSON string
-      if (extraCharges.length > 0) {
-        formData.append('extraCharges', JSON.stringify(extraCharges));
       }
 
       // Submit to API
@@ -130,18 +145,20 @@ export default function CompletePaymentModal({
       if (result.success) {
         notifications.show({
           title: 'Success',
-          message: `Payment verified! Booking ${bookingNumber} is now completed.`,
+          message: `Payment verified! Booking ${bookingNumber} is now completed.${result.totalExtraCharges > 0 ? ` Added Rs ${result.totalExtraCharges} in extra charges.` : ''}`,
           color: 'green',
           icon: <IconCheck size={18} />,
         });
+        
         // Reset form
         setPaymentMethod('');
         setPaymentProof(null);
         setAdminNotes('');
         setExtraCharges([]);
         setShowExtraCharges(false);
-        setNewExtraCategory('');
-        setNewExtraAmount(0);
+        setSelectedCategory('');
+        setExtraChargeAmount('');
+        
         onSuccess();
         onClose();
       } else {
@@ -161,26 +178,79 @@ export default function CompletePaymentModal({
       setPaymentProof(null);
       setAdminNotes('');
       setPaymentAmount(remainingAmount);
+      setError(null);
       setExtraCharges([]);
       setShowExtraCharges(false);
-      setNewExtraCategory('');
-      setNewExtraAmount(0);
-      setError(null);
+      setSelectedCategory('');
+      setExtraChargeAmount('');
       onClose();
     }
   };
 
-  // Update payment amount when remaining amount changes
+  const handleAddExtraCharge = () => {
+    if (!selectedCategory || !extraChargeAmount || parseFloat(extraChargeAmount) <= 0) {
+      setError('Please select a category and enter a valid amount');
+      return;
+    }
+
+    const newCharge: ExtraCharge = {
+      category: selectedCategory as ExtraCharge['category'],
+      amount: parseFloat(extraChargeAmount),
+    };
+
+    setExtraCharges([...extraCharges, newCharge]);
+    setSelectedCategory('');
+    setExtraChargeAmount('');
+    setError(null);
+  };
+
+  const handleRemoveExtraCharge = (index: number) => {
+    const updatedCharges = [...extraCharges];
+    updatedCharges.splice(index, 1);
+    setExtraCharges(updatedCharges);
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'mineral water':
+        return <IconBottle size={16} />;
+      case 'tape':
+        return <IconBandage size={16} />;
+      case 'ball':
+        return <IconBallTennis size={16} />;
+      case 'other':
+        return <IconPackage size={16} />;
+      default:
+        return null;
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'mineral water':
+        return 'Mineral Water';
+      case 'tape':
+        return 'Tape';
+      case 'ball':
+        return 'Ball';
+      case 'other':
+        return 'Other';
+      default:
+        return category;
+    }
+  };
+
+  // Update payment amount when total payable changes
   useEffect(() => {
-    setPaymentAmount(remainingAmount);
-  }, [remainingAmount]);
+    setPaymentAmount(totalPayable);
+  }, [totalPayable]);
 
   return (
     <Modal
       opened={opened}
       onClose={handleClose}
       title="Complete Payment Verification"
-      size="md"
+      size="lg"
       zIndex={300}
     >
       <Stack gap="md">
@@ -209,6 +279,118 @@ export default function CompletePaymentModal({
           </Alert>
         )}
 
+        {/* Extra Charges Section */}
+        <Paper withBorder p="md" radius="md">
+          <Group justify="space-between" mb="sm">
+            <Text fw={600}>Extra Charges</Text>
+            <Button
+              size="xs"
+              variant={showExtraCharges ? 'filled' : 'light'}
+              leftSection={<IconPlus size={14} />}
+              onClick={() => setShowExtraCharges(!showExtraCharges)}
+            >
+              {showExtraCharges ? 'Hide' : 'Add Extra Charges'}
+            </Button>
+          </Group>
+
+          {showExtraCharges && (
+            <Stack gap="sm">
+              <Group align="flex-end">
+                <Select
+                  label="Category"
+                  placeholder="Select category"
+                  data={[
+                    { value: 'mineral water', label: 'Mineral Water' },
+                    { value: 'tape', label: 'Tape' },
+                    { value: 'ball', label: 'Ball' },
+                    { value: 'other', label: 'Other' },
+                  ]}
+                  value={selectedCategory}
+                  onChange={(value) => setSelectedCategory(value || '')}
+                  style={{ flex: 1 }}
+                />
+                <NumberInput
+                  label="Amount"
+                  placeholder="Enter amount"
+                  leftSection={<IconCurrencyRupee size={16} />}
+                  value={extraChargeAmount}
+                  onChange={setExtraChargeAmount}
+                  min={1}
+                  thousandSeparator=","
+                  allowNegative={false}
+                  decimalScale={0}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  onClick={handleAddExtraCharge}
+                  leftSection={<IconPlus size={16} />}
+                  mb={4}
+                >
+                  Add
+                </Button>
+              </Group>
+
+              {extraCharges.length > 0 && (
+                <ScrollArea.Autosize mah={150}>
+                  <Stack gap="xs">
+                    {extraCharges.map((charge, index) => (
+                      <Paper key={index} withBorder p="xs" radius="sm">
+                        <Group justify="space-between">
+                          <Group gap="xs">
+                            <ThemeIcon size="sm" variant="light">
+                              {getCategoryIcon(charge.category)}
+                            </ThemeIcon>
+                            <Text size="sm">{getCategoryLabel(charge.category)}</Text>
+                          </Group>
+                          <Group gap="xs">
+                            <Text size="sm" fw={600}>
+                              Rs {charge.amount.toLocaleString()}
+                            </Text>
+                            <ActionIcon
+                              size="sm"
+                              color="red"
+                              variant="subtle"
+                              onClick={() => handleRemoveExtraCharge(index)}
+                            >
+                              <IconTrash size={14} />
+                            </ActionIcon>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </ScrollArea.Autosize>
+              )}
+            </Stack>
+          )}
+
+          {/* Total Summary */}
+          <Box mt="md">
+            <Group justify="space-between">
+              <Text size="sm">Original Remaining:</Text>
+              <Text size="sm" fw={600}>
+                Rs {remainingAmount.toLocaleString()}
+              </Text>
+            </Group>
+            {extraCharges.length > 0 && (
+              <>
+                <Group justify="space-between" mt={4}>
+                  <Text size="sm">Extra Charges:</Text>
+                  <Text size="sm" fw={600} c="blue">
+                    + Rs {totalExtraCharges.toLocaleString()}
+                  </Text>
+                </Group>
+                <Group justify="space-between" mt={4}>
+                  <Text size="sm" fw={600}>Total Payable:</Text>
+                  <Text size="sm" fw={700} c="green">
+                    Rs {totalPayable.toLocaleString()}
+                  </Text>
+                </Group>
+              </>
+            )}
+          </Box>
+        </Paper>
+
         {/* Payment Amount Input */}
         <NumberInput
           label="Payment Amount"
@@ -219,101 +401,19 @@ export default function CompletePaymentModal({
           value={paymentAmount}
           onChange={(value) => setPaymentAmount(Number(value) || 0)}
           min={1}
-          max={remainingAmount}
-          thousandSeparator="," 
+          max={totalPayable}
+          thousandSeparator=","
           allowNegative={false}
           decimalScale={0}
         />
 
         {/* Show discount amount if different */}
-        {paymentAmount < remainingAmount && (
+        {paymentAmount < totalPayable && (
           <Alert color="yellow" variant="light">
             <Text size="sm">
-              <strong>Discount Applied:</strong> Rs {(remainingAmount - paymentAmount).toLocaleString()}
+              <strong>Discount Applied:</strong> Rs {(totalPayable - paymentAmount).toLocaleString()}
             </Text>
           </Alert>
-        )}
-
-        {/* Extra Charges Section */}
-        <Divider label="Extra Charges (Optional)" labelPosition="center" my="xs" />
-        <Button
-          variant={showExtraCharges ? 'outline' : 'light'}
-          leftSection={<IconPlus size={16} />}
-          onClick={() => setShowExtraCharges((v) => !v)}
-          size="xs"
-        >
-          {showExtraCharges ? 'Hide Extra Charges' : 'Add Extra Charges'}
-        </Button>
-        {showExtraCharges && (
-          <Stack gap="xs">
-            {/* List of extra charges */}
-            {extraCharges.length > 0 && (
-              <Stack gap="xs">
-                {extraCharges.map((ec, idx) => (
-                  <Group key={idx} gap="xs">
-                    <Badge color="gray" size="sm">{ec.category}</Badge>
-                    <Text size="sm">Rs {ec.amount.toLocaleString()}</Text>
-                    <ActionIcon
-                      color="red"
-                      variant="subtle"
-                      size="sm"
-                      aria-label="Remove"
-                      onClick={() => setExtraCharges(extraCharges.filter((_, i) => i !== idx))}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                ))}
-              </Stack>
-            )}
-            {/* Add new extra charge */}
-            <Group gap="xs" align="end">
-              <Select
-                label="Category"
-                placeholder="Select category"
-                data={[
-                  { value: 'mineral water', label: 'Mineral Water' },
-                  { value: 'tape', label: 'Tape' },
-                  { value: 'ball', label: 'Ball' },
-                  { value: 'other', label: 'Other' },
-                ]}
-                value={newExtraCategory}
-                onChange={(v) => setNewExtraCategory(v || '')}
-                w={150}
-              />
-              <NumberInput
-                label="Amount"
-                placeholder="Amount"
-                value={newExtraAmount}
-                onChange={(v) => setNewExtraAmount(Number(v) || 0)}
-                min={1}
-                w={120}
-                leftSection={<IconCurrencyRupee size={16} />}
-              />
-              <Button
-                leftSection={<IconPlus size={16} />}
-                size="xs"
-                disabled={!newExtraCategory || !newExtraAmount || newExtraAmount <= 0}
-                onClick={() => {
-                  if (newExtraCategory && newExtraAmount > 0) {
-                    setExtraCharges([...extraCharges, { category: newExtraCategory, amount: newExtraAmount }]);
-                    setNewExtraCategory('');
-                    setNewExtraAmount(0);
-                  }
-                }}
-              >
-                Add
-              </Button>
-            </Group>
-            {/* Total extra charges */}
-            {extraCharges.length > 0 && (
-              <Alert color="blue" variant="light">
-                <Text size="sm">
-                  <strong>Total Extra Charges:</strong> Rs {extraCharges.reduce((sum, ec) => sum + ec.amount, 0).toLocaleString()}
-                </Text>
-              </Alert>
-            )}
-          </Stack>
         )}
 
         {/* Payment Method */}
@@ -375,7 +475,7 @@ export default function CompletePaymentModal({
           <Text size="xs">
             After verification, the booking will be automatically marked as{' '}
             <strong>completed</strong> and the customer will receive a
-            notification.
+            notification. Extra charges will be added to the booking total.
           </Text>
         </Alert>
       </Stack>

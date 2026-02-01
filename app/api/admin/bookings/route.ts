@@ -24,6 +24,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const includeExtraCharges = searchParams.get('includeExtraCharges') === 'true';
 
     // Build query with all relations
     let query = supabase
@@ -31,7 +32,8 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       .select(`
         *,
         customer:customers(*),
-        slots:booking_slots(*)
+        slots:booking_slots(*),
+        extra_charges:extra_charges(*)
       `, { count: 'exact' })
       .order(sortBy, { ascending: sortOrder === 'asc' })
       .range(offset, offset + limit - 1);
@@ -76,43 +78,33 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-    // Fetch extra charges for all bookings in one query
-    const bookingIds = bookings.map((b: any) => b.id);
-    let extraChargesMap: Record<string, number> = {};
-    if (bookingIds.length > 0) {
-      const { data: extraChargesData, error: extraChargesError } = await supabase
-        .from('extra_charges')
-        .select('booking_id, amount');
-      if (!extraChargesError && extraChargesData) {
-        // Sum extra charges per booking
-        for (const ec of extraChargesData) {
-          if (!ec.booking_id) continue;
-          if (!extraChargesMap[ec.booking_id]) extraChargesMap[ec.booking_id] = 0;
-          extraChargesMap[ec.booking_id] += Number(ec.amount) || 0;
-        }
-      }
-    }
-
-    // Attach extra_charges to each booking
-    const bookingsWithExtras = bookings.map((b: any) => ({
-      ...b,
-      extra_charges: extraChargesMap[b.id] || 0,
-    }));
+    // Process bookings to include extra charges summary
+    const processedBookings = bookings?.map(booking => {
+      // Calculate total extra charges for each booking
+      const totalExtraCharges = booking.extra_charges?.reduce((sum: number, charge: any) => 
+        sum + (charge.amount || 0), 0) || 0;
+      
+      return {
+        ...booking,
+        total_extra_charges: totalExtraCharges,
+      };
+    }) || [];
 
     // Calculate summary statistics
     const summary = {
       total: count || 0,
-      pending: bookingsWithExtras?.filter((b: any) => b.status === 'pending').length || 0,
-      approved: bookingsWithExtras?.filter((b: any) => b.status === 'approved').length || 0,
-      completed: bookingsWithExtras?.filter((b: any) => b.status === 'completed').length || 0,
-      cancelled: bookingsWithExtras?.filter((b: any) => b.status === 'cancelled').length || 0,
-      fullyPaid: bookingsWithExtras?.filter((b: any) => b.remaining_payment === 0).length || 0,
-      partiallyPaid: bookingsWithExtras?.filter((b: any) => b.remaining_payment > 0).length || 0,
+      pending: processedBookings?.filter(b => b.status === 'pending').length || 0,
+      approved: processedBookings?.filter(b => b.status === 'approved').length || 0,
+      completed: processedBookings?.filter(b => b.status === 'completed').length || 0,
+      cancelled: processedBookings?.filter(b => b.status === 'cancelled').length || 0,
+      fullyPaid: processedBookings?.filter(b => b.remaining_payment === 0).length || 0,
+      partiallyPaid: processedBookings?.filter(b => b.remaining_payment > 0).length || 0,
+      totalExtraCharges: processedBookings?.reduce((sum, b) => sum + (b.total_extra_charges || 0), 0) || 0,
     };
 
     return NextResponse.json({
       success: true,
-      bookings: bookingsWithExtras,
+      bookings: processedBookings,
       summary,
       pagination: {
         total: count || 0,
@@ -131,7 +123,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
   }
 });
 
-// Create manual booking (Admin only)
+// Create manual booking (Admin only) - UNCHANGED
 export const POST = withAdminAuth(async (request, { adminProfile }) => {
   try {
     // Only admins can create manual bookings
