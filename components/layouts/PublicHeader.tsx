@@ -3,7 +3,7 @@
  * 
  * Purpose: Navigation header for public-facing pages.
  * Features:
- * - Logo and branding with image logo
+ * - Logo and branding with image logo (zoomed)
  * - Main navigation links (Home, Bookings, About, Contact)
  * - Responsive mobile menu
  * - Premium smooth animations
@@ -11,15 +11,13 @@
 
 'use client';
 
-import { Group, Burger, Container, Title, Box, Text, Button, Image } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { Group, Container, Box, Text, Button, Image } from '@mantine/core';
 import { IconCalendar, IconSearch } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './PublicHeader.module.css';
 
 export default function PublicHeader() {
-  const [opened, { toggle }] = useDisclosure(false);
   const pathname = usePathname();
 
   return (
@@ -28,20 +26,69 @@ export default function PublicHeader() {
         {/* Logo/Brand - Compact on mobile */}
         <Link href="/" className={styles.logo} style={{ textDecoration: 'none', flexShrink: 0 }}>
           <Group gap="xs" wrap="nowrap">
-            <Box className={styles.logoContainer}>
-              <Image
-                src="/logoo.png"
-                alt="PowerPlay Cricket Arena Logo"
-                width={34}
-                height={34}
-                className={styles.logoImage}
-              />
+            <Box
+              style={{
+                width: '40px',
+                height: '40px',
+                background: '#FFFFFF',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid #F5B800',
+                boxShadow: '0 4px 12px rgba(245, 184, 0, 0.3)',
+                overflow: 'hidden',
+                padding: '0px',
+                transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              {/* Container to apply scale transform */}
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: 'scale(1.6)', // Same zoom as AdminHeader
+              }}>
+                <Image
+                  src="/logoo.png"
+                  alt="PowerPlay Cricket Arena Logo"
+                  width={38}
+                  height={38}
+                  fit="cover"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: 'center center',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+              </div>
             </Box>
             <Box>
-              <Title order={3} size={{ base: '0.85rem', xs: '1.2rem' }} c="#1A1A1A" style={{ lineHeight: 1, marginBottom: '2px', fontWeight: 800 }}>
+              <Text 
+                size={{ base: '0.85rem', xs: '1.2rem' }} 
+                c="#1A1A1A" 
+                fw={800}
+                style={{ 
+                  lineHeight: 1, 
+                  marginBottom: '2px',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                }}
+              >
                 POWERPLAY
-              </Title>
-              <Text size={{ base: '7px', xs: '9px' }} c="#6B6B6B" style={{ lineHeight: 1, letterSpacing: '1.5px', fontWeight: 600 }}>
+              </Text>
+              <Text 
+                size={{ base: '7px', xs: '9px' }} 
+                c="#6B6B6B" 
+                fw={600}
+                style={{ 
+                  lineHeight: 1, 
+                  letterSpacing: '1.5px',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                }}
+              >
                 CRICKET ARENA
               </Text>
             </Box>
