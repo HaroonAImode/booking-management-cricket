@@ -24,7 +24,6 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const includeExtraCharges = searchParams.get('includeExtraCharges') === 'true';
 
     // Build query with all relations
     let query = supabase
@@ -78,28 +77,40 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       );
     }
 
-    // Process bookings to include extra charges summary
-    const processedBookings = bookings?.map(booking => {
-      // Calculate total extra charges for each booking
-      const totalExtraCharges = booking.extra_charges?.reduce((sum: number, charge: any) => 
-        sum + (charge.amount || 0), 0) || 0;
+    // Process bookings to ensure extra_charges is always an array
+    const processedBookings = (bookings || []).map((booking: any) => {
+      // Ensure extra_charges is always an array (not null or undefined)
+      const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
       
+      // Calculate total extra charges
+      const totalExtraCharges = extraCharges.reduce((sum: number, charge: any) => 
+        sum + (charge.amount || 0), 0);
+      
+      // Ensure all required fields have default values
       return {
         ...booking,
+        extra_charges: extraCharges,
         total_extra_charges: totalExtraCharges,
+        total_amount: booking.total_amount || 0,
+        total_hours: booking.total_hours || 0,
+        advance_payment: booking.advance_payment || 0,
+        remaining_payment: booking.remaining_payment || 0,
+        remaining_payment_amount: booking.remaining_payment_amount || 0,
+        slots: Array.isArray(booking.slots) ? booking.slots : [],
+        customer: booking.customer || { name: '', phone: '' }
       };
-    }) || [];
+    });
 
     // Calculate summary statistics
     const summary = {
       total: count || 0,
-      pending: processedBookings?.filter(b => b.status === 'pending').length || 0,
-      approved: processedBookings?.filter(b => b.status === 'approved').length || 0,
-      completed: processedBookings?.filter(b => b.status === 'completed').length || 0,
-      cancelled: processedBookings?.filter(b => b.status === 'cancelled').length || 0,
-      fullyPaid: processedBookings?.filter(b => b.remaining_payment === 0).length || 0,
-      partiallyPaid: processedBookings?.filter(b => b.remaining_payment > 0).length || 0,
-      totalExtraCharges: processedBookings?.reduce((sum, b) => sum + (b.total_extra_charges || 0), 0) || 0,
+      pending: processedBookings.filter((b: any) => b.status === 'pending').length || 0,
+      approved: processedBookings.filter((b: any) => b.status === 'approved').length || 0,
+      completed: processedBookings.filter((b: any) => b.status === 'completed').length || 0,
+      cancelled: processedBookings.filter((b: any) => b.status === 'cancelled').length || 0,
+      fullyPaid: processedBookings.filter((b: any) => b.remaining_payment === 0).length || 0,
+      partiallyPaid: processedBookings.filter((b: any) => b.remaining_payment > 0).length || 0,
+      totalExtraCharges: processedBookings.reduce((sum: number, b: any) => sum + (b.total_extra_charges || 0), 0) || 0,
     };
 
     return NextResponse.json({

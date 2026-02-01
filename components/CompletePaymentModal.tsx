@@ -74,15 +74,15 @@ export default function CompletePaymentModal({
   const [adminNotes, setAdminNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState<number>(remainingAmount);
+  const [paymentAmount, setPaymentAmount] = useState<number>(remainingAmount || 0);
   const [showExtraCharges, setShowExtraCharges] = useState(false);
   const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [extraChargeAmount, setExtraChargeAmount] = useState<string>('');
 
   // Calculate total with extra charges
-  const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
-  const totalPayable = remainingAmount + totalExtraCharges;
+  const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+  const totalPayable = (remainingAmount || 0) + totalExtraCharges;
 
   const handleSubmit = async () => {
     // Validation
@@ -177,7 +177,7 @@ export default function CompletePaymentModal({
       setPaymentMethod('');
       setPaymentProof(null);
       setAdminNotes('');
-      setPaymentAmount(remainingAmount);
+      setPaymentAmount(remainingAmount || 0);
       setError(null);
       setExtraCharges([]);
       setShowExtraCharges(false);
@@ -261,7 +261,7 @@ export default function CompletePaymentModal({
               <strong>Booking:</strong> {bookingNumber}
             </Text>
             <Badge size="lg" color="orange">
-              Total Remaining: Rs {remainingAmount.toLocaleString()}
+              Total Remaining: Rs {(remainingAmount || 0).toLocaleString()}
             </Badge>
           </Group>
         </Alert>
@@ -369,7 +369,7 @@ export default function CompletePaymentModal({
             <Group justify="space-between">
               <Text size="sm">Original Remaining:</Text>
               <Text size="sm" fw={600}>
-                Rs {remainingAmount.toLocaleString()}
+                Rs {(remainingAmount || 0).toLocaleString()}
               </Text>
             </Group>
             {extraCharges.length > 0 && (

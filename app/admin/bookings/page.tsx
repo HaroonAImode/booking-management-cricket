@@ -164,9 +164,9 @@ export default function AdminBookingsPage() {
 
     // Count advance payment
     if (booking.advance_payment_method === 'cash') {
-      cash += booking.advance_payment;
+      cash += booking.advance_payment || 0;
     } else {
-      online += booking.advance_payment;
+      online += booking.advance_payment || 0;
     }
 
     // Count remaining payment (only if paid - status is completed)
@@ -193,9 +193,12 @@ export default function AdminBookingsPage() {
     return methodMap[method] || { label: method, color: 'gray' };
   };
 
-  // Helper function to get extra charges display
+  // Helper function to get extra charges display - FIXED with null checks
   const getExtraChargesDisplay = (booking: Booking) => {
-    if (!booking.extra_charges || booking.extra_charges.length === 0) {
+    // Safely get extra charges array
+    const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+    
+    if (extraCharges.length === 0) {
       return (
         <Text size="xs" c="dimmed" ta="center">
           -
@@ -203,7 +206,7 @@ export default function AdminBookingsPage() {
       );
     }
 
-    const totalExtra = booking.extra_charges.reduce((sum, charge) => sum + charge.amount, 0);
+    const totalExtra = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
     
     return (
       <Stack gap={4}>
@@ -211,14 +214,14 @@ export default function AdminBookingsPage() {
           Rs {totalExtra.toLocaleString()}
         </Text>
         <Group gap={4} wrap="wrap" justify="center">
-          {booking.extra_charges.slice(0, 2).map((charge, index) => (
+          {extraCharges.slice(0, 2).map((charge, index) => (
             <Badge key={index} size="xs" color="blue" variant="light">
               {getCategoryLabel(charge.category)}
             </Badge>
           ))}
-          {booking.extra_charges.length > 2 && (
+          {extraCharges.length > 2 && (
             <Badge size="xs" color="gray" variant="light">
-              +{booking.extra_charges.length - 2} more
+              +{extraCharges.length - 2} more
             </Badge>
           )}
         </Group>
@@ -258,6 +261,17 @@ export default function AdminBookingsPage() {
     }
   };
 
+  // Helper function to get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'orange';
+      case 'approved': return 'green';
+      case 'completed': return 'blue';
+      case 'cancelled': return 'red';
+      default: return 'gray';
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
   }, [statusFilter, paymentFilter, debouncedSearch, dateFrom, dateTo]);
@@ -269,7 +283,6 @@ export default function AdminBookingsPage() {
       const params = new URLSearchParams({
         status: statusFilter,
         paymentStatus: paymentFilter,
-        includeExtraCharges: 'true', // Add this to include extra charges
       });
 
       if (debouncedSearch) {
@@ -293,7 +306,20 @@ export default function AdminBookingsPage() {
       const result = await response.json();
 
       if (result.success) {
-        setBookings(result.bookings || []);
+        // Ensure bookings have proper structure
+        const safeBookings = (result.bookings || []).map((booking: any) => ({
+          ...booking,
+          extra_charges: Array.isArray(booking.extra_charges) ? booking.extra_charges : [],
+          total_extra_charges: booking.total_extra_charges || 0,
+          slots: Array.isArray(booking.slots) ? booking.slots : [],
+          customer: booking.customer || { name: '', phone: '' },
+          total_amount: booking.total_amount || 0,
+          total_hours: booking.total_hours || 0,
+          advance_payment: booking.advance_payment || 0,
+          remaining_payment: booking.remaining_payment || 0,
+        }));
+        
+        setBookings(safeBookings);
         setSummary(result.summary);
       } else {
         notifications.show({
@@ -317,9 +343,6 @@ export default function AdminBookingsPage() {
       setLoading(false);
     }
   };
-
-  // Rest of the functions (handleApprove, handleReject, handleDelete, etc.) remain the same
-  // Only showing the updated parts for brevity
 
   const handleApprove = async (bookingId: string) => {
     try {
@@ -515,19 +538,21 @@ export default function AdminBookingsPage() {
     filteredBookings.forEach((b) => {
       if (b.status === 'pending') return;
       
-      // Calculate extra charges
-      const bookingExtraCharges = b.extra_charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0;
+      // Calculate extra charges - with safe access
+      const bookingExtraCharges = Array.isArray(b.extra_charges) 
+        ? b.extra_charges.reduce((sum, charge) => sum + (charge.amount || 0), 0) 
+        : 0;
       totalExtraCharges += bookingExtraCharges;
       
       // Advance payment
       if (b.advance_payment_method === 'cash') {
-        totalCash += b.advance_payment;
+        totalCash += b.advance_payment || 0;
       } else if (b.advance_payment_method === 'easypaisa') {
-        totalOnline += b.advance_payment;
-        totalEasypaisa += b.advance_payment;
+        totalOnline += b.advance_payment || 0;
+        totalEasypaisa += b.advance_payment || 0;
       } else if (b.advance_payment_method === 'sadapay') {
-        totalOnline += b.advance_payment;
-        totalSadaPay += b.advance_payment;
+        totalOnline += b.advance_payment || 0;
+        totalSadaPay += b.advance_payment || 0;
       }
       
       // Remaining payment (only if paid)
@@ -578,45 +603,38 @@ export default function AdminBookingsPage() {
 
     // ... rest of the PDF export function remains similar but update table columns ...
 
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'pending': return 'orange';
-        case 'approved': return 'cyan';
-        case 'completed': return 'green';
-        case 'cancelled': return 'red';
-        default: return 'gray';
-      }
-    };
-
     // Export to Excel updated to include extra charges
     const exportToExcel = () => {
       const data = bookings.map(b => {
         const { cash, online } = getPaymentBreakdown(b);
-        const totalPaid = b.advance_payment + (b.status === 'completed' ? (b.remaining_payment_amount || 0) : 0);
-        const extraChargesTotal = b.extra_charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0;
-        const extraChargesList = b.extra_charges?.map(c => `${c.category}: Rs ${c.amount}`).join(', ') || '';
+        const totalPaid = (b.advance_payment || 0) + (b.status === 'completed' ? (b.remaining_payment_amount || 0) : 0);
+        
+        // Safely get extra charges
+        const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
+        const extraChargesTotal = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+        const extraChargesList = extraCharges.map(c => `${c.category || ''}: Rs ${c.amount || 0}`).join(', ') || '';
         
         return {
-          'Booking Number': b.booking_number,
-          'Customer Name': b.customer.name,
-          'Phone': b.customer.phone,
-          'Email': b.customer.email || '',
+          'Booking Number': b.booking_number || '',
+          'Customer Name': b.customer?.name || '',
+          'Phone': b.customer?.phone || '',
+          'Email': b.customer?.email || '',
           'Booking Date': new Date(b.booking_date).toLocaleDateString(),
-          'Total Hours': b.total_hours,
-          'Total Amount': b.total_amount,
+          'Total Hours': b.total_hours || 0,
+          'Total Amount': b.total_amount || 0,
           'Extra Charges': extraChargesTotal,
           'Extra Charges Details': extraChargesList,
-          'Total Payable': b.total_amount + extraChargesTotal,
+          'Total Payable': (b.total_amount || 0) + extraChargesTotal,
           'Total Paid': totalPaid,
           'Cash Payments': cash,
           'Online Payments': online,
-          'Advance Payment': b.advance_payment,
-          'Advance Method': b.advance_payment_method,
-          'Remaining Payment': b.remaining_payment,
+          'Advance Payment': b.advance_payment || 0,
+          'Advance Method': b.advance_payment_method || '',
+          'Remaining Payment': b.remaining_payment || 0,
           'Remaining Method': b.remaining_payment_method || '',
-          'Status': b.status,
+          'Status': b.status || '',
           'Created At': new Date(b.created_at).toLocaleString(),
-          'Slots': formatSlotRanges(b.slots.map(s => s.slot_hour)),
+          'Slots': formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
         };
       });
 
@@ -633,8 +651,6 @@ export default function AdminBookingsPage() {
         icon: <IconFileSpreadsheet size={18} />,
       });
     };
-
-    // ... rest of the component remains similar, updating the table columns ...
 
   return (
     <Container 
@@ -881,11 +897,18 @@ export default function AdminBookingsPage() {
               </Table.Thead>
               <Table.Tbody>
                 {bookings.map((booking) => {
-                  const totalPaid = booking.advance_payment + (booking.remaining_payment_amount || 0);
-                  const discount = booking.status === 'completed' && totalPaid < booking.total_amount
-                    ? booking.total_amount - totalPaid
+                  const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
+                  const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
+                    ? (booking.total_amount || 0) - totalPaid
                     : 0;
                   const { cash, online } = getPaymentBreakdown(booking);
+                  
+                  // Safely get extra charges
+                  const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+                  const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+                  
+                  // Safely get slots
+                  const slots = Array.isArray(booking.slots) ? booking.slots : [];
                   
                   return (
                     <Table.Tr
@@ -894,16 +917,16 @@ export default function AdminBookingsPage() {
                     >
                       <Table.Td>
                         <Text size="sm" fw={500}>
-                          {booking.booking_number}
+                          {booking.booking_number || ''}
                         </Text>
                         <Text size="xs" c="dimmed">
                           {new Date(booking.created_at).toLocaleDateString()}
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">{booking.customer.name}</Text>
+                        <Text size="sm">{booking.customer?.name || ''}</Text>
                         <Text size="xs" c="dimmed">
-                          {booking.customer.phone}
+                          {booking.customer?.phone || ''}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -913,39 +936,39 @@ export default function AdminBookingsPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" fw={500}>
-                          {formatSlotRanges(booking.slots.map(s => s.slot_hour))}
+                          {formatSlotRanges(slots.map(s => s.slot_hour))}
                         </Text>
                         <Text size="xs" c="dimmed">
-                          {booking.slots.some(s => s.is_night_rate) && '🌙 Night rates'}
+                          {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
                         </Text>
                       </Table.Td>
                       <Table.Td>
                         <Stack gap={2}>
                           <Text size="sm" fw={600}>
-                            Rs {booking.total_amount.toLocaleString()}
+                            Rs {(booking.total_amount || 0).toLocaleString()}
                           </Text>
-                          {booking.total_extra_charges && booking.total_extra_charges > 0 && (
+                          {totalExtraCharges > 0 && (
                             <Text size="xs" c="blue" fw={500}>
-                              (+Rs {booking.total_extra_charges.toLocaleString()})
+                              (+Rs {totalExtraCharges.toLocaleString()})
                             </Text>
                           )}
                           <Text size="xs" c="dimmed">
-                            {booking.total_hours} hours
+                            {booking.total_hours || 0} hours
                           </Text>
                         </Stack>
                       </Table.Td>
                       <Table.Td>
                         <Stack gap={4}>
-                          <Text size="sm" fw={700} c={totalPaid === (booking.total_amount + (booking.total_extra_charges || 0)) ? 'green' : 'orange'}>
+                          <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
                             Rs {totalPaid.toLocaleString()}
                           </Text>
                           {discount > 0 ? (
                             <Text size="xs" c="green" fw={600}>
                               Discount: Rs {discount.toLocaleString()}
                             </Text>
-                          ) : totalPaid < (booking.total_amount + (booking.total_extra_charges || 0)) && booking.status !== 'completed' ? (
+                          ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
                             <Text size="xs" c="red">
-                              Due: Rs {((booking.total_amount + (booking.total_extra_charges || 0)) - totalPaid).toLocaleString()}
+                              Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
                             </Text>
                           ) : null}
                         </Stack>
@@ -978,7 +1001,7 @@ export default function AdminBookingsPage() {
                               Rs {online.toLocaleString()}
                             </Text>
                             <Group gap={4} wrap="nowrap">
-                              {booking.advance_payment_method !== 'cash' && (
+                              {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
                                 <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
                                   {getPaymentMethodBadge(booking.advance_payment_method).label}
                                 </Badge>
@@ -1006,7 +1029,7 @@ export default function AdminBookingsPage() {
                         </Badge>
                         {booking.remaining_payment > 0 && booking.status === 'approved' && (
                           <Text size="xs" c="red" fw={500} mt={4}>
-                            Remaining: Rs {booking.remaining_payment.toLocaleString()}
+                            Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
                           </Text>
                         )}
                       </Table.Td>
@@ -1058,7 +1081,7 @@ export default function AdminBookingsPage() {
                                 setSelectedPaymentBooking({
                                   id: booking.id,
                                   number: booking.booking_number,
-                                  remaining: booking.remaining_payment,
+                                  remaining: booking.remaining_payment || 0,
                                 });
                                 setCompletePaymentOpened(true);
                               }}

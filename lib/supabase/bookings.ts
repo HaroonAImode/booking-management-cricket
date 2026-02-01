@@ -548,26 +548,25 @@ export function formatDateForSQL(date: Date | string | null): string {
   return dateObj.toISOString().split('T')[0];
 }
 
-
 /**
- * Format extra charges for display
+ * Safely format extra charges for display
  */
-export const formatExtraCharges = (charges: Array<{ category: string; amount: number }>) => {
-  if (!charges || charges.length === 0) return '-';
+export const formatExtraCharges = (charges: Array<{ category: string; amount: number }> | null | undefined) => {
+  if (!charges || !Array.isArray(charges) || charges.length === 0) return '-';
   
-  const total = charges.reduce((sum, charge) => sum + charge.amount, 0);
+  const total = charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   const categories = charges.map(charge => 
-    `${charge.category}: Rs ${charge.amount}`
+    `${charge.category || 'Unknown'}: Rs ${charge.amount || 0}`
   ).join(', ');
   
   return `Rs ${total.toLocaleString()} (${categories})`;
 };
 
 /**
- * Calculate total extra charges for a booking
+ * Calculate total extra charges for a booking with null safety
  */
-export const calculateTotalExtraCharges = (charges: Array<{ amount: number }>) => {
-  if (!charges || charges.length === 0) return 0;
+export const calculateTotalExtraCharges = (charges: Array<{ amount: number }> | null | undefined) => {
+  if (!charges || !Array.isArray(charges) || charges.length === 0) return 0;
   
   return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
 };
@@ -588,4 +587,29 @@ export const getExtraChargeCategoryLabel = (category: string) => {
     default:
       return category;
   }
+};
+
+/**
+ * Safely format slot ranges
+ */
+export const safeFormatSlotRanges = (slotHours: number[] | null | undefined): string => {
+  if (!slotHours || !Array.isArray(slotHours) || slotHours.length === 0) {
+    return '';
+  }
+  
+  return formatSlotRanges(slotHours);
+};
+
+/**
+ * Safely get booking customer name
+ */
+export const getBookingCustomerName = (booking: any): string => {
+  return booking?.customer?.name || '';
+};
+
+/**
+ * Safely get booking customer phone
+ */
+export const getBookingCustomerPhone = (booking: any): string => {
+  return booking?.customer?.phone || '';
 };
