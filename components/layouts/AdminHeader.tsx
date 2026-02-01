@@ -159,17 +159,24 @@ export default function AdminHeader({
                 border: '2px solid #F5B800',
                 boxShadow: '0 2px 8px rgba(245, 184, 0, 0.3)',
                 overflow: 'hidden',
-                padding: '3px',
+                // Reduced padding to give more space for image
+                padding: '0px',
               }}
             >
               <Image
                 src="/logoo.png"
                 alt="PowerPlay Cricket Arena Logo"
-                width={34}
-                height={34}
-                fit="contain"
+                // Increased image size to fill more space
+                width={38}  // Increased from 34
+                height={38} // Increased from 34
+                fit="cover" // Changed from 'contain' to 'cover' to fill space
                 style={{
-                  objectFit: 'contain',
+                  objectFit: 'cover', // Changed to cover
+                  // Optional: Adjust object position if needed
+                  objectPosition: 'center center',
+                  // Make image take full container space
+                  width: '100%',
+                  height: '100%',
                 }}
               />
             </Box>
