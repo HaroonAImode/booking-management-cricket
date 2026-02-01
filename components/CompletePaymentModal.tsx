@@ -9,6 +9,7 @@
  * - Admin notes field
  * - Extra charges functionality
  * - Validation and submission
+ * - Mobile responsive design
  */
 
 'use client';
@@ -32,6 +33,7 @@ import {
   ScrollArea,
   Paper,
   ThemeIcon,
+  SimpleGrid,
 } from '@mantine/core';
 import {
   IconUpload,
@@ -252,233 +254,245 @@ export default function CompletePaymentModal({
       title="Complete Payment Verification"
       size="lg"
       zIndex={300}
+      fullScreen
+      transitionProps={{ transition: 'fade', duration: 200 }}
     >
-      <Stack gap="md">
-        {/* Booking Info */}
-        <Alert color="blue" title="Booking Information">
-          <Group>
-            <Text size="sm">
-              <strong>Booking:</strong> {bookingNumber}
-            </Text>
-            <Badge size="lg" color="orange">
-              Total Remaining: Rs {(remainingAmount || 0).toLocaleString()}
-            </Badge>
-          </Group>
-        </Alert>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            icon={<IconAlertCircle size={16} />}
-            title="Error"
-            color="red"
-            onClose={() => setError(null)}
-            withCloseButton
-          >
-            {error}
+      <ScrollArea.Autosize mah="80vh">
+        <Stack gap="md" p="sm">
+          {/* Booking Info */}
+          <Alert color="blue" title="Booking Information">
+            <Group wrap="wrap" justify="space-between">
+              <Text size="sm">
+                <strong>Booking:</strong> {bookingNumber}
+              </Text>
+              <Badge size="lg" color="orange">
+                Total Remaining: Rs {(remainingAmount || 0).toLocaleString()}
+              </Badge>
+            </Group>
           </Alert>
-        )}
 
-        {/* Extra Charges Section */}
-        <Paper withBorder p="md" radius="md">
-          <Group justify="space-between" mb="sm">
-            <Text fw={600}>Extra Charges</Text>
-            <Button
-              size="xs"
-              variant={showExtraCharges ? 'filled' : 'light'}
-              leftSection={<IconPlus size={14} />}
-              onClick={() => setShowExtraCharges(!showExtraCharges)}
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              title="Error"
+              color="red"
+              onClose={() => setError(null)}
+              withCloseButton
             >
-              {showExtraCharges ? 'Hide' : 'Add Extra Charges'}
-            </Button>
-          </Group>
+              {error}
+            </Alert>
+          )}
 
-          {showExtraCharges && (
-            <Stack gap="sm">
-              <Group align="flex-end">
-                <Select
-                  label="Category"
-                  placeholder="Select category"
-                  data={[
-                    { value: 'mineral water', label: 'Mineral Water' },
-                    { value: 'tape', label: 'Tape' },
-                    { value: 'ball', label: 'Ball' },
-                    { value: 'other', label: 'Other' },
-                  ]}
-                  value={selectedCategory}
-                  onChange={(value) => setSelectedCategory(value || '')}
-                  style={{ flex: 1 }}
-                />
-                <NumberInput
-                  label="Amount"
-                  placeholder="Enter amount"
-                  leftSection={<IconCurrencyRupee size={16} />}
-                  value={extraChargeAmount}
-                  onChange={setExtraChargeAmount}
-                  min={1}
-                  thousandSeparator=","
-                  allowNegative={false}
-                  decimalScale={0}
-                  style={{ flex: 1 }}
-                />
+          {/* Extra Charges Section */}
+          <Paper withBorder p="md" radius="md">
+            <Group justify="space-between" mb="sm">
+              <Text fw={600} size="sm">Extra Charges</Text>
+              <Button
+                size="xs"
+                variant={showExtraCharges ? 'filled' : 'light'}
+                leftSection={<IconPlus size={14} />}
+                onClick={() => setShowExtraCharges(!showExtraCharges)}
+              >
+                {showExtraCharges ? 'Hide' : 'Add Extra Charges'}
+              </Button>
+            </Group>
+
+            {showExtraCharges && (
+              <Stack gap="sm">
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <Select
+                    label="Category"
+                    placeholder="Select category"
+                    data={[
+                      { value: 'mineral water', label: 'Mineral Water' },
+                      { value: 'tape', label: 'Tape' },
+                      { value: 'ball', label: 'Ball' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                    value={selectedCategory}
+                    onChange={(value) => setSelectedCategory(value || '')}
+                  />
+                  <NumberInput
+                    label="Amount"
+                    placeholder="Enter amount"
+                    leftSection={<IconCurrencyRupee size={16} />}
+                    value={extraChargeAmount}
+                    onChange={setExtraChargeAmount}
+                    min={1}
+                    thousandSeparator=","
+                    allowNegative={false}
+                    decimalScale={0}
+                  />
+                </SimpleGrid>
                 <Button
                   onClick={handleAddExtraCharge}
                   leftSection={<IconPlus size={16} />}
-                  mb={4}
+                  fullWidth
+                  size="sm"
                 >
-                  Add
+                  Add Extra Charge
                 </Button>
-              </Group>
 
+                {extraCharges.length > 0 && (
+                  <ScrollArea.Autosize mah={150}>
+                    <Stack gap="xs">
+                      {extraCharges.map((charge, index) => (
+                        <Paper key={index} withBorder p="xs" radius="sm">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Group gap="xs" wrap="nowrap">
+                              <ThemeIcon size="sm" variant="light">
+                                {getCategoryIcon(charge.category)}
+                              </ThemeIcon>
+                              <Text size="sm" truncate>
+                                {getCategoryLabel(charge.category)}
+                              </Text>
+                            </Group>
+                            <Group gap="xs" wrap="nowrap">
+                              <Text size="sm" fw={600}>
+                                Rs {charge.amount.toLocaleString()}
+                              </Text>
+                              <ActionIcon
+                                size="sm"
+                                color="red"
+                                variant="subtle"
+                                onClick={() => handleRemoveExtraCharge(index)}
+                              >
+                                <IconTrash size={14} />
+                              </ActionIcon>
+                            </Group>
+                          </Group>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </ScrollArea.Autosize>
+                )}
+              </Stack>
+            )}
+
+            {/* Total Summary */}
+            <Box mt="md">
+              <Group justify="space-between" wrap="wrap">
+                <Text size="sm">Original Remaining:</Text>
+                <Text size="sm" fw={600}>
+                  Rs {(remainingAmount || 0).toLocaleString()}
+                </Text>
+              </Group>
               {extraCharges.length > 0 && (
-                <ScrollArea.Autosize mah={150}>
-                  <Stack gap="xs">
-                    {extraCharges.map((charge, index) => (
-                      <Paper key={index} withBorder p="xs" radius="sm">
-                        <Group justify="space-between">
-                          <Group gap="xs">
-                            <ThemeIcon size="sm" variant="light">
-                              {getCategoryIcon(charge.category)}
-                            </ThemeIcon>
-                            <Text size="sm">{getCategoryLabel(charge.category)}</Text>
-                          </Group>
-                          <Group gap="xs">
-                            <Text size="sm" fw={600}>
-                              Rs {charge.amount.toLocaleString()}
-                            </Text>
-                            <ActionIcon
-                              size="sm"
-                              color="red"
-                              variant="subtle"
-                              onClick={() => handleRemoveExtraCharge(index)}
-                            >
-                              <IconTrash size={14} />
-                            </ActionIcon>
-                          </Group>
-                        </Group>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </ScrollArea.Autosize>
+                <>
+                  <Group justify="space-between" wrap="wrap" mt={4}>
+                    <Text size="sm">Extra Charges:</Text>
+                    <Text size="sm" fw={600} c="blue">
+                      + Rs {totalExtraCharges.toLocaleString()}
+                    </Text>
+                  </Group>
+                  <Group justify="space-between" wrap="wrap" mt={4}>
+                    <Text size="sm" fw={600}>Total Payable:</Text>
+                    <Text size="sm" fw={700} c="green">
+                      Rs {totalPayable.toLocaleString()}
+                    </Text>
+                  </Group>
+                </>
               )}
-            </Stack>
+            </Box>
+          </Paper>
+
+          {/* Payment Amount Input */}
+          <NumberInput
+            label="Payment Amount"
+            description="Enter amount to be paid (you can apply discount if needed)"
+            placeholder="Enter amount"
+            required
+            leftSection={<IconCurrencyRupee size={18} />}
+            value={paymentAmount}
+            onChange={(value) => setPaymentAmount(Number(value) || 0)}
+            min={1}
+            max={totalPayable}
+            thousandSeparator=","
+            allowNegative={false}
+            decimalScale={0}
+          />
+
+          {/* Show discount amount if different */}
+          {paymentAmount < totalPayable && (
+            <Alert color="yellow" variant="light">
+              <Text size="sm">
+                <strong>Discount Applied:</strong> Rs {(totalPayable - paymentAmount).toLocaleString()}
+              </Text>
+            </Alert>
           )}
 
-          {/* Total Summary */}
-          <Box mt="md">
-            <Group justify="space-between">
-              <Text size="sm">Original Remaining:</Text>
-              <Text size="sm" fw={600}>
-                Rs {(remainingAmount || 0).toLocaleString()}
-              </Text>
-            </Group>
-            {extraCharges.length > 0 && (
-              <>
-                <Group justify="space-between" mt={4}>
-                  <Text size="sm">Extra Charges:</Text>
-                  <Text size="sm" fw={600} c="blue">
-                    + Rs {totalExtraCharges.toLocaleString()}
-                  </Text>
-                </Group>
-                <Group justify="space-between" mt={4}>
-                  <Text size="sm" fw={600}>Total Payable:</Text>
-                  <Text size="sm" fw={700} c="green">
-                    Rs {totalPayable.toLocaleString()}
-                  </Text>
-                </Group>
-              </>
-            )}
-          </Box>
-        </Paper>
+          {/* Payment Method */}
+          <Select
+            label="Payment Method"
+            placeholder="Select payment method"
+            required
+            data={[
+              { value: 'easypaisa', label: 'Easypaisa' },
+              { value: 'sadapay', label: 'SadaPay' },
+              { value: 'cash', label: 'Cash' },
+            ]}
+            value={paymentMethod}
+            onChange={(value) => setPaymentMethod(value || '')}
+          />
 
-        {/* Payment Amount Input */}
-        <NumberInput
-          label="Payment Amount"
-          description="Enter amount to be paid (you can apply discount if needed)"
-          placeholder="Enter amount"
-          required
-          leftSection={<IconCurrencyRupee size={18} />}
-          value={paymentAmount}
-          onChange={(value) => setPaymentAmount(Number(value) || 0)}
-          min={1}
-          max={totalPayable}
-          thousandSeparator=","
-          allowNegative={false}
-          decimalScale={0}
-        />
+          {/* Payment Proof Upload */}
+          <FileInput
+            label="Payment Proof"
+            placeholder="Upload payment proof image"
+            required={paymentMethod !== 'cash'}
+            accept="image/*"
+            leftSection={<IconUpload size={18} />}
+            value={paymentProof}
+            onChange={setPaymentProof}
+            description={
+              paymentMethod === 'cash'
+                ? 'Optional for cash payments'
+                : 'Upload screenshot or photo of payment receipt'
+            }
+          />
 
-        {/* Show discount amount if different */}
-        {paymentAmount < totalPayable && (
-          <Alert color="yellow" variant="light">
-            <Text size="sm">
-              <strong>Discount Applied:</strong> Rs {(totalPayable - paymentAmount).toLocaleString()}
+          {/* Admin Notes */}
+          <Textarea
+            label="Admin Notes (Optional)"
+            placeholder="Add any notes about this payment verification..."
+            value={adminNotes}
+            onChange={(e) => setAdminNotes(e.target.value)}
+            minRows={3}
+            autosize
+          />
+
+          {/* Info */}
+          <Alert color="gray" variant="light">
+            <Text size="xs">
+              After verification, the booking will be automatically marked as{' '}
+              <strong>completed</strong> and the customer will receive a
+              notification. Extra charges will be added to the booking total.
             </Text>
           </Alert>
-        )}
 
-        {/* Payment Method */}
-        <Select
-          label="Payment Method"
-          placeholder="Select payment method"
-          required
-          data={[
-            { value: 'easypaisa', label: 'Easypaisa' },
-            { value: 'sadapay', label: 'SadaPay' },
-            { value: 'cash', label: 'Cash' },
-          ]}
-          value={paymentMethod}
-          onChange={(value) => setPaymentMethod(value || '')}
-        />
-
-        {/* Payment Proof Upload */}
-        <FileInput
-          label="Payment Proof"
-          placeholder="Upload payment proof image"
-          required={paymentMethod !== 'cash'}
-          accept="image/*"
-          leftSection={<IconUpload size={18} />}
-          value={paymentProof}
-          onChange={setPaymentProof}
-          description={
-            paymentMethod === 'cash'
-              ? 'Optional for cash payments'
-              : 'Upload screenshot or photo of payment receipt'
-          }
-        />
-
-        {/* Admin Notes */}
-        <Textarea
-          label="Admin Notes (Optional)"
-          placeholder="Add any notes about this payment verification..."
-          value={adminNotes}
-          onChange={(e) => setAdminNotes(e.target.value)}
-          minRows={3}
-        />
-
-        {/* Action Buttons */}
-        <Group justify="flex-end" mt="md">
-          <Button variant="light" onClick={handleClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            loading={loading}
-            leftSection={<IconCheck size={18} />}
-            color="green"
-          >
-            Verify & Complete Booking
-          </Button>
-        </Group>
-
-        {/* Info */}
-        <Alert color="gray" variant="light">
-          <Text size="xs">
-            After verification, the booking will be automatically marked as{' '}
-            <strong>completed</strong> and the customer will receive a
-            notification. Extra charges will be added to the booking total.
-          </Text>
-        </Alert>
-      </Stack>
+          {/* Action Buttons */}
+          <Group justify="flex-end" mt="md" wrap="wrap">
+            <Button 
+              variant="light" 
+              onClick={handleClose} 
+              disabled={loading}
+              fullWidth={{ base: true, sm: false }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={loading}
+              leftSection={<IconCheck size={18} />}
+              color="green"
+              fullWidth={{ base: true, sm: false }}
+            >
+              Verify & Complete Booking
+            </Button>
+          </Group>
+        </Stack>
+      </ScrollArea.Autosize>
     </Modal>
   );
 }

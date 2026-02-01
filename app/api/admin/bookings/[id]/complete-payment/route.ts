@@ -183,13 +183,14 @@ async function handler(
 
     // Call SQL function to verify payment and complete booking
     const { data: result, error: verifyError } = await supabase.rpc(
-      'verify_remaining_payment',
+      'verify_remaining_payment_with_extra_charges',  // Changed to new function
       {
         p_booking_id: bookingId,
         p_payment_method: paymentMethod,
         p_payment_amount: paymentAmount,
         p_payment_proof_path: uploadedProofPath,
         p_admin_notes: adminNotes,
+        p_extra_charges_total: totalExtraCharges,
       }
     );
 
@@ -209,20 +210,13 @@ async function handler(
       );
     }
 
-    // Get updated booking with extra charges
-    const { data: updatedBooking } = await supabase
-      .from('bookings')
-      .select('total_amount, remaining_payment')
-      .eq('id', bookingId)
-      .single();
-
     return NextResponse.json({
       success: true,
       message: 'Payment verified and booking completed successfully',
       bookingNumber: result.booking_number,
       remainingAmount: result.new_remaining || 0,
       totalExtraCharges,
-      newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
+      newTotalAmount: result.new_total_amount || booking.total_amount,
       discountGiven: result.discount_given || 0,
     });
   } catch (error) {
