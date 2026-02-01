@@ -159,26 +159,32 @@ export default function AdminHeader({
                 border: '2px solid #F5B800',
                 boxShadow: '0 2px 8px rgba(245, 184, 0, 0.3)',
                 overflow: 'hidden',
-                // Reduced padding to give more space for image
                 padding: '0px',
               }}
             >
-              <Image
-                src="/logoo.png"
-                alt="PowerPlay Cricket Arena Logo"
-                // Increased image size to fill more space
-                width={38}  // Increased from 34
-                height={38} // Increased from 34
-                fit="cover" // Changed from 'contain' to 'cover' to fill space
-                style={{
-                  objectFit: 'cover', // Changed to cover
-                  // Optional: Adjust object position if needed
-                  objectPosition: 'center center',
-                  // Make image take full container space
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
+              {/* Container to apply scale transform */}
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: 'scale(1.4)', // Increased from 1.3 for more zoom
+              }}>
+                <Image
+                  src="/logoo.png"
+                  alt="PowerPlay Cricket Arena Logo"
+                  width={38}
+                  height={38}
+                  fit="cover"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: 'center center',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+              </div>
             </Box>
             <Box visibleFrom="xs">
               <Text size="sm" c="white" fw={900} style={{ lineHeight: 1, marginBottom: '2px', letterSpacing: '0.5px' }}>
