@@ -169,10 +169,8 @@ export default function CompletePaymentModal({
       formData.append('paymentAmount', paymentAmount.toString());
       formData.append('discountAmount', appliedDiscount.toString());
       
-      // Add extra charges if any - IMPORTANT: This passes JSON array, not just total
-      if (extraCharges.length > 0) {
-        formData.append('extraCharges', JSON.stringify(extraCharges));
-      }
+      // FIX: ALWAYS send extraCharges field, even if empty array
+      formData.append('extraCharges', JSON.stringify(extraCharges));
       
       // Only append proof if it exists (cash payments may not have proof)
       if (paymentProof) {
@@ -181,6 +179,20 @@ export default function CompletePaymentModal({
       if (adminNotes) {
         formData.append('adminNotes', adminNotes);
       }
+
+      // Debug logging
+      console.log('Submitting payment data:', {
+        bookingId,
+        bookingNumber,
+        paymentMethod,
+        paymentAmount,
+        discountAmount: appliedDiscount,
+        extraCharges: extraCharges,
+        extraChargesJson: JSON.stringify(extraCharges),
+        extraChargesCount: extraCharges.length,
+        hasPaymentProof: !!paymentProof,
+        adminNotes,
+      });
 
       // Submit to API
       const response = await fetch(
@@ -203,7 +215,7 @@ export default function CompletePaymentModal({
         }
         
         notifications.show({
-          title: 'Success',
+          title: '✅ Payment Verified',
           message,
           color: 'green',
           icon: <IconCheck size={18} />,
@@ -213,6 +225,7 @@ export default function CompletePaymentModal({
         setPaymentMethod('');
         setPaymentProof(null);
         setAdminNotes('');
+        setPaymentAmount(remainingAmount || 0);
         setExtraCharges([]);
         setShowExtraCharges(false);
         setSelectedCategory('');
@@ -224,10 +237,24 @@ export default function CompletePaymentModal({
         onClose();
       } else {
         setError(result.error || 'Failed to verify payment');
+        
+        notifications.show({
+          title: '❌ Payment Failed',
+          message: result.error || 'Failed to verify payment',
+          color: 'red',
+          icon: <IconAlertCircle size={18} />,
+        });
       }
     } catch (error) {
       console.error('Complete payment error:', error);
       setError('Failed to verify payment. Please try again.');
+      
+      notifications.show({
+        title: '❌ Network Error',
+        message: 'Failed to connect to server. Please check your connection.',
+        color: 'red',
+        icon: <IconAlertCircle size={18} />,
+      });
     } finally {
       setLoading(false);
     }
