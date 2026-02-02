@@ -1,82 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
 
-export async function DELETE(
+// GET single booking by ID
+export const GET = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // params is a Promise
-) {
+  { params, adminProfile }: { params: Promise<{ id: string }>, adminProfile: any }
+) => {
   try {
-    // Await the params to get the actual values
     const resolvedParams = await params;
     const bookingId = resolvedParams.id;
     
     const supabase = await createClient();
 
-    // Check if booking exists
-    const { data: booking, error: fetchError } = await supabase
+    // Fetch booking with all related data
+    const { data: booking, error } = await supabase
       .from('bookings')
-      .select('booking_number, customer_id')
+      .select(`
+        *,
+        customer:customers(*),
+        slots(*),
+        extra_charges(*)
+      `)
       .eq('id', bookingId)
       .single();
 
-    if (fetchError || !booking) {
+    if (error || !booking) {
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
     }
 
-    // Delete booking slots first (foreign key constraint)
-    const { error: slotsError } = await supabase
-      .from('booking_slots')
-      .delete()
-      .eq('booking_id', bookingId);
+    // Calculate total extra charges
+    const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
-    if (slotsError) {
-      console.error('Error deleting slots:', slotsError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to delete booking slots' },
-        { status: 500 }
-      );
-    }
-
-    // Delete the booking
-    const { error: bookingError } = await supabase
-      .from('bookings')
-      .delete()
-      .eq('id', bookingId);
-
-    if (bookingError) {
-      console.error('Error deleting booking:', bookingError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to delete booking' },
-        { status: 500 }
-      );
-    }
-
-    // Optional: Delete customer if they have no other bookings
-    const { data: otherBookings } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('customer_id', booking.customer_id);
-
-    if (!otherBookings || otherBookings.length === 0) {
-      await supabase
-        .from('customers')
-        .delete()
-        .eq('id', booking.customer_id);
-    }
+    const formattedBooking = {
+      id: booking.id,
+      booking_number: booking.booking_number,
+      booking_date: booking.booking_date,
+      total_hours: booking.total_hours,
+      total_amount: booking.total_amount,
+      advance_payment: booking.advance_payment,
+      remaining_payment: booking.remaining_payment,
+      advance_payment_method: booking.advance_payment_method,
+      advance_payment_proof: booking.advance_payment_proof,
+      remaining_payment_proof: booking.remaining_payment_proof,
+      remaining_payment_method: booking.remaining_payment_method,
+      remaining_payment_amount: booking.remaining_payment_amount,
+      discount_amount: booking.discount_amount,
+      status: booking.status,
+      created_at: booking.created_at,
+      customer: booking.customer || { name: '', phone: '', email: '' },
+      slots: Array.isArray(booking.slots) ? booking.slots : [],
+      extra_charges: extraCharges,
+      total_extra_charges: totalExtraCharges,
+    };
 
     return NextResponse.json({
       success: true,
-      message: 'Booking deleted successfully',
-      bookingNumber: booking.booking_number,  // FIXED: Removed the stray 's'
+      booking: formattedBooking,
     });
   } catch (error: any) {
-    console.error('Delete booking error:', error);
+    console.error('Get booking error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
-}
+});

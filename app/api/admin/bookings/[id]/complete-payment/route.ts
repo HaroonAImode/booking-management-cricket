@@ -213,18 +213,17 @@ async function handler(
       : null;
 
     // Call the updated SQL function with ALL parameters including discount
-    // IMPORTANT: Changed from p_extra_charges_total to p_extra_charges (JSONB)
     const { data: result, error: verifyError } = await supabase.rpc(
       'verify_remaining_payment_with_extra_charges',
       {
         p_admin_notes: adminNotes,
         p_booking_id: bookingId,
-        p_extra_charges: extraChargesJsonb, // CHANGED: Now passing JSONB array
+        p_extra_charges: extraChargesJsonb,
         p_payment_amount: paymentAmount,
         p_payment_method: paymentMethod,
         p_payment_proof_path: uploadedProofPath,
         p_created_by: adminProfile.id,
-        p_discount_amount: discountAmount // NEW: discount parameter
+        p_discount_amount: discountAmount
       }
     );
 

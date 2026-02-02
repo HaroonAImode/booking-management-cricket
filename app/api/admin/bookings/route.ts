@@ -1,277 +1,235 @@
 /**
- * Complete Payment API Route
+ * Admin Bookings API Route
  * 
- * Purpose: Handle remaining payment verification with extra charges and discount
- * Features:
- * - Upload remaining payment proof
- * - Verify payment and mark booking as completed
- * - Handle extra charges (mineral water, tape, ball, other)
- * - Handle discount functionality
- * - Update booking totals with extra charges and discount
+ * GET: Fetch bookings with filters for admin dashboard
+ * DELETE: Delete booking by ID (from query param)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
-import { uploadPaymentProof } from '@/lib/supabase/storage';
 
-async function handler(
+// GET handler for fetching bookings
+async function GETHandler(
   request: NextRequest,
-  { params, adminProfile }: { params: Promise<{ id: string }>, adminProfile: any }
+  { adminProfile }: { adminProfile: any }
 ) {
-  const resolvedParams = await params;
-  
-  if (!resolvedParams?.id) {
-    return NextResponse.json(
-      { success: false, error: 'Booking ID is required' },
-      { status: 400 }
-    );
-  }
-
   try {
     const supabase = await createClient();
-    const bookingId = resolvedParams.id;
+    const { searchParams } = new URL(request.url);
+    
+    // Extract query parameters
+    const status = searchParams.get('status') || 'all';
+    const paymentStatus = searchParams.get('paymentStatus') || 'all';
+    const search = searchParams.get('search') || '';
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const remainingOnly = searchParams.get('remainingOnly') === 'true';
 
-    // Parse form data
-    const formData = await request.formData();
-    const paymentMethod = formData.get('paymentMethod') as string;
-    const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
-    const discountAmount = parseFloat(formData.get('discountAmount') as string || '0');
-    const paymentProof = formData.get('paymentProof') as File | null;
-    const adminNotes = formData.get('adminNotes') as string | null;
-    const extraChargesJson = formData.get('extraCharges') as string | null;
-
-    // Parse extra charges if provided
-    let extraCharges: Array<{ category: string; amount: number }> = [];
-    if (extraChargesJson) {
-      try {
-        extraCharges = JSON.parse(extraChargesJson);
-      } catch (error) {
-        console.error('Error parsing extra charges:', error);
-        return NextResponse.json(
-          { success: false, error: 'Invalid extra charges format' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate required fields
-    if (!paymentMethod) {
-      return NextResponse.json(
-        { success: false, error: 'Payment method is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate payment amount
-    if (!paymentAmount || paymentAmount <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Valid payment amount is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate discount amount
-    if (discountAmount < 0) {
-      return NextResponse.json(
-        { success: false, error: 'Discount amount cannot be negative' },
-        { status: 400 }
-      );
-    }
-
-    // Validate extra charges
-    if (extraCharges.length > 0) {
-      for (const charge of extraCharges) {
-        if (!charge.category || !charge.amount || charge.amount <= 0) {
-          return NextResponse.json(
-            { success: false, error: 'Invalid extra charge data' },
-            { status: 400 }
-          );
-        }
-        
-        // Validate category
-        const validCategories = ['mineral water', 'tape', 'ball', 'other'];
-        if (!validCategories.includes(charge.category)) {
-          return NextResponse.json(
-            { success: false, error: `Invalid category: ${charge.category}` },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
-    // Payment proof is optional for cash payments, required for digital
-    if (!paymentProof && paymentMethod !== 'cash') {
-      return NextResponse.json(
-        { success: false, error: 'Payment proof is required for digital payments' },
-        { status: 400 }
-      );
-    }
-
-    // Get booking details first to get booking number and date
-    const { data: booking, error: bookingError } = await supabase
+    // Build query
+    let query = supabase
       .from('bookings')
-      .select('booking_number, booking_date, remaining_payment, status, total_amount')
+      .select(`
+        *,
+        customer:customers(*),
+        slots(*),
+        extra_charges(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    // Apply status filter
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    // Apply payment status filter (admin only)
+    if (adminProfile.role === 'admin' && paymentStatus !== 'all') {
+      if (paymentStatus === 'paid') {
+        query = query.or('remaining_payment.eq.0,remaining_payment.is.null');
+      } else if (paymentStatus === 'pending') {
+        query = query.gt('remaining_payment', 0);
+      }
+    }
+
+    // Apply search filter
+    if (search) {
+      query = query.or(`booking_number.ilike.%${search}%,customers(name).ilike.%${search}%,customers(phone).ilike.%${search}%`);
+    }
+
+    // Apply date range filter
+    if (dateFrom) {
+      query = query.gte('booking_date', dateFrom);
+    }
+    if (dateTo) {
+      query = query.lte('booking_date', dateTo);
+    }
+
+    // For ground managers: only show approved bookings with remaining payment
+    if (adminProfile.role === 'ground_manager' || remainingOnly) {
+      query = query.eq('status', 'approved').gt('remaining_payment', 0);
+    }
+
+    // Execute query
+    const { data: bookings, error } = await query;
+
+    if (error) {
+      console.error('Error fetching bookings:', error);
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      );
+    }
+
+    // Calculate summary statistics
+    const summary = {
+      total: bookings.length,
+      pending: bookings.filter(b => b.status === 'pending').length,
+      approved: bookings.filter(b => b.status === 'approved').length,
+      completed: bookings.filter(b => b.status === 'completed').length,
+      cancelled: bookings.filter(b => b.status === 'cancelled').length,
+      totalRevenue: bookings.reduce((sum, b) => sum + (b.total_amount || 0), 0),
+      totalExtraCharges: bookings.reduce((sum, b) => {
+        const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
+        return sum + extraCharges.reduce((sum2, ec) => sum2 + (ec.amount || 0), 0);
+      }, 0),
+      totalDiscount: bookings.reduce((sum, b) => sum + (b.discount_amount || 0), 0),
+    };
+
+    // Format bookings for response
+    const formattedBookings = bookings.map(booking => {
+      // Calculate total extra charges
+      const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
+      const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+
+      return {
+        id: booking.id,
+        booking_number: booking.booking_number,
+        booking_date: booking.booking_date,
+        total_hours: booking.total_hours,
+        total_amount: booking.total_amount,
+        advance_payment: booking.advance_payment,
+        remaining_payment: booking.remaining_payment,
+        advance_payment_method: booking.advance_payment_method,
+        advance_payment_proof: booking.advance_payment_proof,
+        remaining_payment_proof: booking.remaining_payment_proof,
+        remaining_payment_method: booking.remaining_payment_method,
+        remaining_payment_amount: booking.remaining_payment_amount,
+        discount_amount: booking.discount_amount,
+        status: booking.status,
+        created_at: booking.created_at,
+        customer: booking.customer || { name: '', phone: '', email: '' },
+        slots: Array.isArray(booking.slots) ? booking.slots : [],
+        extra_charges: extraCharges,
+        total_extra_charges: totalExtraCharges,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      bookings: formattedBookings,
+      summary,
+    });
+  } catch (error: any) {
+    console.error('Error in bookings API:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE handler for deleting bookings by ID
+async function DELETEHandler(
+  request: NextRequest,
+  { adminProfile }: { adminProfile: any }
+) {
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const bookingId = searchParams.get('id');
+    
+    if (!bookingId) {
+      return NextResponse.json(
+        { success: false, error: 'Booking ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Only admins can delete bookings
+    if (adminProfile.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Only admins can delete bookings' },
+        { status: 403 }
+      );
+    }
+
+    // Check if booking exists
+    const { data: booking, error: fetchError } = await supabase
+      .from('bookings')
+      .select('booking_number, customer_id')
       .eq('id', bookingId)
       .single();
 
-    if (bookingError || !booking) {
+    if (fetchError || !booking) {
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
     }
 
-    // Validate booking status
-    if (booking.status !== 'approved') {
+    // Delete extra charges first
+    await supabase
+      .from('extra_charges')
+      .delete()
+      .eq('booking_id', bookingId);
+
+    // Delete slots
+    await supabase
+      .from('slots')
+      .delete()
+      .eq('booking_id', bookingId);
+
+    // Delete booking
+    const { error: deleteError } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingId);
+
+    if (deleteError) {
+      console.error('Delete booking error:', deleteError);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Booking must be approved to complete payment. Current status: ${booking.status}` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Calculate total with extra charges
-    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
-    const totalPayable = booking.remaining_payment + totalExtraCharges;
-
-    // Validate payment amount doesn't exceed total payable
-    if (paymentAmount > totalPayable) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Payment amount (Rs ${paymentAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate payment amount is at least original remaining amount
-    if (paymentAmount < booking.remaining_payment) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Payment must be at least Rs ${booking.remaining_payment} (original remaining amount)` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate discount doesn't exceed extra charges
-    if (discountAmount > totalExtraCharges) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Discount (Rs ${discountAmount}) cannot exceed extra charges amount (Rs ${totalExtraCharges})` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Calculate expected payment with discount
-    const expectedPayment = totalPayable - discountAmount;
-    
-    // Validate actual payment matches expected payment (with small tolerance for rounding)
-    if (Math.abs(paymentAmount - expectedPayment) > 1) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Payment amount mismatch. Expected: Rs ${expectedPayment}, Provided: Rs ${paymentAmount}` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Upload payment proof to storage (if provided)
-    let uploadedProofPath = null;
-    
-    if (paymentProof) {
-      const uploadResult = await uploadPaymentProof(
-        paymentProof,
-        bookingId,
-        booking.booking_date
-      );
-
-      if (uploadResult.error || !uploadResult.data) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: uploadResult.error || 'Failed to upload payment proof' 
-          },
-          { status: 500 }
-        );
-      }
-      
-      uploadedProofPath = uploadResult.data;
-    }
-
-    // Convert extra charges to JSONB format for database
-    const extraChargesJsonb = extraCharges.length > 0 
-      ? JSON.stringify(extraCharges) 
-      : null;
-
-    // Call the updated SQL function with ALL parameters including discount
-    const { data: result, error: verifyError } = await supabase.rpc(
-      'verify_remaining_payment_with_extra_charges',
-      {
-        p_admin_notes: adminNotes,
-        p_booking_id: bookingId,
-        p_extra_charges: extraChargesJsonb,
-        p_payment_amount: paymentAmount,
-        p_payment_method: paymentMethod,
-        p_payment_proof_path: uploadedProofPath,
-        p_created_by: adminProfile.id,
-        p_discount_amount: discountAmount
-      }
-    );
-
-    if (verifyError) {
-      console.error('Verify payment error:', verifyError);
-      return NextResponse.json(
-        { success: false, error: verifyError.message },
+        { success: false, error: deleteError.message },
         { status: 500 }
       );
     }
 
-    // Check if the function returned an error
-    if (result && !result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 400 }
-      );
-    }
-
-    // Fetch updated booking to get discount amount
-    const { data: updatedBooking } = await supabase
+    // Optional: Delete customer if they have no other bookings
+    const { data: otherBookings } = await supabase
       .from('bookings')
-      .select('discount_amount, total_amount, remaining_payment_amount')
-      .eq('id', bookingId)
-      .single();
+      .select('id')
+      .eq('customer_id', booking.customer_id);
+
+    if (!otherBookings || otherBookings.length === 0) {
+      await supabase
+        .from('customers')
+        .delete()
+        .eq('id', booking.customer_id);
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Payment verified and booking completed successfully',
-      bookingNumber: result.booking_number,
-      remainingAmount: booking.remaining_payment,
-      totalExtraCharges: result.total_extra_charges || totalExtraCharges,
-      actual_discount: result.actual_discount || discountAmount,
-      discountApplied: updatedBooking?.discount_amount || discountAmount,
-      finalPayment: paymentAmount,
-      newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
-      remainingPaymentAmount: updatedBooking?.remaining_payment_amount || 0,
+      message: `Booking #${booking.booking_number} deleted successfully`,
+      bookingNumber: booking.booking_number,
     });
   } catch (error: any) {
-    console.error('Complete payment error:', error);
+    console.error('Delete error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      },
+      { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export const PATCH = withAdminAuth(handler);
+// Export both GET and DELETE methods
+export const GET = withAdminAuth(GETHandler);
+export const DELETE = withAdminAuth(DELETEHandler);
