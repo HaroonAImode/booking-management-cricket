@@ -99,6 +99,31 @@ export default function CompletePaymentModal({
       return;
     }
 
+    // CRITICAL FIX: Payment must include extra charges
+    if (extraCharges.length > 0 && paymentAmount < totalPayable) {
+      const missingAmount = totalPayable - paymentAmount;
+      
+      // Check if missing amount equals extra charges (customer trying to skip extra charges)
+      if (Math.abs(missingAmount - totalExtraCharges) < 1) { // Allow small rounding differences
+        setError(`Payment must include extra charges. Total payable: Rs ${totalPayable.toLocaleString()} (original Rs ${remainingAmount.toLocaleString()} + extra Rs ${totalExtraCharges.toLocaleString()})`);
+        return;
+      }
+      
+      // If there's a real discount, ask for confirmation
+      const confirmed = window.confirm(
+        `You are applying a discount of Rs ${missingAmount.toLocaleString()}.\n\n` +
+        `Original: Rs ${remainingAmount.toLocaleString()}\n` +
+        `Extra Charges: Rs ${totalExtraCharges.toLocaleString()}\n` +
+        `Total Payable: Rs ${totalPayable.toLocaleString()}\n` +
+        `Payment: Rs ${paymentAmount.toLocaleString()}\n\n` +
+        `Is this correct?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+
     if (paymentAmount > totalPayable) {
       setError(`Payment amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
       return;
@@ -147,7 +172,7 @@ export default function CompletePaymentModal({
       if (result.success) {
         notifications.show({
           title: 'Success',
-          message: `Payment verified! Booking ${bookingNumber} is now completed.${result.totalExtraCharges > 0 ? ` Added Rs ${result.totalExtraCharges} in extra charges.` : ''}`,
+          message: `Payment verified! Booking ${bookingNumber} is now completed.${result.totalExtraCharges > 0 ? ` Added Rs ${result.totalExtraCharges} in extra charges.` : ''}${result.actual_discount > 0 ? ` Discount: Rs ${result.actual_discount}.` : ''}`,
           color: 'green',
           icon: <IconCheck size={18} />,
         });
@@ -244,8 +269,16 @@ export default function CompletePaymentModal({
 
   // Update payment amount when total payable changes
   useEffect(() => {
+    // CRITICAL FIX: Always set payment to total payable when extra charges change
     setPaymentAmount(totalPayable);
   }, [totalPayable]);
+
+  // Also update when modal opens
+  useEffect(() => {
+    if (opened) {
+      setPaymentAmount(totalPayable);
+    }
+  }, [opened, totalPayable]);
 
   return (
     <Modal
@@ -392,6 +425,11 @@ export default function CompletePaymentModal({
                       Rs {totalPayable.toLocaleString()}
                     </Text>
                   </Group>
+                  <Alert color="yellow" variant="light" mt="sm" p="xs">
+                    <Text size="xs">
+                      <strong>Note:</strong> Extra charges must be paid. Payment will be auto-set to total payable.
+                    </Text>
+                  </Alert>
                 </>
               )}
             </Box>
@@ -400,7 +438,9 @@ export default function CompletePaymentModal({
           {/* Payment Amount Input */}
           <NumberInput
             label="Payment Amount"
-            description="Enter amount to be paid (you can apply discount if needed)"
+            description={extraCharges.length > 0 ? 
+              "Amount includes extra charges. You can apply additional discount if needed." :
+              "Enter amount to be paid (you can apply discount if needed)"}
             placeholder="Enter amount"
             required
             leftSection={<IconCurrencyRupee size={18} />}
@@ -411,6 +451,7 @@ export default function CompletePaymentModal({
             thousandSeparator=","
             allowNegative={false}
             decimalScale={0}
+            disabled={extraCharges.length > 0} // Disable editing when extra charges exist
           />
 
           {/* Show discount amount if different */}
@@ -418,6 +459,11 @@ export default function CompletePaymentModal({
             <Alert color="yellow" variant="light">
               <Text size="sm">
                 <strong>Discount Applied:</strong> Rs {(totalPayable - paymentAmount).toLocaleString()}
+                {extraCharges.length > 0 && (
+                  <Text size="xs" mt={4}>
+                    (Total payable includes Rs {totalExtraCharges.toLocaleString()} in extra charges)
+                  </Text>
+                )}
               </Text>
             </Alert>
           )}
@@ -468,6 +514,9 @@ export default function CompletePaymentModal({
               After verification, the booking will be automatically marked as{' '}
               <strong>completed</strong> and the customer will receive a
               notification. Extra charges will be added to the booking total.
+              {extraCharges.length > 0 && (
+                <><br/><strong>Note:</strong> Extra charges must be paid and cannot be discounted.</>
+              )}
             </Text>
           </Alert>
 
