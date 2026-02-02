@@ -86,29 +86,39 @@ export default function CompletePaymentModal({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [extraChargeAmount, setExtraChargeAmount] = useState<string>('');
   const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
-  const [isDiscountManual, setIsDiscountManual] = useState(false);
 
   // Calculate total with extra charges
   const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   const totalPayable = (remainingAmount || 0) + totalExtraCharges;
-  const calculatedPayment = totalPayable - appliedDiscount;
 
-  // Update payment amount when total changes
+  // Reset form when modal opens
   useEffect(() => {
-    if (!isDiscountManual) {
-      setPaymentAmount(totalPayable);
+    if (opened) {
+      setPaymentAmount(remainingAmount || 0);
+      setAppliedDiscount(0);
+      setExtraCharges([]);
+      setPaymentMethod('');
+      setPaymentProof(null);
+      setAdminNotes('');
+      setError(null);
+      setSelectedCategory('');
+      setExtraChargeAmount('');
+    }
+  }, [opened, remainingAmount]);
+
+  // Update payment amount when extra charges change (auto-calculate)
+  useEffect(() => {
+    // Calculate new total including extra charges
+    const newTotal = (remainingAmount || 0) + totalExtraCharges;
+    
+    // Only auto-update if payment amount is currently at the previous total
+    // This prevents overwriting manual adjustments
+    if (paymentAmount === (remainingAmount || 0) || paymentAmount === totalPayable - appliedDiscount) {
+      setPaymentAmount(newTotal);
+      // Reset discount when extra charges are added/removed
       setAppliedDiscount(0);
     }
-  }, [totalPayable, isDiscountManual]);
-
-  // Update discount when payment amount is manually changed
-  useEffect(() => {
-    if (isDiscountManual && paymentAmount < totalPayable) {
-      setAppliedDiscount(totalPayable - paymentAmount);
-    } else if (isDiscountManual && paymentAmount >= totalPayable) {
-      setAppliedDiscount(0);
-    }
-  }, [paymentAmount, totalPayable, isDiscountManual]);
+  }, [totalExtraCharges, remainingAmount]);
 
   const handleSubmit = async () => {
     // Validation
@@ -126,6 +136,15 @@ export default function CompletePaymentModal({
     // Payment proof is optional for cash payments, required for digital
     if (!paymentProof && paymentMethod !== 'cash') {
       setError('Please upload payment proof for digital payments');
+      return;
+    }
+
+    // Calculate expected total based on remaining + extra charges - discount
+    const expectedTotal = totalPayable - appliedDiscount;
+    
+    // Validate payment matches expected total (allow 1 rupee rounding)
+    if (Math.abs(paymentAmount - expectedTotal) > 1) {
+      setError(`Payment amount (Rs ${paymentAmount.toLocaleString()}) doesn't match expected total (Rs ${expectedTotal.toLocaleString()}). Please adjust payment amount or discount.`);
       return;
     }
 
@@ -156,8 +175,9 @@ export default function CompletePaymentModal({
       formData.append('paymentAmount', paymentAmount.toString());
       formData.append('discountAmount', appliedDiscount.toString());
       
-      // FIX: ALWAYS send extraCharges field, even if empty array
-      formData.append('extraCharges', JSON.stringify(extraCharges));
+      // ALWAYS send extraCharges field, even if empty array
+      const extraChargesData = extraCharges.length > 0 ? extraCharges : [];
+      formData.append('extraCharges', JSON.stringify(extraChargesData));
       
       // Only append proof if it exists (cash payments may not have proof)
       if (paymentProof) {
@@ -174,9 +194,13 @@ export default function CompletePaymentModal({
         paymentMethod,
         paymentAmount,
         discountAmount: appliedDiscount,
-        extraCharges: extraCharges,
-        extraChargesJson: JSON.stringify(extraCharges),
-        extraChargesCount: extraCharges.length,
+        extraCharges: extraChargesData,
+        extraChargesJson: JSON.stringify(extraChargesData),
+        extraChargesCount: extraChargesData.length,
+        remainingAmount,
+        totalExtraCharges,
+        totalPayable,
+        expectedTotal: totalPayable - appliedDiscount,
         hasPaymentProof: !!paymentProof,
         adminNotes,
       });
@@ -218,7 +242,6 @@ export default function CompletePaymentModal({
         setSelectedCategory('');
         setExtraChargeAmount('');
         setAppliedDiscount(0);
-        setIsDiscountManual(false);
         
         onSuccess();
         onClose();
@@ -259,7 +282,6 @@ export default function CompletePaymentModal({
       setSelectedCategory('');
       setExtraChargeAmount('');
       setAppliedDiscount(0);
-      setIsDiscountManual(false);
       onClose();
     }
   };
@@ -279,14 +301,12 @@ export default function CompletePaymentModal({
     setSelectedCategory('');
     setExtraChargeAmount('');
     setError(null);
-    setIsDiscountManual(true); // Allow editing after adding extra charges
   };
 
   const handleRemoveExtraCharge = (index: number) => {
     const updatedCharges = [...extraCharges];
     updatedCharges.splice(index, 1);
     setExtraCharges(updatedCharges);
-    setIsDiscountManual(true); // Allow editing after removing charges
   };
 
   const getCategoryIcon = (category: string) => {
@@ -321,8 +341,15 @@ export default function CompletePaymentModal({
 
   const handlePaymentAmountChange = (value: number | string) => {
     const numValue = Number(value);
-    setPaymentAmount(numValue);
-    setIsDiscountManual(true);
+    if (numValue >= 0 && numValue <= totalPayable) {
+      setPaymentAmount(numValue);
+      
+      // Calculate discount based on payment amount
+      const newDiscount = totalPayable - numValue;
+      if (newDiscount >= 0 && newDiscount <= totalPayable) {
+        setAppliedDiscount(newDiscount);
+      }
+    }
   };
 
   const handleApplyDiscount = () => {
@@ -360,7 +387,6 @@ export default function CompletePaymentModal({
       // Apply discount
       setPaymentAmount(newPayment);
       setAppliedDiscount(discountAmount);
-      setIsDiscountManual(true);
       setError(null);
       
       notifications.show({
@@ -370,6 +396,12 @@ export default function CompletePaymentModal({
         icon: <IconDiscount size={18} />,
       });
     }
+  };
+
+  const handleResetDiscount = () => {
+    setPaymentAmount(totalPayable);
+    setAppliedDiscount(0);
+    setError(null);
   };
 
   return (
@@ -535,22 +567,34 @@ export default function CompletePaymentModal({
           <Paper withBorder p="md" radius="md">
             <Group justify="space-between" mb="md">
               <Text fw={600} size="sm">Payment Amount</Text>
-              <Button
-                size="xs"
-                variant="light"
-                color="yellow"
-                leftSection={<IconDiscount size={14} />}
-                onClick={handleApplyDiscount}
-              >
-                Apply Discount
-              </Button>
+              <Group gap="xs">
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="yellow"
+                  leftSection={<IconDiscount size={14} />}
+                  onClick={handleApplyDiscount}
+                >
+                  Apply Discount
+                </Button>
+                {appliedDiscount > 0 && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="gray"
+                    onClick={handleResetDiscount}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </Group>
             </Group>
 
             <NumberInput
               label="Enter Payment Amount"
-              description={isDiscountManual ? 
-                "Payment amount manually adjusted. Auto-calculation disabled." :
-                "Amount auto-calculated. Click 'Apply Discount' or edit to adjust."}
+              description={appliedDiscount > 0 ? 
+                "Payment amount includes discount. Click 'Reset' to remove discount." :
+                "Amount includes extra charges. Click 'Apply Discount' to reduce amount."}
               placeholder="Enter amount"
               required
               leftSection={<IconCurrencyRupee size={18} />}
@@ -591,7 +635,8 @@ export default function CompletePaymentModal({
             <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light" mt="md" p="xs">
               <Text size="xs">
                 <strong>Important:</strong> Discount can be applied to the total payable amount. 
-                Payment after discount must be at least Rs 0.
+                Payment after discount must be at least Rs 0. The payment amount should match: 
+                (Remaining + Extra Charges) - Discount
               </Text>
             </Alert>
           </Paper>

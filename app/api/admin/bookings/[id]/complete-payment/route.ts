@@ -124,7 +124,7 @@ async function handler(
     // Get booking details first to get booking number and date
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('booking_number, booking_date, remaining_payment, status, total_amount')
+      .select('booking_number, booking_date, remaining_payment, status, total_amount, advance_payment, discount_amount')
       .eq('id', bookingId)
       .single();
 
@@ -156,6 +156,9 @@ async function handler(
       totalPayable,
       discountAmount,
       paymentAmount,
+      originalTotal: booking.total_amount,
+      advancePayment: booking.advance_payment,
+      existingDiscount: booking.discount_amount,
     });
 
     // Validate payment amount doesn't exceed total payable
@@ -238,12 +241,15 @@ async function handler(
     }
 
     // Convert extra charges to JSONB format for database
-    // IMPORTANT: Create proper JSONB object for empty array
+    // IMPORTANT: Always send as JSONB array
     let extraChargesJsonb: any = '[]'; // Default empty array
     
     if (extraCharges.length > 0) {
       // For non-empty arrays, pass the stringified JSON
       extraChargesJsonb = JSON.stringify(extraCharges);
+    } else {
+      // Ensure empty array is sent as proper JSON
+      extraChargesJsonb = [];
     }
 
     console.log('Calling database function with:', {
@@ -289,14 +295,10 @@ async function handler(
       );
     }
 
-    // Fetch updated booking to get discount amount
-    const { data: updatedBooking } = await supabase
-      .from('bookings')
-      .select('discount_amount, total_amount, remaining_payment_amount')
-      .eq('id', bookingId)
-      .single();
-
     console.log('Payment successful, result:', result);
+
+    // Calculate new total for frontend display
+    const newTotalAmount = booking.total_amount + totalExtraCharges - discountAmount;
 
     return NextResponse.json({
       success: true,
@@ -305,11 +307,10 @@ async function handler(
       remainingAmount: booking.remaining_payment,
       totalExtraCharges: result.total_extra_charges || totalExtraCharges,
       actual_discount: result.actual_discount || discountAmount,
-      discountApplied: updatedBooking?.discount_amount || discountAmount,
+      discountApplied: result.actual_discount || discountAmount,
       finalPayment: paymentAmount,
-      newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
-      remainingPaymentAmount: updatedBooking?.remaining_payment_amount || 0,
-      debug_info: result.debug_info, // For debugging
+      newTotalAmount: result.new_total_amount || newTotalAmount,
+      remainingPaymentAmount: 0, // Should be 0 after payment
     });
   } catch (error: any) {
     console.error('Complete payment error:', error);
