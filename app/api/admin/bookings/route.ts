@@ -26,14 +26,12 @@ async function GETHandler(
     const dateTo = searchParams.get('dateTo');
     const remainingOnly = searchParams.get('remainingOnly') === 'true';
 
-    // Build query
+    // Build query - FIRST fetch bookings with customers
     let query = supabase
       .from('bookings')
       .select(`
         *,
-        customer:customers(*),
-        slots(*),
-        extra_charges(*)
+        customer:customers(*)
       `)
       .order('created_at', { ascending: false });
 
@@ -53,7 +51,11 @@ async function GETHandler(
 
     // Apply search filter
     if (search) {
-      query = query.or(`booking_number.ilike.%${search}%,customers(name).ilike.%${search}%,customers(phone).ilike.%${search}%`);
+      query = query.or(`
+        booking_number.ilike.%${search}%,
+        customers(name).ilike.%${search}%,
+        customers(phone).ilike.%${search}%
+      `);
     }
 
     // Apply date range filter
@@ -69,37 +71,83 @@ async function GETHandler(
       query = query.eq('status', 'approved').gt('remaining_payment', 0);
     }
 
-    // Execute query
-    const { data: bookings, error } = await query;
+    // Execute booking query
+    const { data: bookings, error: bookingsError } = await query;
 
-    if (error) {
-      console.error('Error fetching bookings:', error);
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError);
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: bookingsError.message },
         { status: 500 }
       );
     }
 
-    // Calculate summary statistics
-    const summary = {
-      total: bookings.length,
-      pending: bookings.filter(b => b.status === 'pending').length,
-      approved: bookings.filter(b => b.status === 'approved').length,
-      completed: bookings.filter(b => b.status === 'completed').length,
-      cancelled: bookings.filter(b => b.status === 'cancelled').length,
-      totalRevenue: bookings.reduce((sum, b) => sum + (b.total_amount || 0), 0),
-      totalExtraCharges: bookings.reduce((sum, b) => {
-        const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
-        return sum + extraCharges.reduce((sum2, ec) => sum2 + (ec.amount || 0), 0);
-      }, 0),
-      totalDiscount: bookings.reduce((sum, b) => sum + (b.discount_amount || 0), 0),
-    };
+    if (!bookings || bookings.length === 0) {
+      return NextResponse.json({
+        success: true,
+        bookings: [],
+        summary: {
+          total: 0,
+          pending: 0,
+          approved: 0,
+          completed: 0,
+          cancelled: 0,
+          totalRevenue: 0,
+          totalExtraCharges: 0,
+          totalDiscount: 0,
+        }
+      });
+    }
 
-    // Format bookings for response
+    // Get booking IDs for fetching related data
+    const bookingIds = bookings.map(b => b.id);
+
+    // Fetch slots from booking_slots table
+    const { data: allSlots, error: slotsError } = await supabase
+      .from('booking_slots')  // CHANGED: using correct table name
+      .select('*')
+      .in('booking_id', bookingIds);
+
+    if (slotsError) {
+      console.error('Error fetching slots:', slotsError);
+    }
+
+    // Fetch extra charges from extra_charges table
+    const { data: allExtraCharges, error: extraChargesError } = await supabase
+      .from('extra_charges')  // CHANGED: using correct table name
+      .select('*')
+      .in('booking_id', bookingIds);
+
+    if (extraChargesError) {
+      console.error('Error fetching extra charges:', extraChargesError);
+    }
+
+    // Organize slots and extra charges by booking ID
+    const slotsByBookingId: Record<string, any[]> = {};
+    if (allSlots) {
+      allSlots.forEach(slot => {
+        if (!slotsByBookingId[slot.booking_id]) {
+          slotsByBookingId[slot.booking_id] = [];
+        }
+        slotsByBookingId[slot.booking_id].push(slot);
+      });
+    }
+
+    const extraChargesByBookingId: Record<string, any[]> = {};
+    if (allExtraCharges) {
+      allExtraCharges.forEach(charge => {
+        if (!extraChargesByBookingId[charge.booking_id]) {
+          extraChargesByBookingId[charge.booking_id] = [];
+        }
+        extraChargesByBookingId[charge.booking_id].push(charge);
+      });
+    }
+
+    // Format bookings with related data
     const formattedBookings = bookings.map(booking => {
-      // Calculate total extra charges
-      const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
-      const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+      const bookingSlots = slotsByBookingId[booking.id] || [];
+      const bookingExtraCharges = extraChargesByBookingId[booking.id] || [];
+      const totalExtraCharges = bookingExtraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
       return {
         id: booking.id,
@@ -118,11 +166,26 @@ async function GETHandler(
         status: booking.status,
         created_at: booking.created_at,
         customer: booking.customer || { name: '', phone: '', email: '' },
-        slots: Array.isArray(booking.slots) ? booking.slots : [],
-        extra_charges: extraCharges,
+        slots: bookingSlots,
+        extra_charges: bookingExtraCharges,
         total_extra_charges: totalExtraCharges,
       };
     });
+
+    // Calculate summary statistics
+    const summary = {
+      total: formattedBookings.length,
+      pending: formattedBookings.filter(b => b.status === 'pending').length,
+      approved: formattedBookings.filter(b => b.status === 'approved').length,
+      completed: formattedBookings.filter(b => b.status === 'completed').length,
+      cancelled: formattedBookings.filter(b => b.status === 'cancelled').length,
+      totalRevenue: formattedBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0),
+      totalExtraCharges: formattedBookings.reduce((sum, b) => {
+        const extraCharges = Array.isArray(b.extra_charges) ? b.extra_charges : [];
+        return sum + extraCharges.reduce((sum2, ec) => sum2 + (ec.amount || 0), 0);
+      }, 0),
+      totalDiscount: formattedBookings.reduce((sum, b) => sum + (b.discount_amount || 0), 0),
+    };
 
     return NextResponse.json({
       success: true,
@@ -177,15 +240,15 @@ async function DELETEHandler(
       );
     }
 
-    // Delete extra charges first
+    // Delete extra charges first (from extra_charges table)
     await supabase
-      .from('extra_charges')
+      .from('extra_charges')  // CHANGED: using correct table name
       .delete()
       .eq('booking_id', bookingId);
 
-    // Delete slots
+    // Delete slots (from booking_slots table)
     await supabase
-      .from('slots')
+      .from('booking_slots')  // CHANGED: using correct table name
       .delete()
       .eq('booking_id', bookingId);
 

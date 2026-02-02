@@ -13,14 +13,12 @@ export const GET = withAdminAuth(async (
     
     const supabase = await createClient();
 
-    // Fetch booking with all related data
+    // Fetch booking with customer
     const { data: booking, error } = await supabase
       .from('bookings')
       .select(`
         *,
-        customer:customers(*),
-        slots(*),
-        extra_charges(*)
+        customer:customers(*)
       `)
       .eq('id', bookingId)
       .single();
@@ -32,9 +30,27 @@ export const GET = withAdminAuth(async (
       );
     }
 
-    // Calculate total extra charges
-    const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
-    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+    // Fetch slots separately (from booking_slots table)
+    const { data: bookingSlots, error: slotsError } = await supabase
+      .from('booking_slots')
+      .select('*')
+      .eq('booking_id', bookingId);
+
+    if (slotsError) {
+      console.error('Error fetching slots:', slotsError);
+    }
+
+    // Fetch extra charges separately (from extra_charges table)
+    const { data: bookingExtraCharges, error: chargesError } = await supabase
+      .from('extra_charges')
+      .select('*')
+      .eq('booking_id', bookingId);
+
+    if (chargesError) {
+      console.error('Error fetching extra charges:', chargesError);
+    }
+
+    const totalExtraCharges = (bookingExtraCharges || []).reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
     const formattedBooking = {
       id: booking.id,
@@ -53,8 +69,8 @@ export const GET = withAdminAuth(async (
       status: booking.status,
       created_at: booking.created_at,
       customer: booking.customer || { name: '', phone: '', email: '' },
-      slots: Array.isArray(booking.slots) ? booking.slots : [],
-      extra_charges: extraCharges,
+      slots: bookingSlots || [],
+      extra_charges: bookingExtraCharges || [],
       total_extra_charges: totalExtraCharges,
     };
 
