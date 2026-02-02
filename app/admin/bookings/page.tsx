@@ -13,6 +13,7 @@
  * - Export to PDF and Excel
  * - Search and filters
  * - Extra charges display and management
+ * - Discount display
  */
 
 'use client';
@@ -40,6 +41,7 @@ import {
   Modal,
   Box,
   ThemeIcon,
+  HoverCard,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -64,6 +66,8 @@ import {
   IconBallTennis,
   IconBandage,
   IconPackage,
+  IconDiscount,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -121,7 +125,6 @@ interface Booking {
 export default function AdminBookingsPage() {
   // Export modal state
   const [exportModalOpened, setExportModalOpened] = useState(false);
-  // Mantine DatesRangeValue<Date> is [Date | null, Date | null]
   const [exportDateRange, setExportDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,7 +134,6 @@ export default function AdminBookingsPage() {
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  // Ground managers see only approved bookings with remaining payment
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
   
   // Update status filter when role is determined
@@ -140,6 +142,7 @@ export default function AdminBookingsPage() {
       setStatusFilter('approved');
     }
   }, [isGroundManager, statusFilter]);
+  
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
@@ -193,7 +196,7 @@ export default function AdminBookingsPage() {
     return methodMap[method] || { label: method, color: 'gray' };
   };
 
-  // Helper function to get extra charges display - FIXED with null checks
+  // Helper function to get extra charges display with correct categories
   const getExtraChargesDisplay = (booking: Booking) => {
     // Safely get extra charges array
     const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
@@ -210,13 +213,37 @@ export default function AdminBookingsPage() {
     
     return (
       <Stack gap={4}>
-        <Text size="sm" fw={600} c="blue">
-          Rs {totalExtra.toLocaleString()}
-        </Text>
+        <HoverCard shadow="md" position="bottom" withinPortal>
+          <HoverCard.Target>
+            <Text size="sm" fw={600} c="blue" style={{ cursor: 'pointer' }}>
+              Rs {totalExtra.toLocaleString()}
+            </Text>
+          </HoverCard.Target>
+          <HoverCard.Dropdown>
+            <Stack gap="xs">
+              <Text size="sm" fw={600}>Extra Charges Details:</Text>
+              {extraCharges.map((charge, index) => (
+                <Group key={index} justify="space-between" gap="xs">
+                  <Group gap={6}>
+                    <ThemeIcon size="xs" variant="light">
+                      {getCategoryIcon(charge.category)}
+                    </ThemeIcon>
+                    <Text size="xs">{getCategoryLabel(charge.category)}</Text>
+                  </Group>
+                  <Text size="xs" fw={500}>Rs {charge.amount.toLocaleString()}</Text>
+                </Group>
+              ))}
+              <Group justify="space-between" pt="xs" style={{ borderTop: '1px solid #dee2e6' }}>
+                <Text size="sm" fw={600}>Total:</Text>
+                <Text size="sm" fw={700}>Rs {totalExtra.toLocaleString()}</Text>
+              </Group>
+            </Stack>
+          </HoverCard.Dropdown>
+        </HoverCard>
         <Group gap={4} wrap="wrap" justify="center">
           {extraCharges.slice(0, 2).map((charge, index) => (
             <Badge key={index} size="xs" color="blue" variant="light">
-              {getCategoryLabel(charge.category)}
+              {getCategoryIcon(charge.category)} {getCategoryLabel(charge.category)}
             </Badge>
           ))}
           {extraCharges.length > 2 && (
@@ -317,6 +344,7 @@ export default function AdminBookingsPage() {
           total_hours: booking.total_hours || 0,
           advance_payment: booking.advance_payment || 0,
           remaining_payment: booking.remaining_payment || 0,
+          discount_amount: booking.discount_amount || 0,
         }));
         
         setBookings(safeBookings);
@@ -511,7 +539,7 @@ export default function AdminBookingsPage() {
     }
   };
 
-  // Update handlePDFExport to include extra charges
+  // Update handlePDFExport to include extra charges and discount
   const handlePDFExport = (dateRange?: [Date | null, Date | null] | null) => {
     // --- Timeline/Date Range ---
     let timelineText = 'All Bookings';
@@ -526,12 +554,13 @@ export default function AdminBookingsPage() {
       timelineText = `Timeline: ${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
     }
 
-    // --- Calculate totals including extra charges ---
+    // --- Calculate totals including extra charges and discount ---
     let totalCash = 0;
     let totalOnline = 0;
     let totalEasypaisa = 0;
     let totalSadaPay = 0;
     let totalExtraCharges = 0;
+    let totalDiscount = 0;
     
     filteredBookings.forEach((b) => {
       if (b.status === 'pending') return;
@@ -541,6 +570,9 @@ export default function AdminBookingsPage() {
         ? b.extra_charges.reduce((sum, charge) => sum + (charge.amount || 0), 0) 
         : 0;
       totalExtraCharges += bookingExtraCharges;
+      
+      // Add discount
+      totalDiscount += b.discount_amount || 0;
       
       // Advance payment
       if (b.advance_payment_method === 'cash') {
@@ -597,6 +629,8 @@ export default function AdminBookingsPage() {
     doc.text(`Total Online: Rs ${totalOnline.toLocaleString()}  (Easypaisa: Rs ${totalEasypaisa.toLocaleString()}, SadaPay: Rs ${totalSadaPay.toLocaleString()})`, 18, statY);
     statY += 6;
     doc.text(`Total Extra Charges: Rs ${totalExtraCharges.toLocaleString()}`, 18, statY);
+    statY += 6;
+    doc.text(`Total Discount: Rs ${totalDiscount.toLocaleString()}`, 18, statY);
     statY += 8;
 
     // Table data for PDF
@@ -614,6 +648,7 @@ export default function AdminBookingsPage() {
         formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
         `Rs ${(b.total_amount || 0).toLocaleString()}`,
         `Rs ${totalExtraCharges.toLocaleString()}`,
+        `Rs ${(b.discount_amount || 0).toLocaleString()}`,
         `Rs ${totalPaid.toLocaleString()}`,
         `Rs ${cash.toLocaleString()}`,
         `Rs ${online.toLocaleString()}`,
@@ -623,7 +658,7 @@ export default function AdminBookingsPage() {
 
     // Table headers for PDF
     const headers = [
-      ['Booking #', 'Customer', 'Phone', 'Date', 'Slots', 'Amount', 'Extra', 'Paid', 'Cash', 'Online', 'Status']
+      ['Booking #', 'Customer', 'Phone', 'Date', 'Slots', 'Amount', 'Extra', 'Discount', 'Paid', 'Cash', 'Online', 'Status']
     ];
 
     // Add table to PDF
@@ -650,7 +685,7 @@ export default function AdminBookingsPage() {
     });
   };
 
-  // Export to Excel updated to include extra charges
+  // Export to Excel updated to include extra charges and discount
   const exportToExcel = () => {
     const data = bookings.map(b => {
       const { cash, online } = getPaymentBreakdown(b);
@@ -671,6 +706,7 @@ export default function AdminBookingsPage() {
         'Total Amount': b.total_amount || 0,
         'Extra Charges': extraChargesTotal,
         'Extra Charges Details': extraChargesList,
+        'Discount Amount': b.discount_amount || 0,
         'Total Payable': (b.total_amount || 0) + extraChargesTotal,
         'Total Paid': totalPaid,
         'Cash Payments': cash,
@@ -729,9 +765,17 @@ export default function AdminBookingsPage() {
                   <Badge color="green" variant="light" size="sm">
                     Approved: {summary.approved}
                   </Badge>
+                  <Badge color="blue" variant="light" size="sm">
+                    Completed: {summary.completed}
+                  </Badge>
                   {summary.totalExtraCharges > 0 && (
                     <Badge color="blue" variant="light" size="sm">
                       Extra Charges: Rs {summary.totalExtraCharges.toLocaleString()}
+                    </Badge>
+                  )}
+                  {summary.totalDiscount > 0 && (
+                    <Badge color="yellow" variant="light" size="sm">
+                      Discount: Rs {summary.totalDiscount.toLocaleString()}
                     </Badge>
                   )}
                 </Group>
@@ -944,9 +988,7 @@ export default function AdminBookingsPage() {
                 <Table.Tbody>
                   {bookings.map((booking) => {
                     const totalPaid = (booking.advance_payment || 0) + (booking.remaining_payment_amount || 0);
-                    const discount = booking.status === 'completed' && totalPaid < (booking.total_amount || 0)
-                      ? (booking.total_amount || 0) - totalPaid
-                      : 0;
+                    const discount = booking.discount_amount || 0;
                     const { cash, online } = getPaymentBreakdown(booking);
                     
                     // Safely get extra charges
@@ -955,6 +997,7 @@ export default function AdminBookingsPage() {
                     
                     // Safely get slots
                     const slots = Array.isArray(booking.slots) ? booking.slots : [];
+                    const totalPayable = (booking.total_amount || 0) + totalExtraCharges;
                     
                     return (
                       <Table.Tr
@@ -1005,16 +1048,19 @@ export default function AdminBookingsPage() {
                         </Table.Td>
                         <Table.Td>
                           <Stack gap={4}>
-                            <Text size="sm" fw={700} c={totalPaid === ((booking.total_amount || 0) + totalExtraCharges) ? 'green' : 'orange'}>
+                            <Text size="sm" fw={700} c={totalPaid === totalPayable ? 'green' : 'orange'}>
                               Rs {totalPaid.toLocaleString()}
                             </Text>
                             {discount > 0 ? (
-                              <Text size="xs" c="green" fw={600}>
-                                Discount: Rs {discount.toLocaleString()}
-                              </Text>
-                            ) : totalPaid < ((booking.total_amount || 0) + totalExtraCharges) && booking.status !== 'completed' ? (
+                              <Group gap={4} wrap="nowrap">
+                                <IconDiscount size={12} />
+                                <Text size="xs" c="green" fw={600}>
+                                  Discount: Rs {discount.toLocaleString()}
+                                </Text>
+                              </Group>
+                            ) : totalPaid < totalPayable && booking.status !== 'completed' ? (
                               <Text size="xs" c="red">
-                                Due: Rs {(((booking.total_amount || 0) + totalExtraCharges) - totalPaid).toLocaleString()}
+                                Due: Rs {(totalPayable - totalPaid).toLocaleString()}
                               </Text>
                             ) : null}
                           </Stack>

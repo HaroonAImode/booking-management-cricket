@@ -8,6 +8,7 @@
  * - Display remaining amount
  * - Admin notes field
  * - Extra charges functionality
+ * - Discount functionality
  * - Validation and submission
  * - Mobile responsive design
  */
@@ -34,6 +35,7 @@ import {
   Paper,
   ThemeIcon,
   SimpleGrid,
+  Divider,
 } from '@mantine/core';
 import {
   IconUpload,
@@ -46,6 +48,8 @@ import {
   IconBallTennis,
   IconBandage,
   IconPackage,
+  IconDiscount,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
@@ -81,10 +85,30 @@ export default function CompletePaymentModal({
   const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [extraChargeAmount, setExtraChargeAmount] = useState<string>('');
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [isDiscountManual, setIsDiscountManual] = useState(false);
 
   // Calculate total with extra charges
   const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   const totalPayable = (remainingAmount || 0) + totalExtraCharges;
+  const calculatedPayment = totalPayable - appliedDiscount;
+
+  // Update payment amount when total changes
+  useEffect(() => {
+    if (!isDiscountManual) {
+      setPaymentAmount(totalPayable);
+      setAppliedDiscount(0);
+    }
+  }, [totalPayable, isDiscountManual]);
+
+  // Update discount when payment amount is manually changed
+  useEffect(() => {
+    if (isDiscountManual && paymentAmount < totalPayable) {
+      setAppliedDiscount(totalPayable - paymentAmount);
+    } else if (isDiscountManual && paymentAmount >= totalPayable) {
+      setAppliedDiscount(0);
+    }
+  }, [paymentAmount, totalPayable, isDiscountManual]);
 
   const handleSubmit = async () => {
     // Validation
@@ -99,29 +123,11 @@ export default function CompletePaymentModal({
       return;
     }
 
-    // CRITICAL FIX: Payment must include extra charges
-    if (extraCharges.length > 0 && paymentAmount < totalPayable) {
-      const missingAmount = totalPayable - paymentAmount;
-      
-      // Check if missing amount equals extra charges (customer trying to skip extra charges)
-      if (Math.abs(missingAmount - totalExtraCharges) < 1) { // Allow small rounding differences
-        setError(`Payment must include extra charges. Total payable: Rs ${totalPayable.toLocaleString()} (original Rs ${remainingAmount.toLocaleString()} + extra Rs ${totalExtraCharges.toLocaleString()})`);
-        return;
-      }
-      
-      // If there's a real discount, ask for confirmation
-      const confirmed = window.confirm(
-        `You are applying a discount of Rs ${missingAmount.toLocaleString()}.\n\n` +
-        `Original: Rs ${remainingAmount.toLocaleString()}\n` +
-        `Extra Charges: Rs ${totalExtraCharges.toLocaleString()}\n` +
-        `Total Payable: Rs ${totalPayable.toLocaleString()}\n` +
-        `Payment: Rs ${paymentAmount.toLocaleString()}\n\n` +
-        `Is this correct?`
-      );
-      
-      if (!confirmed) {
-        return;
-      }
+    // Validate minimum payment
+    const minimumPayment = remainingAmount; // Must pay at least original remaining
+    if (paymentAmount < minimumPayment) {
+      setError(`Payment must be at least Rs ${minimumPayment.toLocaleString()} (original remaining amount)`);
+      return;
     }
 
     if (paymentAmount > totalPayable) {
@@ -136,6 +142,23 @@ export default function CompletePaymentModal({
       return;
     }
 
+    // Confirm discount if applied
+    if (appliedDiscount > 0) {
+      const confirmed = window.confirm(
+        `You are applying a discount of Rs ${appliedDiscount.toLocaleString()}.\n\n` +
+        `Original Remaining: Rs ${remainingAmount.toLocaleString()}\n` +
+        `Extra Charges: Rs ${totalExtraCharges.toLocaleString()}\n` +
+        `Total Payable: Rs ${totalPayable.toLocaleString()}\n` +
+        `Discount: Rs ${appliedDiscount.toLocaleString()}\n` +
+        `Final Payment: Rs ${paymentAmount.toLocaleString()}\n\n` +
+        `Is this correct?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -144,8 +167,9 @@ export default function CompletePaymentModal({
       const formData = new FormData();
       formData.append('paymentMethod', paymentMethod);
       formData.append('paymentAmount', paymentAmount.toString());
+      formData.append('discountAmount', appliedDiscount.toString());
       
-      // Add extra charges if any
+      // Add extra charges if any - IMPORTANT: This passes JSON array, not just total
       if (extraCharges.length > 0) {
         formData.append('extraCharges', JSON.stringify(extraCharges));
       }
@@ -170,9 +194,17 @@ export default function CompletePaymentModal({
       const result = await response.json();
 
       if (result.success) {
+        let message = `Payment verified! Booking ${bookingNumber} is now completed.`;
+        if (totalExtraCharges > 0) {
+          message += ` Added Rs ${totalExtraCharges.toLocaleString()} in extra charges.`;
+        }
+        if (appliedDiscount > 0) {
+          message += ` Discount: Rs ${appliedDiscount.toLocaleString()}.`;
+        }
+        
         notifications.show({
           title: 'Success',
-          message: `Payment verified! Booking ${bookingNumber} is now completed.${result.totalExtraCharges > 0 ? ` Added Rs ${result.totalExtraCharges} in extra charges.` : ''}${result.actual_discount > 0 ? ` Discount: Rs ${result.actual_discount}.` : ''}`,
+          message,
           color: 'green',
           icon: <IconCheck size={18} />,
         });
@@ -185,6 +217,8 @@ export default function CompletePaymentModal({
         setShowExtraCharges(false);
         setSelectedCategory('');
         setExtraChargeAmount('');
+        setAppliedDiscount(0);
+        setIsDiscountManual(false);
         
         onSuccess();
         onClose();
@@ -210,6 +244,8 @@ export default function CompletePaymentModal({
       setShowExtraCharges(false);
       setSelectedCategory('');
       setExtraChargeAmount('');
+      setAppliedDiscount(0);
+      setIsDiscountManual(false);
       onClose();
     }
   };
@@ -229,12 +265,14 @@ export default function CompletePaymentModal({
     setSelectedCategory('');
     setExtraChargeAmount('');
     setError(null);
+    setIsDiscountManual(true); // Allow editing after adding extra charges
   };
 
   const handleRemoveExtraCharge = (index: number) => {
     const updatedCharges = [...extraCharges];
     updatedCharges.splice(index, 1);
     setExtraCharges(updatedCharges);
+    setIsDiscountManual(true); // Allow editing after removing charges
   };
 
   const getCategoryIcon = (category: string) => {
@@ -267,18 +305,31 @@ export default function CompletePaymentModal({
     }
   };
 
-  // Update payment amount when total payable changes
-  useEffect(() => {
-    // CRITICAL FIX: Always set payment to total payable when extra charges change
-    setPaymentAmount(totalPayable);
-  }, [totalPayable]);
+  const handlePaymentAmountChange = (value: number | string) => {
+    const numValue = Number(value);
+    setPaymentAmount(numValue);
+    setIsDiscountManual(true);
+  };
 
-  // Also update when modal opens
-  useEffect(() => {
-    if (opened) {
-      setPaymentAmount(totalPayable);
+  const handleApplyDiscount = () => {
+    const discount = window.prompt('Enter discount amount:');
+    if (discount && !isNaN(parseFloat(discount)) && parseFloat(discount) >= 0) {
+      const discountAmount = parseFloat(discount);
+      if (discountAmount > totalPayable - remainingAmount) {
+        setError(`Discount cannot exceed Rs ${(totalPayable - remainingAmount).toLocaleString()} (extra charges amount)`);
+        return;
+      }
+      const newPayment = totalPayable - discountAmount;
+      if (newPayment < remainingAmount) {
+        setError(`Payment after discount (Rs ${newPayment.toLocaleString()}) must be at least Rs ${remainingAmount.toLocaleString()} (original remaining amount)`);
+        return;
+      }
+      setPaymentAmount(newPayment);
+      setAppliedDiscount(discountAmount);
+      setIsDiscountManual(true);
+      setError(null);
     }
-  }, [opened, totalPayable]);
+  };
 
   return (
     <Modal
@@ -299,7 +350,7 @@ export default function CompletePaymentModal({
                 <strong>Booking:</strong> {bookingNumber}
               </Text>
               <Badge size="lg" color="orange">
-                Total Remaining: Rs {(remainingAmount || 0).toLocaleString()}
+                Remaining Amount: Rs {(remainingAmount || 0).toLocaleString()}
               </Badge>
             </Group>
           </Alert>
@@ -405,68 +456,105 @@ export default function CompletePaymentModal({
 
             {/* Total Summary */}
             <Box mt="md">
-              <Group justify="space-between" wrap="wrap">
-                <Text size="sm">Original Remaining:</Text>
-                <Text size="sm" fw={600}>
-                  Rs {(remainingAmount || 0).toLocaleString()}
-                </Text>
-              </Group>
-              {extraCharges.length > 0 && (
-                <>
-                  <Group justify="space-between" wrap="wrap" mt={4}>
+              <Stack gap={4}>
+                <Group justify="space-between" wrap="wrap">
+                  <Text size="sm">Original Remaining:</Text>
+                  <Text size="sm" fw={600}>
+                    Rs {(remainingAmount || 0).toLocaleString()}
+                  </Text>
+                </Group>
+                {extraCharges.length > 0 && (
+                  <Group justify="space-between" wrap="wrap">
                     <Text size="sm">Extra Charges:</Text>
                     <Text size="sm" fw={600} c="blue">
                       + Rs {totalExtraCharges.toLocaleString()}
                     </Text>
                   </Group>
-                  <Group justify="space-between" wrap="wrap" mt={4}>
-                    <Text size="sm" fw={600}>Total Payable:</Text>
-                    <Text size="sm" fw={700} c="green">
-                      Rs {totalPayable.toLocaleString()}
+                )}
+                <Divider my={4} />
+                <Group justify="space-between" wrap="wrap">
+                  <Text size="sm" fw={600}>Total Payable:</Text>
+                  <Text size="sm" fw={700} c="green">
+                    Rs {totalPayable.toLocaleString()}
+                  </Text>
+                </Group>
+                {appliedDiscount > 0 && (
+                  <Group justify="space-between" wrap="wrap">
+                    <Text size="sm">Discount Applied:</Text>
+                    <Text size="sm" fw={600} c="red">
+                      - Rs {appliedDiscount.toLocaleString()}
                     </Text>
                   </Group>
-                  <Alert color="yellow" variant="light" mt="sm" p="xs">
-                    <Text size="xs">
-                      <strong>Note:</strong> Extra charges must be paid. Payment will be auto-set to total payable.
-                    </Text>
-                  </Alert>
-                </>
-              )}
+                )}
+              </Stack>
             </Box>
           </Paper>
 
-          {/* Payment Amount Input */}
-          <NumberInput
-            label="Payment Amount"
-            description={extraCharges.length > 0 ? 
-              "Amount includes extra charges. You can apply additional discount if needed." :
-              "Enter amount to be paid (you can apply discount if needed)"}
-            placeholder="Enter amount"
-            required
-            leftSection={<IconCurrencyRupee size={18} />}
-            value={paymentAmount}
-            onChange={(value) => setPaymentAmount(Number(value) || 0)}
-            min={1}
-            max={totalPayable}
-            thousandSeparator=","
-            allowNegative={false}
-            decimalScale={0}
-            disabled={extraCharges.length > 0} // Disable editing when extra charges exist
-          />
+          {/* Payment Amount & Discount Section */}
+          <Paper withBorder p="md" radius="md">
+            <Group justify="space-between" mb="md">
+              <Text fw={600} size="sm">Payment Amount</Text>
+              <Button
+                size="xs"
+                variant="light"
+                color="yellow"
+                leftSection={<IconDiscount size={14} />}
+                onClick={handleApplyDiscount}
+                disabled={totalPayable <= remainingAmount}
+              >
+                Apply Discount
+              </Button>
+            </Group>
 
-          {/* Show discount amount if different */}
-          {paymentAmount < totalPayable && (
-            <Alert color="yellow" variant="light">
-              <Text size="sm">
-                <strong>Discount Applied:</strong> Rs {(totalPayable - paymentAmount).toLocaleString()}
-                {extraCharges.length > 0 && (
-                  <Text size="xs" mt={4}>
-                    (Total payable includes Rs {totalExtraCharges.toLocaleString()} in extra charges)
+            <NumberInput
+              label="Enter Payment Amount"
+              description={isDiscountManual ? 
+                "Payment amount manually adjusted. Auto-calculation disabled." :
+                "Amount auto-calculated. Click 'Apply Discount' or edit to adjust."}
+              placeholder="Enter amount"
+              required
+              leftSection={<IconCurrencyRupee size={18} />}
+              value={paymentAmount}
+              onChange={handlePaymentAmountChange}
+              min={remainingAmount}
+              max={totalPayable}
+              thousandSeparator=","
+              allowNegative={false}
+              decimalScale={0}
+              disabled={loading}
+            />
+
+            {/* Payment Summary */}
+            <Stack gap={4} mt="md">
+              <Group justify="space-between">
+                <Text size="sm">Total Payable:</Text>
+                <Text size="sm" fw={600}>Rs {totalPayable.toLocaleString()}</Text>
+              </Group>
+              {appliedDiscount > 0 && (
+                <Group justify="space-between">
+                  <Text size="sm">Discount:</Text>
+                  <Text size="sm" fw={600} c="green">
+                    - Rs {appliedDiscount.toLocaleString()}
                   </Text>
-                )}
+                </Group>
+              )}
+              <Divider />
+              <Group justify="space-between">
+                <Text size="sm" fw={600}>Final Payment:</Text>
+                <Text size="sm" fw={700} c="blue">
+                  Rs {paymentAmount.toLocaleString()}
+                </Text>
+              </Group>
+            </Stack>
+
+            {/* Important Notes */}
+            <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light" mt="md" p="xs">
+              <Text size="xs">
+                <strong>Important:</strong> Payment must be at least Rs {remainingAmount.toLocaleString()} (original remaining amount). 
+                Discount can only be applied to extra charges portion.
               </Text>
             </Alert>
-          )}
+          </Paper>
 
           {/* Payment Method */}
           <Select
@@ -480,6 +568,7 @@ export default function CompletePaymentModal({
             ]}
             value={paymentMethod}
             onChange={(value) => setPaymentMethod(value || '')}
+            disabled={loading}
           />
 
           {/* Payment Proof Upload */}
@@ -496,29 +585,19 @@ export default function CompletePaymentModal({
                 ? 'Optional for cash payments'
                 : 'Upload screenshot or photo of payment receipt'
             }
+            disabled={loading}
           />
 
           {/* Admin Notes */}
           <Textarea
             label="Admin Notes (Optional)"
-            placeholder="Add any notes about this payment verification..."
+            placeholder="Add any notes about this payment verification or discount reason..."
             value={adminNotes}
             onChange={(e) => setAdminNotes(e.target.value)}
             minRows={3}
             autosize
+            disabled={loading}
           />
-
-          {/* Info */}
-          <Alert color="gray" variant="light">
-            <Text size="xs">
-              After verification, the booking will be automatically marked as{' '}
-              <strong>completed</strong> and the customer will receive a
-              notification. Extra charges will be added to the booking total.
-              {extraCharges.length > 0 && (
-                <><br/><strong>Note:</strong> Extra charges must be paid and cannot be discounted.</>
-              )}
-            </Text>
-          </Alert>
 
           {/* Action Buttons */}
           <Group justify="flex-end" mt="md" wrap="wrap">

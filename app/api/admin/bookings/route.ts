@@ -1,244 +1,277 @@
 /**
- * Bookings API Route
- * GET /api/admin/bookings - List all bookings with full details
- * POST /api/admin/bookings - Create manual booking
+ * Complete Payment API Route
+ * 
+ * Purpose: Handle remaining payment verification with extra charges and discount
+ * Features:
+ * - Upload remaining payment proof
+ * - Verify payment and mark booking as completed
+ * - Handle extra charges (mineral water, tape, ball, other)
+ * - Handle discount functionality
+ * - Update booking totals with extra charges and discount
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
+import { uploadPaymentProof } from '@/lib/supabase/storage';
 
-export const GET = withAdminAuth(async (request, { adminProfile }) => {
-  try {
-    const supabase = await createClient();
-    
-    // Parse query parameters
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const paymentStatus = searchParams.get('paymentStatus');
-    const search = searchParams.get('search');
-    const dateFrom = searchParams.get('dateFrom');
-    const dateTo = searchParams.get('dateTo');
-    const remainingOnly = searchParams.get('remainingOnly') === 'true';
-    const sortBy = searchParams.get('sortBy') || 'created_at';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const limit = parseInt(searchParams.get('limit') || '100');
-    const offset = parseInt(searchParams.get('offset') || '0');
-
-    // Build query with all relations
-    let query = supabase
-      .from('bookings')
-      .select(`
-        *,
-        customer:customers(*),
-        slots:booking_slots(*),
-        extra_charges:extra_charges(*)
-      `, { count: 'exact' })
-      .order(sortBy, { ascending: sortOrder === 'asc' })
-      .range(offset, offset + limit - 1);
-
-    // Ground managers only see approved bookings with remaining payment > 0
-    if (remainingOnly) {
-      query = query.gt('remaining_payment', 0).eq('status', 'approved');
-    } else {
-      // Filter by booking status (only for admins)
-      if (status && status !== 'all') {
-        query = query.eq('status', status);
-      }
-
-      // Filter by payment status (only for admins)
-      if (paymentStatus === 'paid') {
-        query = query.eq('remaining_payment', 0);
-      } else if (paymentStatus === 'pending') {
-        query = query.gt('remaining_payment', 0);
-      }
-    }
-
-    // Search by booking number, customer name, or phone
-    if (search) {
-      query = query.or(`booking_number.ilike.%${search}%,customer.name.ilike.%${search}%,customer.phone.ilike.%${search}%`);
-    }
-
-    // Filter by date range
-    if (dateFrom) {
-      query = query.gte('booking_date', dateFrom);
-    }
-    if (dateTo) {
-      query = query.lte('booking_date', dateTo);
-    }
-
-    const { data: bookings, error, count } = await query;
-
-    if (error) {
-      console.error('Fetch bookings error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch bookings' },
-        { status: 500 }
-      );
-    }
-
-    // Process bookings to ensure extra_charges is always an array
-    const processedBookings = (bookings || []).map((booking: any) => {
-      // Ensure extra_charges is always an array (not null or undefined)
-      const extraCharges = Array.isArray(booking.extra_charges) ? booking.extra_charges : [];
-      
-      // Calculate total extra charges
-      const totalExtraCharges = extraCharges.reduce((sum: number, charge: any) => 
-        sum + (charge.amount || 0), 0);
-      
-      // Ensure all required fields have default values
-      return {
-        ...booking,
-        extra_charges: extraCharges,
-        total_extra_charges: totalExtraCharges,
-        total_amount: booking.total_amount || 0,
-        total_hours: booking.total_hours || 0,
-        advance_payment: booking.advance_payment || 0,
-        remaining_payment: booking.remaining_payment || 0,
-        remaining_payment_amount: booking.remaining_payment_amount || 0,
-        slots: Array.isArray(booking.slots) ? booking.slots : [],
-        customer: booking.customer || { name: '', phone: '' }
-      };
-    });
-
-    // Calculate summary statistics
-    const summary = {
-      total: count || 0,
-      pending: processedBookings.filter((b: any) => b.status === 'pending').length || 0,
-      approved: processedBookings.filter((b: any) => b.status === 'approved').length || 0,
-      completed: processedBookings.filter((b: any) => b.status === 'completed').length || 0,
-      cancelled: processedBookings.filter((b: any) => b.status === 'cancelled').length || 0,
-      fullyPaid: processedBookings.filter((b: any) => b.remaining_payment === 0).length || 0,
-      partiallyPaid: processedBookings.filter((b: any) => b.remaining_payment > 0).length || 0,
-      totalExtraCharges: processedBookings.reduce((sum: number, b: any) => sum + (b.total_extra_charges || 0), 0) || 0,
-    };
-
-    return NextResponse.json({
-      success: true,
-      bookings: processedBookings,
-      summary,
-      pagination: {
-        total: count || 0,
-        limit,
-        offset,
-        hasMore: (offset + limit) < (count || 0),
-      },
-      adminRole: adminProfile.role,
-    });
-  } catch (error) {
-    console.error('API error:', error);
+async function handler(
+  request: NextRequest,
+  { params, adminProfile }: { params: Promise<{ id: string }>, adminProfile: any }
+) {
+  const resolvedParams = await params;
+  
+  if (!resolvedParams?.id) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: 'Booking ID is required' },
+      { status: 400 }
     );
   }
-});
 
-// Create manual booking (Admin only) - UNCHANGED
-export const POST = withAdminAuth(async (request, { adminProfile }) => {
   try {
-    // Only admins can create manual bookings
-    if (adminProfile.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only administrators can create manual bookings' },
-        { status: 403 }
-      );
-    }
-
     const supabase = await createClient();
-    const body = await request.json();
+    const bookingId = resolvedParams.id;
 
-    const {
-      customerName,
-      customerPhone,
-      bookingDate,
-      slots,
-      totalAmount,
-      advancePayment,
-      advancePaymentMethod,
-      advancePaymentProof,
-      notes,
-      autoApprove,
-    } = body;
+    // Parse form data
+    const formData = await request.formData();
+    const paymentMethod = formData.get('paymentMethod') as string;
+    const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
+    const discountAmount = parseFloat(formData.get('discountAmount') as string || '0');
+    const paymentProof = formData.get('paymentProof') as File | null;
+    const adminNotes = formData.get('adminNotes') as string | null;
+    const extraChargesJson = formData.get('extraCharges') as string | null;
+
+    // Parse extra charges if provided
+    let extraCharges: Array<{ category: string; amount: number }> = [];
+    if (extraChargesJson) {
+      try {
+        extraCharges = JSON.parse(extraChargesJson);
+      } catch (error) {
+        console.error('Error parsing extra charges:', error);
+        return NextResponse.json(
+          { success: false, error: 'Invalid extra charges format' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Validate required fields
-    if (!customerName || !customerPhone || !bookingDate || !slots || slots.length === 0) {
+    if (!paymentMethod) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { success: false, error: 'Payment method is required' },
         { status: 400 }
       );
     }
 
-
-    // Always create a new customer for every booking, even if name/phone matches existing records
-    let customerId = null;
-    const { data: newCustomer, error: createCustomerError } = await supabase
-      .from('customers')
-      .insert([{ name: customerName, phone: customerPhone }])
-      .select('id')
-      .single();
-    if (createCustomerError || !newCustomer) {
+    // Validate payment amount
+    if (!paymentAmount || paymentAmount <= 0) {
       return NextResponse.json(
-        { error: 'Failed to create new customer' },
+        { success: false, error: 'Valid payment amount is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate discount amount
+    if (discountAmount < 0) {
+      return NextResponse.json(
+        { success: false, error: 'Discount amount cannot be negative' },
+        { status: 400 }
+      );
+    }
+
+    // Validate extra charges
+    if (extraCharges.length > 0) {
+      for (const charge of extraCharges) {
+        if (!charge.category || !charge.amount || charge.amount <= 0) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid extra charge data' },
+            { status: 400 }
+          );
+        }
+        
+        // Validate category
+        const validCategories = ['mineral water', 'tape', 'ball', 'other'];
+        if (!validCategories.includes(charge.category)) {
+          return NextResponse.json(
+            { success: false, error: `Invalid category: ${charge.category}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Payment proof is optional for cash payments, required for digital
+    if (!paymentProof && paymentMethod !== 'cash') {
+      return NextResponse.json(
+        { success: false, error: 'Payment proof is required for digital payments' },
+        { status: 400 }
+      );
+    }
+
+    // Get booking details first to get booking number and date
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('booking_number, booking_date, remaining_payment, status, total_amount')
+      .eq('id', bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
+    // Validate booking status
+    if (booking.status !== 'approved') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Booking must be approved to complete payment. Current status: ${booking.status}` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Calculate total with extra charges
+    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
+    const totalPayable = booking.remaining_payment + totalExtraCharges;
+
+    // Validate payment amount doesn't exceed total payable
+    if (paymentAmount > totalPayable) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Payment amount (Rs ${paymentAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate payment amount is at least original remaining amount
+    if (paymentAmount < booking.remaining_payment) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Payment must be at least Rs ${booking.remaining_payment} (original remaining amount)` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate discount doesn't exceed extra charges
+    if (discountAmount > totalExtraCharges) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Discount (Rs ${discountAmount}) cannot exceed extra charges amount (Rs ${totalExtraCharges})` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Calculate expected payment with discount
+    const expectedPayment = totalPayable - discountAmount;
+    
+    // Validate actual payment matches expected payment (with small tolerance for rounding)
+    if (Math.abs(paymentAmount - expectedPayment) > 1) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Payment amount mismatch. Expected: Rs ${expectedPayment}, Provided: Rs ${paymentAmount}` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Upload payment proof to storage (if provided)
+    let uploadedProofPath = null;
+    
+    if (paymentProof) {
+      const uploadResult = await uploadPaymentProof(
+        paymentProof,
+        bookingId,
+        booking.booking_date
+      );
+
+      if (uploadResult.error || !uploadResult.data) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: uploadResult.error || 'Failed to upload payment proof' 
+          },
+          { status: 500 }
+        );
+      }
+      
+      uploadedProofPath = uploadResult.data;
+    }
+
+    // Convert extra charges to JSONB format for database
+    const extraChargesJsonb = extraCharges.length > 0 
+      ? JSON.stringify(extraCharges) 
+      : null;
+
+    // Call the updated SQL function with ALL parameters including discount
+    const { data: result, error: verifyError } = await supabase.rpc(
+      'verify_remaining_payment_with_extra_charges',
+      {
+        p_admin_notes: adminNotes,
+        p_booking_id: bookingId,
+        p_extra_charges: extraChargesJsonb,
+        p_payment_amount: paymentAmount,
+        p_payment_method: paymentMethod,
+        p_payment_proof_path: uploadedProofPath,
+        p_created_by: adminProfile.id,
+        p_discount_amount: discountAmount
+      }
+    );
+
+    if (verifyError) {
+      console.error('Verify payment error:', verifyError);
+      return NextResponse.json(
+        { success: false, error: verifyError.message },
         { status: 500 }
       );
     }
-    customerId = newCustomer.id;
 
-    // Format slots for RPC function
-    const formattedSlots = slots.map((slot: any) => ({
-      slot_hour: slot.hour,
-      slot_time: `${String(slot.hour).padStart(2, '0')}:00:00`,
-      is_night_rate: slot.isNightRate,
-      hourly_rate: slot.rate,
-    }));
-
-    // Call create booking function (pass customer name as the original name for this booking, not to update customer)
-    const { data, error } = await supabase.rpc('create_booking_with_slots', {
-      p_customer_name: customerName,
-      p_booking_date: bookingDate,
-      p_total_hours: slots.length,
-      p_total_amount: totalAmount,
-      p_advance_payment: advancePayment || 0,
-      p_advance_payment_method: advancePaymentMethod || 'cash',
-      p_advance_payment_proof: advancePaymentProof || 'manual-booking-no-proof',
-      p_slots: formattedSlots, // Pass as array, not string
-      p_customer_phone: customerPhone || null,
-      p_customer_notes: notes || null,
-    });
-
-    let bookingResult = data;
-    if (typeof bookingResult === 'string') bookingResult = JSON.parse(bookingResult);
-    if (Array.isArray(bookingResult)) bookingResult = bookingResult[0];
-
-    if (!bookingResult || !bookingResult.success) {
-      console.error('Booking creation failed:', { result: bookingResult, error, body });
+    // Check if the function returned an error
+    if (result && !result.success) {
       return NextResponse.json(
-        { error: (bookingResult && bookingResult.error_message) || error?.message || 'Failed to create booking' },
+        { success: false, error: result.error },
         { status: 400 }
       );
     }
 
-    // Auto-approve if requested
-    if (autoApprove) {
-      await supabase.rpc('approve_booking', {
-        p_booking_id: bookingResult.booking_id,
-        p_admin_notes: `Manual booking created by ${adminProfile.full_name}`,
-      });
-    }
+    // Fetch updated booking to get discount amount
+    const { data: updatedBooking } = await supabase
+      .from('bookings')
+      .select('discount_amount, total_amount, remaining_payment_amount')
+      .eq('id', bookingId)
+      .single();
 
     return NextResponse.json({
       success: true,
-      bookingId: bookingResult.booking_id,
-      bookingNumber: bookingResult.booking_number,
-      message: `Booking created successfully${autoApprove ? ' and auto-approved' : ''}`,
-      createdBy: adminProfile.full_name,
+      message: 'Payment verified and booking completed successfully',
+      bookingNumber: result.booking_number,
+      remainingAmount: booking.remaining_payment,
+      totalExtraCharges: result.total_extra_charges || totalExtraCharges,
+      actual_discount: result.actual_discount || discountAmount,
+      discountApplied: updatedBooking?.discount_amount || discountAmount,
+      finalPayment: paymentAmount,
+      newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
+      remainingPaymentAmount: updatedBooking?.remaining_payment_amount || 0,
     });
-  } catch (error) {
-    console.error('Create booking error:', error);
+  } catch (error: any) {
+    console.error('Complete payment error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false, 
+        error: error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }
-});
+}
+
+export const PATCH = withAdminAuth(handler);
