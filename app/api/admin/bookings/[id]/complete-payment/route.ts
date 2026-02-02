@@ -161,23 +161,24 @@ async function handler(
       );
     }
 
-    // Validate payment amount is at least original remaining amount
-    if (paymentAmount < booking.remaining_payment) {
+    // UPDATED: Allow payment to be less than original remaining with discount
+    // Only check that payment is not negative
+    if (paymentAmount < 0) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment must be at least Rs ${booking.remaining_payment} (original remaining amount)` 
+          error: `Payment amount cannot be negative` 
         },
         { status: 400 }
       );
     }
 
-    // Validate discount doesn't exceed extra charges
-    if (discountAmount > totalExtraCharges) {
+    // UPDATED: Allow discount on TOTAL payable, not just extra charges
+    if (discountAmount > totalPayable) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Discount (Rs ${discountAmount}) cannot exceed extra charges amount (Rs ${totalExtraCharges})` 
+          error: `Discount (Rs ${discountAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
         },
         { status: 400 }
       );
@@ -185,13 +186,13 @@ async function handler(
 
     // Calculate expected payment with discount
     const expectedPayment = totalPayable - discountAmount;
-    
+
     // Validate actual payment matches expected payment (with small tolerance for rounding)
     if (Math.abs(paymentAmount - expectedPayment) > 1) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment amount mismatch. Expected: Rs ${expectedPayment}, Provided: Rs ${paymentAmount}` 
+          error: `Payment amount mismatch. Expected: Rs ${expectedPayment.toFixed(0)}, Provided: Rs ${paymentAmount.toFixed(0)}` 
         },
         { status: 400 }
       );

@@ -8,7 +8,7 @@
  * - Display remaining amount
  * - Admin notes field
  * - Extra charges functionality
- * - Discount functionality
+ * - Discount functionality (can be applied to total amount)
  * - Validation and submission
  * - Mobile responsive design
  */
@@ -123,20 +123,7 @@ export default function CompletePaymentModal({
       return;
     }
 
-    // Validate minimum payment
-    const minimumPayment = remainingAmount; // Must pay at least original remaining
-    if (paymentAmount < minimumPayment) {
-      setError(`Payment must be at least Rs ${minimumPayment.toLocaleString()} (original remaining amount)`);
-      return;
-    }
-
-    if (paymentAmount > totalPayable) {
-      setError(`Payment amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
-      return;
-    }
-
-    // Payment proof is optional for cash payments
-    // Required for digital payments (easypaisa, sadapay)
+    // Payment proof is optional for cash payments, required for digital
     if (!paymentProof && paymentMethod !== 'cash') {
       setError('Please upload payment proof for digital payments');
       return;
@@ -339,22 +326,49 @@ export default function CompletePaymentModal({
   };
 
   const handleApplyDiscount = () => {
-    const discount = window.prompt('Enter discount amount:');
+    const discount = window.prompt(`Enter discount amount (max: Rs ${totalPayable.toLocaleString()}):`);
     if (discount && !isNaN(parseFloat(discount)) && parseFloat(discount) >= 0) {
       const discountAmount = parseFloat(discount);
-      if (discountAmount > totalPayable - remainingAmount) {
-        setError(`Discount cannot exceed Rs ${(totalPayable - remainingAmount).toLocaleString()} (extra charges amount)`);
+      
+      // Allow discount on TOTAL PAYABLE, not just extra charges
+      if (discountAmount > totalPayable) {
+        setError(`Discount cannot exceed Rs ${totalPayable.toLocaleString()} (total payable amount)`);
+        notifications.show({
+          title: '❌ Discount Too High',
+          message: `Discount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`,
+          color: 'red',
+          icon: <IconAlertCircle size={18} />,
+        });
         return;
       }
+      
+      // Calculate new payment amount
       const newPayment = totalPayable - discountAmount;
-      if (newPayment < remainingAmount) {
-        setError(`Payment after discount (Rs ${newPayment.toLocaleString()}) must be at least Rs ${remainingAmount.toLocaleString()} (original remaining amount)`);
+      
+      // Validate minimum payment (must be at least 0)
+      if (newPayment < 0) {
+        setError(`Payment after discount cannot be negative`);
+        notifications.show({
+          title: '❌ Invalid Discount',
+          message: 'Payment after discount cannot be negative',
+          color: 'red',
+          icon: <IconAlertCircle size={18} />,
+        });
         return;
       }
+      
+      // Apply discount
       setPaymentAmount(newPayment);
       setAppliedDiscount(discountAmount);
       setIsDiscountManual(true);
       setError(null);
+      
+      notifications.show({
+        title: '✅ Discount Applied',
+        message: `Discount of Rs ${discountAmount.toLocaleString()} applied. New payment: Rs ${newPayment.toLocaleString()}`,
+        color: 'green',
+        icon: <IconDiscount size={18} />,
+      });
     }
   };
 
@@ -527,7 +541,6 @@ export default function CompletePaymentModal({
                 color="yellow"
                 leftSection={<IconDiscount size={14} />}
                 onClick={handleApplyDiscount}
-                disabled={totalPayable <= remainingAmount}
               >
                 Apply Discount
               </Button>
@@ -543,7 +556,7 @@ export default function CompletePaymentModal({
               leftSection={<IconCurrencyRupee size={18} />}
               value={paymentAmount}
               onChange={handlePaymentAmountChange}
-              min={remainingAmount}
+              min={0}
               max={totalPayable}
               thousandSeparator=","
               allowNegative={false}
@@ -577,8 +590,8 @@ export default function CompletePaymentModal({
             {/* Important Notes */}
             <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light" mt="md" p="xs">
               <Text size="xs">
-                <strong>Important:</strong> Payment must be at least Rs {remainingAmount.toLocaleString()} (original remaining amount). 
-                Discount can only be applied to extra charges portion.
+                <strong>Important:</strong> Discount can be applied to the total payable amount. 
+                Payment after discount must be at least Rs 0.
               </Text>
             </Alert>
           </Paper>
