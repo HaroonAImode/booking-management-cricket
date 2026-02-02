@@ -55,6 +55,19 @@ async function handler(
       }
     }
 
+    // Debug logging
+    console.log('Complete payment request:', {
+      bookingId,
+      paymentMethod,
+      paymentAmount,
+      discountAmount,
+      extraChargesCount: extraCharges.length,
+      extraCharges,
+      adminNotes,
+      hasPaymentProof: !!paymentProof,
+      adminProfileId: adminProfile.id,
+    });
+
     // Validate required fields
     if (!paymentMethod) {
       return NextResponse.json(
@@ -208,9 +221,21 @@ async function handler(
     }
 
     // Convert extra charges to JSONB format for database
+    // IMPORTANT FIX: Always pass a JSONB value, even if empty array
     const extraChargesJsonb = extraCharges.length > 0 
       ? JSON.stringify(extraCharges) 
-      : null;
+      : '[]'; // Changed from null to empty array
+
+    console.log('Calling database function with:', {
+      p_admin_notes: adminNotes,
+      p_booking_id: bookingId,
+      p_extra_charges: extraChargesJsonb,
+      p_payment_amount: paymentAmount,
+      p_payment_method: paymentMethod,
+      p_payment_proof_path: uploadedProofPath,
+      p_created_by: adminProfile.id,
+      p_discount_amount: discountAmount
+    });
 
     // Call the updated SQL function with ALL parameters including discount
     const { data: result, error: verifyError } = await supabase.rpc(
@@ -218,7 +243,7 @@ async function handler(
       {
         p_admin_notes: adminNotes,
         p_booking_id: bookingId,
-        p_extra_charges: extraChargesJsonb,
+        p_extra_charges: extraChargesJsonb, // This will now be '[]' instead of null
         p_payment_amount: paymentAmount,
         p_payment_method: paymentMethod,
         p_payment_proof_path: uploadedProofPath,
