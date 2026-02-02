@@ -148,14 +148,22 @@ async function handler(
 
     // Calculate total with extra charges
     const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
-    const totalPayable = booking.remaining_payment + totalExtraCharges;
+    const totalPayable = (booking.remaining_payment || 0) + totalExtraCharges;
+
+    console.log('Payment calculation:', {
+      remainingPayment: booking.remaining_payment,
+      totalExtraCharges,
+      totalPayable,
+      discountAmount,
+      paymentAmount,
+    });
 
     // Validate payment amount doesn't exceed total payable
     if (paymentAmount > totalPayable) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment amount (Rs ${paymentAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
+          error: `Payment amount (Rs ${paymentAmount.toFixed(0)}) cannot exceed total payable amount (Rs ${totalPayable.toFixed(0)})` 
         },
         { status: 400 }
       );
@@ -178,7 +186,7 @@ async function handler(
       return NextResponse.json(
         { 
           success: false, 
-          error: `Discount (Rs ${discountAmount}) cannot exceed total payable amount (Rs ${totalPayable})` 
+          error: `Discount (Rs ${discountAmount.toFixed(0)}) cannot exceed total payable amount (Rs ${totalPayable.toFixed(0)})` 
         },
         { status: 400 }
       );
@@ -187,12 +195,20 @@ async function handler(
     // Calculate expected payment with discount
     const expectedPayment = totalPayable - discountAmount;
 
+    console.log('Expected payment calculation:', {
+      totalPayable,
+      discountAmount,
+      expectedPayment,
+      paymentAmount,
+      difference: Math.abs(paymentAmount - expectedPayment),
+    });
+
     // Validate actual payment matches expected payment (with small tolerance for rounding)
     if (Math.abs(paymentAmount - expectedPayment) > 1) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment amount mismatch. Expected: Rs ${expectedPayment.toFixed(0)}, Provided: Rs ${paymentAmount.toFixed(0)}` 
+          error: `Payment amount mismatch. Expected: Rs ${expectedPayment.toFixed(0)}, Provided: Rs ${paymentAmount.toFixed(0)}. Total payable: Rs ${totalPayable.toFixed(0)} (Remaining: Rs ${booking.remaining_payment} + Extra: Rs ${totalExtraCharges}) minus discount: Rs ${discountAmount}` 
         },
         { status: 400 }
       );
@@ -266,6 +282,7 @@ async function handler(
 
     // Check if the function returned an error
     if (result && !result.success) {
+      console.error('Payment verification failed:', result.error);
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 400 }
@@ -279,6 +296,8 @@ async function handler(
       .eq('id', bookingId)
       .single();
 
+    console.log('Payment successful, result:', result);
+
     return NextResponse.json({
       success: true,
       message: 'Payment verified and booking completed successfully',
@@ -290,6 +309,7 @@ async function handler(
       finalPayment: paymentAmount,
       newTotalAmount: updatedBooking?.total_amount || booking.total_amount,
       remainingPaymentAmount: updatedBooking?.remaining_payment_amount || 0,
+      debug_info: result.debug_info, // For debugging
     });
   } catch (error: any) {
     console.error('Complete payment error:', error);
