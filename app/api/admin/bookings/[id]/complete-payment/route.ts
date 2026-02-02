@@ -240,15 +240,15 @@ async function handler(
       uploadedProofPath = uploadResult.data;
     }
 
-    // Convert extra charges to JSONB format for database
-    // IMPORTANT: Always send as JSONB array
-    let extraChargesJsonb: any = '[]'; // Default empty array
+    // FIXED: Convert extra charges to PROPER JSONB format
+    // The Supabase RPC expects JSONB, not a string
+    let extraChargesJsonb: any = null;
     
     if (extraCharges.length > 0) {
-      // For non-empty arrays, pass the stringified JSON
-      extraChargesJsonb = JSON.stringify(extraCharges);
+      // For non-empty arrays, create a proper JSONB object
+      extraChargesJsonb = extraCharges; // This will be serialized to JSONB by Supabase
     } else {
-      // Ensure empty array is sent as proper JSON
+      // For empty array, use empty array (not string)
       extraChargesJsonb = [];
     }
 
@@ -269,7 +269,7 @@ async function handler(
       {
         p_admin_notes: adminNotes,
         p_booking_id: bookingId,
-        p_extra_charges: extraChargesJsonb,
+        p_extra_charges: extraChargesJsonb, // This should be JSONB, not string
         p_payment_amount: paymentAmount,
         p_payment_method: paymentMethod,
         p_payment_proof_path: uploadedProofPath,
