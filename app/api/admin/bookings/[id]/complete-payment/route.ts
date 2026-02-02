@@ -221,10 +221,13 @@ async function handler(
     }
 
     // Convert extra charges to JSONB format for database
-    // IMPORTANT FIX: Always pass a JSONB value, even if empty array
-    const extraChargesJsonb = extraCharges.length > 0 
-      ? JSON.stringify(extraCharges) 
-      : '[]'; // Changed from null to empty array
+    // IMPORTANT: Create proper JSONB object for empty array
+    let extraChargesJsonb: any = '[]'; // Default empty array
+    
+    if (extraCharges.length > 0) {
+      // For non-empty arrays, pass the stringified JSON
+      extraChargesJsonb = JSON.stringify(extraCharges);
+    }
 
     console.log('Calling database function with:', {
       p_admin_notes: adminNotes,
@@ -243,7 +246,7 @@ async function handler(
       {
         p_admin_notes: adminNotes,
         p_booking_id: bookingId,
-        p_extra_charges: extraChargesJsonb, // This will now be '[]' instead of null
+        p_extra_charges: extraChargesJsonb,
         p_payment_amount: paymentAmount,
         p_payment_method: paymentMethod,
         p_payment_proof_path: uploadedProofPath,

@@ -199,3 +199,92 @@ $$;
 GRANT EXECUTE ON FUNCTION public.verify_remaining_payment_with_extra_charges(
     TEXT, UUID, JSONB, NUMERIC, TEXT, TEXT, UUID, NUMERIC
 ) TO authenticated, service_role;
+
+
+
+
+
+
+
+
+
+
+after that i runned this to fix some issues:
+-- First, drop the function if it exists
+DROP FUNCTION IF EXISTS public.add_extra_charges_during_payment(
+    UUID, JSONB, UUID
+);
+
+-- Create the updated function with proper null handling
+CREATE OR REPLACE FUNCTION public.add_extra_charges_during_payment(
+    p_booking_id UUID,
+    p_extra_charges JSONB,
+    p_created_by UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_booking bookings%ROWTYPE;
+  v_extra_charge_record jsonb;
+  v_total_extra numeric := 0;
+  v_result jsonb;
+  v_array_length INTEGER;
+BEGIN
+  -- Check if booking exists
+  SELECT * INTO v_booking FROM bookings WHERE id = p_booking_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Booking not found');
+  END IF;
+
+  -- Validate extra charges array - FIXED with proper null/type checking
+  IF p_extra_charges IS NULL OR jsonb_typeof(p_extra_charges) != 'array' THEN
+    RETURN jsonb_build_object('success', true, 'message', 'No extra charges to add');
+  END IF;
+  
+  v_array_length := jsonb_array_length(p_extra_charges);
+  IF v_array_length = 0 THEN
+    RETURN jsonb_build_object('success', true, 'message', 'No extra charges to add');
+  END IF;
+
+  -- Process each extra charge
+  FOR v_extra_charge_record IN SELECT * FROM jsonb_array_elements(p_extra_charges)
+  LOOP
+    -- Add each extra charge
+    PERFORM add_extra_charge_to_booking(
+      p_booking_id,
+      v_extra_charge_record->>'category',
+      (v_extra_charge_record->>'amount')::numeric,
+      p_created_by
+    );
+    
+    -- Accumulate total
+    v_total_extra := v_total_extra + (v_extra_charge_record->>'amount')::numeric;
+  END LOOP;
+
+  -- Get updated booking
+  SELECT * INTO v_booking FROM bookings WHERE id = p_booking_id;
+
+  -- Return success
+  v_result := jsonb_build_object(
+    'success', true,
+    'booking_id', p_booking_id,
+    'total_extra_charges_added', v_total_extra,
+    'new_total_amount', v_booking.total_amount,
+    'new_remaining_payment', v_booking.remaining_payment,
+    'message', format('Added %s extra charges totaling Rs %s', 
+                     v_array_length, v_total_extra)
+  );
+
+  RETURN v_result;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END;
+$$;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION public.add_extra_charges_during_payment(
+    UUID, JSONB, UUID
+) TO authenticated, service_role;
