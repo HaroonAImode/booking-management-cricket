@@ -6,7 +6,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/supabase/api-auth';
 import { createClient } from '@/lib/supabase/server';
-import { formatSlotRanges } from '@/lib/supabase/bookings';
+
+// Helper function to format slot ranges
+function formatSlotRanges(slots: number[]): string {
+  if (!slots || slots.length === 0) return 'No slots';
+  
+  const sortedSlots = [...slots].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sortedSlots[0];
+  let end = sortedSlots[0];
+  
+  for (let i = 1; i < sortedSlots.length; i++) {
+    if (sortedSlots[i] === end + 1) {
+      end = sortedSlots[i];
+    } else {
+      ranges.push(start === end ? formatTime(start) : `${formatTime(start)} - ${formatTime(end + 1)}`);
+      start = sortedSlots[i];
+      end = sortedSlots[i];
+    }
+  }
+  
+  ranges.push(start === end ? formatTime(start) : `${formatTime(start)} - ${formatTime(end + 1)}`);
+  return ranges.join(', ');
+}
+
+function formatTime(hour: number): string {
+  if (hour === 0) return '12:00 AM';
+  if (hour === 12) return '12:00 PM';
+  if (hour > 12) return `${hour - 12}:00 PM`;
+  return `${hour}:00 AM`;
+}
 
 // GET /api/admin/calendar - Fetch calendar bookings
 export const GET = withAdminAuth(async (request, { adminProfile }) => {
@@ -18,44 +47,64 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const endDate = searchParams.get('end') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const status = searchParams.get('status') || null;
 
-    // Call calendar bookings function
-    const { data: bookings, error } = await supabase.rpc('get_calendar_bookings', {
-      p_start_date: startDate,
-      p_end_date: endDate,
-      p_status: status,
-    });
+    console.log('📅 Fetching calendar bookings:', { startDate, endDate, status });
+
+    // Use direct query instead of RPC to avoid processedData issues
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        booking_number,
+        booking_date,
+        total_hours,
+        total_amount,
+        advance_payment,
+        remaining_payment,
+        status,
+        created_at,
+        customer_name,
+        customer_phone,
+        customer_notes,
+        admin_notes,
+        booking_slots(slot_hour)
+      `)
+      .gte('booking_date', startDate)
+      .lte('booking_date', endDate)
+      .order('booking_date', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Calendar bookings fetch error:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch calendar data' },
+        { success: false, error: 'Failed to fetch calendar data', details: error.message },
         { status: 500 }
       );
     }
 
-    // Transform bookings to calendar events with proper start and end times
+    console.log('✅ Raw bookings fetched:', bookings?.length || 0);
+
+    // Transform bookings to calendar events
     const events = (bookings || []).map((booking: any) => {
-      // Get slot hours array
-      const slotHours = booking.slot_hours || [];
+      // Extract slot hours from booking_slots
+      const slotHours = (booking.booking_slots || []).map((slot: any) => slot.slot_hour).sort((a: number, b: number) => a - b);
       
-      // Sort slots and get first and last
-      const sortedSlots = [...slotHours].sort((a: number, b: number) => a - b);
-      const firstSlot = sortedSlots[0] || 8; // Default to 8 AM if no slots
-      const lastSlot = sortedSlots[sortedSlots.length - 1] || 9; // Default to 9 AM if no slots
+      // Get first and last slot
+      const firstSlot = slotHours.length > 0 ? slotHours[0] : 8;
+      const lastSlot = slotHours.length > 0 ? slotHours[slotHours.length - 1] : 9;
       
-      // Format slot ranges for display
-      const slotRanges = formatSlotRanges(sortedSlots);
+      // Format slot ranges
+      const slotRanges = formatSlotRanges(slotHours);
       
-      // Check if it's a night rate booking
-      const hasNightRate = sortedSlots.some((slot: number) => slot >= 19 || slot < 6);
+      // Check if it's a night rate booking (after 7 PM or before 7 AM)
+      const hasNightRate = slotHours.some((slot: number) => slot >= 19 || slot < 7);
       
       // Calculate start and end times
       const startHour = String(firstSlot).padStart(2, '0');
-      const endHour = String(lastSlot + 1).padStart(2, '0'); // Add 1 hour for end time
+      const endHour = String(lastSlot + 1).padStart(2, '0');
       
       return {
-        id: booking.booking_id,
-        bookingId: booking.booking_id,
+        id: booking.id,
+        bookingId: booking.id,
         title: `${booking.customer_name} - ${slotRanges}`,
         start: `${booking.booking_date}T${startHour}:00:00`,
         end: `${booking.booking_date}T${endHour}:00:00`,
@@ -63,7 +112,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
         borderColor: getStatusColor(booking.status),
         textColor: '#ffffff',
         extendedProps: {
-          bookingId: booking.booking_id,
+          bookingId: booking.id,
           bookingNumber: booking.booking_number,
           customerName: booking.customer_name,
           customerPhone: booking.customer_phone,
@@ -73,15 +122,17 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
           advancePayment: booking.advance_payment,
           remainingPayment: booking.remaining_payment,
           createdAt: booking.created_at,
-          pendingExpiresAt: booking.pending_expires_at,
           customerNotes: booking.customer_notes,
           adminNotes: booking.admin_notes,
           slotRanges: slotRanges,
+          slotHours: slotHours,
           nightRate: hasNightRate,
           isNightRate: hasNightRate,
         },
       };
     });
+
+    console.log('📅 Events processed:', events.length);
 
     return NextResponse.json({
       success: true,
@@ -89,10 +140,10 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       count: events.length,
       filters: { startDate, endDate, status },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Calendar API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
@@ -102,7 +153,7 @@ function getStatusColor(status: string): string {
   switch (status) {
     case 'pending':
       return '#fd7e14'; // Orange
-    case 'approved':
+    case 'confirmed':
       return '#40c057'; // Green
     case 'completed':
       return '#228be6'; // Blue
