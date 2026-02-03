@@ -52,7 +52,7 @@ export default function ManualBookingModal({
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '', // ADDED: Email field
+    customerEmail: '',
     bookingDate: new Date(),
     advancePayment: 500,
     advancePaymentMethod: 'cash',
@@ -78,14 +78,12 @@ export default function ManualBookingModal({
     if (!formData.bookingDate) return;
     setSlotsLoading(true);
     setSlotsError(null);
-    // If editing, pass excludeBookingId
     const url = `/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
         const availableHours: number[] = data.availableSlots || [];
         const bookedHours: number[] = data.bookedSlots || [];
-        // Build SlotInfo[] for all 24 hours
         const now = new Date();
         const isToday = formData.bookingDate.toDateString() === now.toDateString();
         const currentHour = isToday ? now.getHours() : -1;
@@ -159,7 +157,7 @@ export default function ManualBookingModal({
       return;
     }
 
-    // Duplicate booking prevention: check if any selected slot is already booked
+    // Duplicate booking prevention
     try {
       setLoading(true);
       const duplicateCheckResponse = await fetch(
@@ -193,7 +191,7 @@ export default function ManualBookingModal({
       // Handle payment proof upload if required
       let paymentProofUrlToSend = null;
       if (formData.advancePaymentMethod !== 'cash' && paymentProofFile) {
-        const fakeBookingId = crypto.randomUUID(); // Use a temp ID for path
+        const fakeBookingId = crypto.randomUUID();
         const uploadResult = await uploadPaymentProof(
           paymentProofFile,
           fakeBookingId,
@@ -212,32 +210,45 @@ export default function ManualBookingModal({
       }
 
       // Prepare slots data in correct format for API
+      const bookingDateStr = formData.bookingDate.toISOString().split('T')[0];
       const slotsData = selectedSlots.map(hour => {
         const slot = availableSlots?.find(s => s.slot_hour === hour);
         const slotTime = `${String(hour).padStart(2, '0')}:00:00`;
         
-        return {
-          slotDate: formData.bookingDate.toISOString().split('T')[0],
+        // Send BOTH formats for maximum compatibility
+        // New format (what API expects)
+        const newFormat = {
+          slotDate: bookingDateStr,
           slotTime: slotTime,
           slotHour: hour,
           hourlyRate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
-          is_night_rate: isNightHour(hour) // FIXED: Use underscore to match database column name
+          is_night_rate: isNightHour(hour)
+        };
+        
+        // Also include old format as backup
+        return {
+          ...newFormat,
+          // Old format fields (for backward compatibility)
+          hour: hour,
+          rate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
+          isNightRate: isNightHour(hour)
         };
       });
 
-      console.log('Slots data being sent:', JSON.stringify(slotsData, null, 2));
+      console.log('=== SLOTS DATA BEING SENT ===');
+      console.log(JSON.stringify(slotsData, null, 2));
+      console.log('=== END SLOTS DATA ===');
 
-      // Calculate total hours
+      // Calculate totals
       const totalHours = selectedSlots.length;
-
-      // Calculate total amount
       const totalAmount = calculateTotal();
 
-      console.log('Sending data to API:', {
+      console.log('=== COMPLETE REQUEST DATA ===');
+      console.log({
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
         customerEmail: formData.customerEmail || null,
-        bookingDate: formData.bookingDate.toISOString().split('T')[0],
+        bookingDate: bookingDateStr,
         slots: slotsData,
         totalHours,
         totalAmount,
@@ -247,6 +258,7 @@ export default function ManualBookingModal({
         adminNotes: formData.notes || null,
         autoApprove: formData.autoApprove,
       });
+      console.log('=== END REQUEST DATA ===');
 
       const response = await fetch('/api/admin/bookings', {
         method: 'POST',
@@ -255,7 +267,7 @@ export default function ManualBookingModal({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
           customerEmail: formData.customerEmail || null,
-          bookingDate: formData.bookingDate.toISOString().split('T')[0],
+          bookingDate: bookingDateStr,
           slots: slotsData,
           totalHours: totalHours,
           totalAmount: totalAmount,
@@ -386,6 +398,7 @@ export default function ManualBookingModal({
               onChange={(value) => {
                 const date = typeof value === 'string' ? new Date(value) : (value || new Date());
                 setFormData({ ...formData, bookingDate: date });
+                setSelectedSlots([]);
               }}
               minDate={new Date()}
               size="sm"
