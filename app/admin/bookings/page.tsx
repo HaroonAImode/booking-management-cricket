@@ -448,56 +448,62 @@ export default function AdminBookingsPage() {
     }
   };
 
-  // ... (keep all the imports and interface definitions same as before)
-// Only updating the handleDelete function:
-
-const handleDelete = async (bookingId: string, bookingNumber: string) => {
-  const confirmed = window.confirm(
-    `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations\n• Extra charges`
-  );
-
-  if (!confirmed) return;
-
-  try {
-    // FIXED: Use query parameter instead of URL path parameter
-    const response = await fetch(`/api/admin/bookings?id=${bookingId}`, {
-      method: 'DELETE',
-    });
+  // UPDATED: handleDelete function with status-specific warnings
+  const handleDelete = async (bookingId: string, bookingNumber: string, status: string) => {
+    // Different warning messages based on booking status
+    let warningMessage = `Are you sure you want to delete Booking #${bookingNumber}?`;
     
-    // Check if response is OK before parsing JSON
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Delete API Error:', errorText);
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    if (status === 'completed') {
+      warningMessage += `\n\n⚠️ WARNING: This is a COMPLETED booking with full payment.`;
+    } else if (status === 'cancelled') {
+      warningMessage += `\n\n⚠️ WARNING: This is a CANCELLED booking.`;
     }
     
-    const result = await response.json();
+    warningMessage += `\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations\n• Extra charges`;
     
-    if (result.success) {
-      notifications.show({
-        title: '✅ Booking Deleted',
-        message: `Booking #${bookingNumber} deleted successfully`,
-        color: 'green',
-        autoClose: 4000,
-        icon: <IconTrash size={18} />,
+    const confirmed = window.confirm(warningMessage);
+
+    if (!confirmed) return;
+
+    try {
+      // Use query parameter instead of URL path parameter
+      const response = await fetch(`/api/admin/bookings?id=${bookingId}`, {
+        method: 'DELETE',
       });
-      fetchBookings();
-    } else {
-      throw new Error(result.error || 'Failed to delete booking');
+      
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Delete API Error:', errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        notifications.show({
+          title: '✅ Booking Deleted',
+          message: `Booking #${bookingNumber} deleted successfully`,
+          color: 'green',
+          autoClose: 4000,
+          icon: <IconTrash size={18} />,
+        });
+        fetchBookings();
+      } else {
+        throw new Error(result.error || 'Failed to delete booking');
+      }
+    } catch (error: any) {
+      console.error('Delete booking error:', error);
+      notifications.show({
+        title: '❌ Delete Failed',
+        message: error.message || 'Failed to delete booking',
+        color: 'red',
+        autoClose: 4000,
+        icon: <IconAlertCircle size={18} />,
+      });
     }
-  } catch (error: any) {
-    console.error('Delete booking error:', error);
-    notifications.show({
-      title: '❌ Delete Failed',
-      message: error.message || 'Failed to delete booking',
-      color: 'red',
-      autoClose: 4000,
-      icon: <IconAlertCircle size={18} />,
-    });
-  }
-};
+  };
 
-// ... (keep the rest of the code exactly the same as before)
   const downloadInvoice = async (bookingId: string, bookingNumber: string) => {
     try {
       notifications.show({
@@ -908,7 +914,7 @@ const handleDelete = async (bookingId: string, bookingNumber: string) => {
               placeholder="Search by booking #, customer, phone..."
               leftSection={<IconSearch size={16} />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
               size="sm"
             />
             <Group wrap="wrap">
@@ -1231,10 +1237,11 @@ const handleDelete = async (bookingId: string, bookingNumber: string) => {
                                 )}
                                 
                                 {canDeleteBookings && (
+                                  // UPDATED: Pass booking status to handleDelete
                                   <Menu.Item
                                     leftSection={<IconTrash size={16} />}
                                     color="red"
-                                    onClick={() => handleDelete(booking.id, booking.booking_number)}
+                                    onClick={() => handleDelete(booking.id, booking.booking_number, booking.status)}
                                   >
                                     Delete Booking
                                   </Menu.Item>

@@ -664,15 +664,16 @@ async function DELETEHandler(
       );
     }
 
-    console.log('Found booking to delete:', booking.booking_number);
+    console.log('Found booking to delete:', booking.booking_number, 'Status:', booking.status);
 
-    // Prevent deletion of completed bookings (optional safety check)
-    if (booking.status === 'completed') {
-      return NextResponse.json(
-        { success: false, error: 'Cannot delete completed bookings' },
-        { status: 400 }
-      );
-    }
+    // REMOVED: The safety check that prevents deletion of completed bookings
+    // Allow admins to delete ANY booking regardless of status
+    // if (booking.status === 'completed') {
+    //   return NextResponse.json(
+    //     { success: false, error: 'Cannot delete completed bookings' },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Delete extra charges first (from extra_charges table)
     const { error: extraChargesError } = await supabase
