@@ -166,7 +166,7 @@ async function GETHandler(
         discount_amount: booking.discount_amount,
         status: booking.status,
         created_at: booking.created_at,
-        customer: booking.customer || { name: '', phone: '', email: '' },
+        customer: booking.customer || { name: '', phone: '' }, // Removed email
         slots: bookingSlots,
         extra_charges: bookingExtraCharges,
         total_extra_charges: totalExtraCharges,
@@ -228,7 +228,7 @@ async function POSTHandler(
     const {
       customerName,
       customerPhone,
-      customerEmail,
+      customerEmail, // We'll accept it but not use it
       bookingDate,
       slots,
       totalHours,
@@ -244,7 +244,6 @@ async function POSTHandler(
     console.log({
       customerName,
       customerPhone,
-      customerEmail,
       bookingDate,
       slotsCount: slots?.length,
       totalHours,
@@ -444,23 +443,21 @@ async function POSTHandler(
       if (existingCustomer) {
         customerId = existingCustomer.id;
         
-        // Update customer details if provided
+        // Update customer name if provided (no email field)
         await supabase
           .from('customers')
           .update({
             name: customerName,
-            email: customerEmail || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', customerId);
       } else {
-        // Create new customer
+        // Create new customer (without email field)
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
             name: customerName,
             phone: customerPhone,
-            email: customerEmail || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })

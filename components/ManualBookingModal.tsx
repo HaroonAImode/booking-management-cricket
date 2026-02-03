@@ -52,7 +52,6 @@ export default function ManualBookingModal({
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
     bookingDate: new Date(),
     advancePayment: 500,
     advancePaymentMethod: 'cash',
@@ -247,7 +246,6 @@ export default function ManualBookingModal({
       console.log({
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
-        customerEmail: formData.customerEmail || null,
         bookingDate: bookingDateStr,
         slots: slotsData,
         totalHours,
@@ -266,7 +264,6 @@ export default function ManualBookingModal({
         body: JSON.stringify({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
-          customerEmail: formData.customerEmail || null,
           bookingDate: bookingDateStr,
           slots: slotsData,
           totalHours: totalHours,
@@ -320,7 +317,6 @@ export default function ManualBookingModal({
     setFormData({
       customerName: '',
       customerPhone: '',
-      customerEmail: '',
       bookingDate: new Date(),
       advancePayment: 500,
       advancePaymentMethod: 'cash',
@@ -369,17 +365,6 @@ export default function ManualBookingModal({
                   value={formData.customerPhone}
                   onChange={(e) =>
                     setFormData({ ...formData, customerPhone: e.target.value })
-                  }
-                  size="sm"
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12 }}>
-                <TextInput
-                  label="Email (Optional)"
-                  placeholder="customer@example.com"
-                  value={formData.customerEmail}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customerEmail: e.target.value })
                   }
                   size="sm"
                 />
