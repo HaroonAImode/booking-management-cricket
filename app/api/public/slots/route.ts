@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('📦 Raw RPC data received:', data?.length, 'slots');
+    console.log('📦 Raw RPC data received:', data?.length || 0, 'slots');
     
     // Process the data for public consumption
-    const processedData = (data || []).map((slot: any) => {
+    const processedSlots = (data || []).map((slot: any) => {
       // CRITICAL: Convert PostgreSQL boolean to JavaScript boolean
       const isAvailable = typeof slot.is_available === 'boolean' 
         ? slot.is_available 
@@ -60,18 +60,21 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log('✅ Processed slots sample:', processedData.slice(17, 23));
+    console.log('✅ Processed slots count:', processedSlots.length);
+    if (processedSlots.length > 0) {
+      console.log('Sample slots 17-23:', processedSlots.slice(17, 23));
+    }
 
     return NextResponse.json({
       success: true,
       date,
-      slots: processedData,
-      count: processedData.length
+      slots: processedSlots,
+      count: processedSlots.length
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Public slots API exception:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

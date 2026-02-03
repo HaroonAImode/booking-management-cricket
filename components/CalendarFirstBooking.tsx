@@ -31,106 +31,110 @@ export default function CalendarFirstBooking() {
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
   const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
 
-useEffect(() => {
-  setSlotsLoading(true);
-  setSlotsError(null);
-  const dateStr = quickViewDate.toISOString().split('T')[0];
-  
-  console.log('🔍 Fetching slots for date:', dateStr);
-  
-  // Use a PUBLIC API endpoint instead of admin API
-  fetch(`/api/public/slots?date=${dateStr}`)
-    .then(async res => {
-      console.log('📡 API Response status:', res.status);
-      
-      if (!res.ok) {
-        // Try direct RPC as fallback
-        console.log('🔄 Trying direct RPC fallback...');
-        return fallbackDirectRPC(dateStr);
-      }
-      
-      const data = await res.json();
-      console.log('✅ Public API response:', data);
-      
-      if (!data.success) {
-        throw new Error(data.error || 'API error');
-      }
-      
-      return processSlotData(data.slots || [], quickViewDate);
-    })
-    .then(processedSlots => {
-      console.log('🎯 Processed slots:', processedSlots);
-      setTodaySlots(processedSlots);
-      setSlotsLoading(false);
-    })
-    .catch(err => {
-      console.error('❌ Slot fetch error:', err);
-      setSlotsError('Failed to load slots');
-      setSlotsLoading(false);
-      
-      // Show empty slots on error
-      setTodaySlots([]);
-    });
-}, [quickViewDate]);
-
-// Fallback function for direct RPC call
-async function fallbackDirectRPC(dateStr: string) {
-  try {
-    // Import supabase client
-    const { createClient } = await import('@/lib/supabase/client');
-    const supabase = createClient();
+  // Helper function to process slot data
+  const processSlotData = (apiSlots: any[], date: Date): any[] => {
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const currentHour = isToday ? now.getHours() : -1;
     
-    const { data, error } = await supabase.rpc('get_available_slots', {
-      p_date: dateStr
-    });
+    // Create map of all 24 hours
+    const slotsMap = new Map();
     
-    if (error) throw error;
-    
-    return processSlotData(data || [], new Date(dateStr));
-  } catch (err) {
-    console.error('Fallback RPC failed:', err);
-    throw err;
-  }
-}
-
-// Process slot data from API
-function processSlotData(apiSlots: any[], date: Date): any[] {
-  const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const currentHour = isToday ? now.getHours() : -1;
-  
-  // Create map of all 24 hours
-  const slotsMap = new Map();
-  
-  for (let hour = 0; hour < 24; hour++) {
-    const isPast = isToday && hour < currentHour;
-    slotsMap.set(hour, {
-      slot_hour: hour,
-      is_available: false, // Default to not available
-      current_status: isPast ? 'past' : 'pending', // Default status
-    });
-  }
-  
-  // Update with actual API data
-  apiSlots.forEach(slot => {
-    const hour = slot.slot_hour;
-    const isPast = isToday && hour < currentHour;
-    const isAvailable = slot.is_available && !isPast;
-    
-    let status = 'available';
-    if (!isAvailable) {
-      status = isPast ? 'past' : (slot.current_status || 'booked');
+    for (let hour = 0; hour < 24; hour++) {
+      const isPast = isToday && hour < currentHour;
+      slotsMap.set(hour, {
+        slot_hour: hour,
+        is_available: false, // Default to not available
+        current_status: isPast ? 'past' : 'pending', // Default status
+      });
     }
     
-    slotsMap.set(hour, {
-      slot_hour: hour,
-      is_available: isAvailable,
-      current_status: status,
+    // Update with actual API data
+    apiSlots.forEach((slot: any) => {
+      const hour = slot.slot_hour;
+      const isPast = isToday && hour < currentHour;
+      const isAvailable = slot.is_available && !isPast;
+      
+      let status = 'available';
+      if (!isAvailable) {
+        status = isPast ? 'past' : (slot.current_status || 'booked');
+      }
+      
+      slotsMap.set(hour, {
+        slot_hour: hour,
+        is_available: isAvailable,
+        current_status: status,
+      });
     });
-  });
-  
-  return Array.from(slotsMap.values());
-}
+    
+    return Array.from(slotsMap.values());
+  };
+
+  // Fallback function for direct RPC call
+  const fallbackDirectRPC = async (dateStr: string) => {
+    try {
+      // Import supabase client
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      
+      const { data, error } = await supabase.rpc('get_available_slots', {
+        p_date: dateStr
+      });
+      
+      if (error) throw error;
+      
+      return processSlotData(data || [], new Date(dateStr));
+    } catch (err) {
+      console.error('Fallback RPC failed:', err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      setSlotsLoading(true);
+      setSlotsError(null);
+      const dateStr = quickViewDate.toISOString().split('T')[0];
+      
+      console.log('🔍 Fetching slots for date:', dateStr);
+      
+      try {
+        // Use a PUBLIC API endpoint instead of admin API
+        const response = await fetch(`/api/public/slots?date=${dateStr}`);
+        console.log('📡 API Response status:', response.status);
+        
+        let processedSlots;
+        
+        if (!response.ok) {
+          // Try direct RPC as fallback
+          console.log('🔄 Trying direct RPC fallback...');
+          processedSlots = await fallbackDirectRPC(dateStr);
+        } else {
+          const data = await response.json();
+          console.log('✅ Public API response:', data);
+          
+          if (!data.success) {
+            throw new Error(data.error || 'API error');
+          }
+          
+          processedSlots = processSlotData(data.slots || [], quickViewDate);
+        }
+        
+        console.log('🎯 Processed slots:', processedSlots);
+        setTodaySlots(processedSlots);
+        setSlotsLoading(false);
+      } catch (err: any) {
+        console.error('❌ Slot fetch error:', err);
+        setSlotsError('Failed to load slots');
+        setSlotsLoading(false);
+        
+        // Show empty slots on error
+        setTodaySlots([]);
+      }
+    };
+
+    fetchSlots();
+  }, [quickViewDate]);
 
   const handleSlotToggle = (hour: number) => {
     setSelectedSlots((prev) => {
@@ -518,7 +522,7 @@ function processSlotData(apiSlots: any[], date: Date): any[] {
                     <Box style={{ transition: 'opacity 0.3s', opacity: slotsLoading ? 0.3 : 1 }}>
                       <SimpleGrid cols={{ base: 3, xs: 4, sm: 6, md: 8 }} spacing={{ base: 'xs', sm: 'sm' }}>
                         {todaySlots.map((slot) => {
-                          // FIXED: Use the slot's actual status from the API response
+                          // Use the slot's actual status from the API response
                           const isBooked = slot.current_status === 'booked';
                           const isPending = slot.current_status === 'pending';
                           const isPast = slot.current_status === 'past';
