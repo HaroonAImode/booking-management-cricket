@@ -448,41 +448,56 @@ export default function AdminBookingsPage() {
     }
   };
 
-  const handleDelete = async (bookingId: string, bookingNumber: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations\n• Extra charges`
-    );
+  // ... (keep all the imports and interface definitions same as before)
+// Only updating the handleDelete function:
 
-    if (!confirmed) return;
+const handleDelete = async (bookingId: string, bookingNumber: string) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete Booking #${bookingNumber}?\n\nThis action cannot be undone and will permanently remove all booking data including:\n• Customer information\n• Payment records\n• Slot reservations\n• Extra charges`
+  );
 
-    try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        notifications.show({
-          title: '✅ Booking Deleted',
-          message: `Booking #${bookingNumber} deleted successfully`,
-          color: 'green',
-          autoClose: 4000,
-          icon: <IconTrash size={18} />,
-        });
-        fetchBookings();
-      } else {
-        throw new Error(result.error || 'Failed to delete booking');
-      }
-    } catch (error: any) {
-      notifications.show({
-        title: '❌ Delete Failed',
-        message: error.message || 'Failed to delete booking',
-        color: 'red',
-        autoClose: 4000,
-        icon: <IconAlertCircle size={18} />,
-      });
+  if (!confirmed) return;
+
+  try {
+    // FIXED: Use query parameter instead of URL path parameter
+    const response = await fetch(`/api/admin/bookings?id=${bookingId}`, {
+      method: 'DELETE',
+    });
+    
+    // Check if response is OK before parsing JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Delete API Error:', errorText);
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
-  };
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      notifications.show({
+        title: '✅ Booking Deleted',
+        message: `Booking #${bookingNumber} deleted successfully`,
+        color: 'green',
+        autoClose: 4000,
+        icon: <IconTrash size={18} />,
+      });
+      fetchBookings();
+    } else {
+      throw new Error(result.error || 'Failed to delete booking');
+    }
+  } catch (error: any) {
+    console.error('Delete booking error:', error);
+    notifications.show({
+      title: '❌ Delete Failed',
+      message: error.message || 'Failed to delete booking',
+      color: 'red',
+      autoClose: 4000,
+      icon: <IconAlertCircle size={18} />,
+    });
+  }
+};
 
+// ... (keep the rest of the code exactly the same as before)
   const downloadInvoice = async (bookingId: string, bookingNumber: string) => {
     try {
       notifications.show({
