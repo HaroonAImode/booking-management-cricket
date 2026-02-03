@@ -39,6 +39,47 @@ export default function SlotSelector({
   const [nightStart, setNightStart] = useState(17);
   const [nightEnd, setNightEnd] = useState(7);
 
+  // DEBUG: Log what we receive
+  useEffect(() => {
+    console.log('🔍 SlotSelector DEBUG:', {
+      selectedDate,
+      availableSlotsCount: availableSlots?.length,
+      loading,
+      error,
+      sampleSlots: availableSlots?.slice(0, 5)
+    });
+    
+    if (availableSlots && availableSlots.length > 0) {
+      // Check how many are available vs pending vs booked
+      const availableCount = availableSlots.filter(s => s.is_available).length;
+      const pendingCount = availableSlots.filter(s => s.current_status === 'pending').length;
+      const bookedCount = availableSlots.filter(s => s.current_status === 'booked').length;
+      
+      console.log('📊 Slot Status Summary:', {
+        total: availableSlots.length,
+        available: availableCount,
+        pending: pendingCount,
+        booked: bookedCount
+      });
+      
+      // Log specific slots for today
+      if (selectedDate) {
+        const today = new Date();
+        const isToday = selectedDate.getDate() === today.getDate() &&
+                       selectedDate.getMonth() === today.getMonth() &&
+                       selectedDate.getFullYear() === today.getFullYear();
+        
+        if (isToday) {
+          console.log('📅 Today\'s slots (17-22):', 
+            availableSlots
+              .filter(s => s.slot_hour >= 17 && s.slot_hour <= 22)
+              .map(s => `${s.slot_hour}: ${s.current_status} (available: ${s.is_available})`)
+          );
+        }
+      }
+    }
+  }, [availableSlots, loading, error, selectedDate]);
+
   // Ensure selectedSlots is always an array
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
 
@@ -61,7 +102,7 @@ export default function SlotSelector({
       const existingSlot = availableSlots?.find(s => s.slot_hour === hour);
       
       // For today, check if this hour has passed
-      const isPast = isToday && hour <= currentHour;
+      const isPast = isToday && hour < currentHour;
       
       if (existingSlot) {
         // Use existing slot data but override availability if it's in the past

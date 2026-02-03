@@ -88,7 +88,7 @@ export async function fetchSettings(): Promise<{ data: Settings | null; error: s
 }
 
 // ========================================
-// SLOTS
+// SLOTS - UPDATED TO FIX THE BUG
 // ========================================
 
 /**
@@ -100,18 +100,80 @@ export async function getAvailableSlots(
   try {
     const supabase = createClient();
 
+    console.log('🔍 getAvailableSlots called with date:', date);
+    
+    // Ensure date is in YYYY-MM-DD format (strip time if present)
+    let cleanDate = date;
+    if (date.includes('T')) {
+      cleanDate = date.split('T')[0];
+    }
+    
+    console.log('🔍 Clean date for RPC:', cleanDate);
+    
+    // Call RPC - function now accepts TEXT parameter
     const { data, error } = await supabase.rpc('get_available_slots', {
-      p_date: date,
+      p_date: cleanDate
+    });
+
+    console.log('🔍 RPC response:', { 
+      hasData: !!data, 
+      dataLength: data?.length,
+      error: error?.message 
     });
 
     if (error) {
-      console.error('Get available slots error:', error);
+      console.error('❌ Get available slots error:', error);
       return { data: null, error: error.message };
     }
 
-    return { data: data as SlotInfo[], error: null };
+    // Process and transform the data to match SlotInfo interface
+    const processedData = (data || []).map((slot: any) => {
+      // Ensure slot_time is in correct format (convert "08:00" or "08:00:00" to "08:00")
+      let slotTime = slot.slot_time;
+      if (typeof slotTime === 'string') {
+        if (slotTime.includes(':')) {
+          const parts = slotTime.split(':');
+          if (parts.length >= 2) {
+            slotTime = `${parts[0].padStart(2, '0')}:${parts[1]}`;
+          }
+        }
+      } else {
+        slotTime = `${slot.slot_hour.toString().padStart(2, '0')}:00`;
+      }
+      
+      // Ensure is_available is boolean
+      const isAvailable = slot.is_available === true || 
+                         slot.is_available === 'true' || 
+                         slot.is_available === 't' ||
+                         slot.is_available === '1';
+      
+      // Ensure current_status is valid
+      const validStatuses = ['available', 'pending', 'booked', 'cancelled'];
+      let currentStatus = (slot.current_status || 'available').toLowerCase();
+      if (!validStatuses.includes(currentStatus)) {
+        currentStatus = 'available';
+      }
+      
+      // Parse hourly rate
+      const hourlyRate = typeof slot.hourly_rate === 'number' 
+        ? slot.hourly_rate 
+        : parseFloat(slot.hourly_rate || '1500');
+      
+      return {
+        slot_hour: slot.slot_hour,
+        slot_time: slotTime,
+        is_available: isAvailable,
+        current_status: currentStatus as 'available' | 'pending' | 'booked' | 'cancelled',
+        hourly_rate: hourlyRate
+      };
+    });
+
+    console.log('✅ Processed slots:', processedData.length);
+    console.log('📊 Sample slots:', processedData.slice(0, 3));
+    
+    return { data: processedData, error: null };
   } catch (err) {
-    console.error('Get available slots exception:', err);
+    console.error('💥 Get available slots exception:', err);
     return { data: null, error: 'Failed to fetch available slots' };
   }
 }
@@ -126,10 +188,13 @@ export async function checkSlotsAvailability(
   try {
     const supabase = createClient();
 
+    // Ensure date is in correct format
+    const cleanDate = date.includes('T') ? date.split('T')[0] : date;
+    
     const { data, error } = await supabase
       .from('booking_slots')
       .select('slot_hour, status')
-      .eq('slot_date', date)
+      .eq('slot_date', cleanDate)
       .in('slot_hour', slotHours)
       .in('status', ['pending', 'booked']);
 
