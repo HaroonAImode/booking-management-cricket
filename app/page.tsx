@@ -27,6 +27,8 @@ import {
   Card,
   Anchor,
   useMantineTheme,
+  Divider,
+  Tooltip,
 } from '@mantine/core';
 import {
   IconCalendarEvent,
@@ -43,6 +45,8 @@ import {
   IconUsers,
   IconTrophy,
   IconBolt,
+  IconBrandWhatsapp,
+  IconMessage,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -143,7 +147,7 @@ export default function HomePage() {
         ref={heroRef}
         style={{
           position: 'relative',
-          background: 'linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.95))',
+          background: 'linear-gradient(rgba(26, 26, 26, 0.88), rgba(26, 26, 26, 0.92))',
           minHeight: '85vh',
           display: 'flex',
           alignItems: 'center',
@@ -163,7 +167,7 @@ export default function HomePage() {
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             zIndex: -1,
-            opacity: 0.4,
+            opacity: 0.35, // Reduced from 0.4 to 0.35 for less transparency
           }}
         />
         
@@ -288,51 +292,195 @@ export default function HomePage() {
                 </Button>
               </Group>
 
-              {/* Quick Info Row */}
-              <Group
-                gap={{ base: 'md', sm: 'xl' }}
+              {/* UPDATED: Quick Contact Info Section - Now with 3 CTAs */}
+              <Box
                 mt={{ base: 'lg', sm: 'xl' }}
-                wrap="wrap"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid rgba(245, 184, 0, 0.2)',
+                }}
               >
-                <Group gap="xs">
-                  <ThemeIcon size={32} radius="md" color="yellow" variant="light">
-                    <IconPhone size={18} />
-                  </ThemeIcon>
-                  <div>
-                    <Text size="sm" c="#D1D1D1" fw={500}>
-                      Call Us
-                    </Text>
-                    <Anchor
-                      href={`tel:${phoneNumber.replace('-', '')}`}
-                      c="#F5B800"
-                      fw={700}
-                      size="sm"
+                <Text
+                  size="sm"
+                  c="#F5B800"
+                  fw={700}
+                  mb="md"
+                  style={{ letterSpacing: '0.05em' }}
+                >
+                  GET IN TOUCH
+                </Text>
+                
+                <SimpleGrid
+                  cols={{ base: 1, sm: 3 }}
+                  spacing="lg"
+                >
+                  {/* Phone Call Action */}
+                  <Group
+                    gap="sm"
+                    align="flex-start"
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={() => window.open(`tel:${phoneNumber.replace('-', '')}`, '_self')}
+                    className="contact-action"
+                  >
+                    <ThemeIcon
+                      size={48}
+                      radius="xl"
+                      style={{
+                        background: 'rgba(40, 167, 69, 0.2)',
+                        color: '#28a745',
+                        flexShrink: 0,
+                      }}
                     >
-                      {phoneNumber}
-                    </Anchor>
-                  </div>
-                </Group>
+                      <IconPhone size={22} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="sm" c="#D1D1D1" fw={500}>
+                        Call Us
+                      </Text>
+                      <Anchor
+                        component="button"
+                        c="#28a745"
+                        fw={800}
+                        size="lg"
+                        style={{ textDecoration: 'none', fontSize: '1.1rem' }}
+                      >
+                        {phoneNumber}
+                      </Anchor>
+                      <Text size="xs" c="#888" mt={2}>
+                        Tap to call directly
+                      </Text>
+                    </div>
+                  </Group>
 
-                <Group gap="xs">
-                  <ThemeIcon size={32} radius="md" color="yellow" variant="light">
-                    <IconMapPin size={18} />
-                  </ThemeIcon>
-                  <div>
-                    <Text size="sm" c="#D1D1D1" fw={500}>
-                      Location
-                    </Text>
-                    <Anchor
+                  {/* WhatsApp Action */}
+                  <Group
+                    gap="sm"
+                    align="flex-start"
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={() => window.open(whatsappLink, '_blank')}
+                    className="contact-action"
+                  >
+                    <ThemeIcon
+                      size={48}
+                      radius="xl"
+                      style={{
+                        background: 'rgba(37, 211, 102, 0.2)',
+                        color: '#25D366',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IconBrandWhatsapp size={22} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="sm" c="#D1D1D1" fw={500}>
+                        WhatsApp
+                      </Text>
+                      <Anchor
+                        component="button"
+                        c="#25D366"
+                        fw={800}
+                        size="lg"
+                        style={{ textDecoration: 'none', fontSize: '1.1rem' }}
+                      >
+                        Chat Now
+                      </Anchor>
+                      <Text size="xs" c="#888" mt={2}>
+                        Instant message support
+                      </Text>
+                    </div>
+                  </Group>
+
+                  {/* Location Action */}
+                  <Group
+                    gap="sm"
+                    align="flex-start"
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={() => window.open(locationLink, '_blank')}
+                    className="contact-action"
+                  >
+                    <ThemeIcon
+                      size={48}
+                      radius="xl"
+                      style={{
+                        background: 'rgba(245, 184, 0, 0.2)',
+                        color: '#F5B800',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IconMapPin size={22} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="sm" c="#D1D1D1" fw={500}>
+                        Location
+                      </Text>
+                      <Anchor
+                        component="button"
+                        c="#F5B800"
+                        fw={800}
+                        size="lg"
+                        style={{ textDecoration: 'none', fontSize: '1.1rem' }}
+                      >
+                        View on Maps
+                      </Anchor>
+                      <Text size="xs" c="#888" mt={2}>
+                        Get directions
+                      </Text>
+                    </div>
+                  </Group>
+                </SimpleGrid>
+
+                {/* Mobile-friendly alternative for small screens */}
+                <Box visibleFrom="sm" style={{ display: 'none' }}>
+                  <Group gap="md" mt="lg" wrap="wrap" justify="center">
+                    <Button
+                      component="a"
+                      href={`tel:${phoneNumber.replace('-', '')}`}
+                      size="sm"
+                      leftSection={<IconPhone size={16} />}
+                      variant="light"
+                      color="green"
+                      style={{ flex: 1, minWidth: '150px' }}
+                    >
+                      Call Now
+                    </Button>
+                    <Button
+                      component="a"
+                      href={whatsappLink}
+                      target="_blank"
+                      size="sm"
+                      leftSection={<IconBrandWhatsapp size={16} />}
+                      variant="light"
+                      color="teal"
+                      style={{ flex: 1, minWidth: '150px' }}
+                    >
+                      WhatsApp
+                    </Button>
+                    <Button
+                      component="a"
                       href={locationLink}
                       target="_blank"
-                      c="#F5B800"
-                      fw={700}
                       size="sm"
+                      leftSection={<IconMapPin size={16} />}
+                      variant="light"
+                      color="yellow"
+                      style={{ flex: 1, minWidth: '150px' }}
                     >
-                      View on Maps
-                    </Anchor>
-                  </div>
-                </Group>
-              </Group>
+                      Directions
+                    </Button>
+                  </Group>
+                </Box>
+              </Box>
             </Stack>
 
             {/* Right Content - Stats Cards */}
@@ -346,7 +494,7 @@ export default function HomePage() {
             >
               {[
                 { value: '24/7', label: 'Hours Available', icon: IconClock24 },
-                { value: 'Rs 1,500', label: 'Day Rate Per Hour', icon: IconCalendarEvent }, // Or any other icon you prefer
+                { value: 'Rs 1,500', label: 'Day Rate Per Hour', icon: IconCalendarEvent },
                 { value: 'Rs 2,000', label: 'Night Rate Per Hour', icon: IconStar },
                 { value: '100+', label: 'Teams Played', icon: IconUsers },
               ].map((stat, index) => (
@@ -798,7 +946,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 color="green"
-                leftSection={<IconPhone size={20} />}
+                leftSection={<IconBrandWhatsapp size={20} />}
                 style={{
                   fontWeight: 700,
                   borderWidth: '2px',
@@ -1022,11 +1170,27 @@ export default function HomePage() {
           transition: opacity 800ms ease, transform 800ms ease;
         }
         
+        /* Contact action hover effects */
+        .contact-action {
+          padding: 12px 16px;
+          border-radius: 12px;
+          transition: all 0.2s ease;
+        }
+        
+        .contact-action:hover {
+          background: rgba(255, 255, 255, 0.05);
+          transform: translateY(-2px);
+        }
+        
         /* Mobile optimizations */
         @media (max-width: 768px) {
           .scroll-animate {
             opacity: 1;
             transform: translateY(0);
+          }
+          
+          .contact-action {
+            padding: 10px 12px;
           }
         }
       `}</style>
