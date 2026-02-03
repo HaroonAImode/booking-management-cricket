@@ -210,8 +210,18 @@ async function POSTHandler(
   try {
     const supabase = await createClient();
     
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await request.json();
+      console.log('POST booking request body:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
     
     const {
       customerName,
@@ -221,28 +231,66 @@ async function POSTHandler(
       slots,
       totalHours,
       totalAmount,
-      advancePayment,
+      advancePayment = 0,
       advancePaymentMethod,
       advancePaymentProof,
       adminNotes
     } = body;
 
+    console.log('Parsed fields:', {
+      customerName,
+      customerPhone,
+      customerEmail,
+      bookingDate,
+      slotsCount: slots?.length,
+      totalHours,
+      totalAmount,
+      advancePayment,
+      advancePaymentMethod,
+      hasAdminNotes: !!adminNotes
+    });
+
     // Validate required fields
-    if (!customerName || !customerPhone || !bookingDate || !slots || !Array.isArray(slots) || slots.length === 0) {
+    if (!customerName || !customerPhone || !bookingDate) {
       return NextResponse.json(
-        { success: false, error: 'Customer name, phone, booking date, and at least one slot are required' },
+        { success: false, error: 'Customer name, phone, and booking date are required' },
         { status: 400 }
       );
     }
 
-    if (!totalHours || totalHours <= 0) {
+    if (!slots || !Array.isArray(slots) || slots.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'At least one time slot is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate totalHours - calculate from slots if not provided
+    let calculatedTotalHours = totalHours;
+    if (!calculatedTotalHours || calculatedTotalHours <= 0) {
+      // Calculate total hours from slots
+      calculatedTotalHours = slots.length;
+      console.log('Calculated total hours from slots:', calculatedTotalHours);
+    }
+
+    if (calculatedTotalHours <= 0) {
       return NextResponse.json(
         { success: false, error: 'Total hours must be greater than 0' },
         { status: 400 }
       );
     }
 
-    if (!totalAmount || totalAmount <= 0) {
+    // Validate totalAmount - calculate from slots if not provided
+    let calculatedTotalAmount = totalAmount;
+    if (!calculatedTotalAmount || calculatedTotalAmount <= 0) {
+      // Calculate total amount from slots
+      calculatedTotalAmount = slots.reduce((sum: number, slot: any) => {
+        return sum + (slot.hourlyRate || 0);
+      }, 0);
+      console.log('Calculated total amount from slots:', calculatedTotalAmount);
+    }
+
+    if (calculatedTotalAmount <= 0) {
       return NextResponse.json(
         { success: false, error: 'Total amount must be greater than 0' },
         { status: 400 }
@@ -250,7 +298,8 @@ async function POSTHandler(
     }
 
     // Validate advance payment
-    if (advancePayment && advancePayment > totalAmount) {
+    const finalAdvancePayment = advancePayment || 0;
+    if (finalAdvancePayment > calculatedTotalAmount) {
       return NextResponse.json(
         { success: false, error: 'Advance payment cannot exceed total amount' },
         { status: 400 }
@@ -259,11 +308,16 @@ async function POSTHandler(
 
     // Validate slots
     for (const slot of slots) {
-      if (!slot.slotDate || !slot.slotTime || !slot.slotHour || slot.hourlyRate === undefined) {
+      if (!slot.slotDate || !slot.slotTime || slot.slotHour === undefined) {
         return NextResponse.json(
-          { success: false, error: 'Each slot must have date, time, hour, and hourly rate' },
+          { success: false, error: 'Each slot must have date, time, and hour' },
           { status: 400 }
         );
+      }
+      
+      // Set default hourly rate if not provided
+      if (slot.hourlyRate === undefined) {
+        slot.hourlyRate = 0;
       }
     }
 
@@ -327,6 +381,7 @@ async function POSTHandler(
           .single();
 
         if (customerError || !newCustomer) {
+          console.error('Customer creation error:', customerError);
           throw new Error(customerError?.message || 'Failed to create customer');
         }
         
@@ -346,16 +401,16 @@ async function POSTHandler(
       const bookingNumber = `BK-${dateStr}-${sequenceNumber.toString().padStart(3, '0')}`;
 
       // Step 3: Create booking
-      const remainingPayment = totalAmount - (advancePayment || 0);
+      const remainingPayment = calculatedTotalAmount - finalAdvancePayment;
       
       const { data: newBooking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
           booking_number: bookingNumber,
           booking_date: bookingDate,
-          total_hours: totalHours,
-          total_amount: totalAmount,
-          advance_payment: advancePayment || 0,
+          total_hours: calculatedTotalHours,
+          total_amount: calculatedTotalAmount,
+          advance_payment: finalAdvancePayment,
           remaining_payment: remainingPayment,
           advance_payment_method: advancePaymentMethod || null,
           advance_payment_proof: advancePaymentProof || null,
@@ -370,10 +425,12 @@ async function POSTHandler(
         .single();
 
       if (bookingError || !newBooking) {
+        console.error('Booking creation error:', bookingError);
         throw new Error(bookingError?.message || 'Failed to create booking');
       }
       
       bookingId = newBooking.id;
+      console.log('Booking created with ID:', bookingId);
 
       // Step 4: Create booking slots
       const slotPromises = slots.map((slot: any) => 
@@ -390,7 +447,8 @@ async function POSTHandler(
         })
       );
 
-      await Promise.all(slotPromises);
+      const slotResults = await Promise.all(slotPromises);
+      console.log('Slots created:', slotResults.length);
 
       // Step 5: Create notification for admin
       await supabase.from('notifications').insert({
@@ -414,16 +472,20 @@ async function POSTHandler(
         .eq('id', bookingId)
         .single();
 
+      console.log('Booking creation successful:', bookingNumber);
+
       return NextResponse.json({
         success: true,
         message: 'Booking created successfully',
         booking: createdBooking,
         bookingNumber,
-      });
+      }, { status: 201 }); // 201 Created status
       
     } catch (error: any) {
+      console.error('Transaction error:', error);
       // Rollback: If booking was partially created, try to delete it
       if (bookingId) {
+        console.log('Attempting rollback for booking ID:', bookingId);
         await supabase.from('booking_slots').delete().eq('booking_id', bookingId);
         await supabase.from('bookings').delete().eq('id', bookingId);
       }
@@ -433,7 +495,11 @@ async function POSTHandler(
   } catch (error: any) {
     console.error('Create booking error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create booking' },
+      { 
+        success: false, 
+        error: error.message || 'Failed to create booking',
+        details: error.details || null
+      },
       { status: 500 }
     );
   }
@@ -448,6 +514,8 @@ async function DELETEHandler(
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const bookingId = searchParams.get('id');
+    
+    console.log('DELETE request for booking ID:', bookingId);
     
     if (!bookingId) {
       return NextResponse.json(
@@ -467,28 +535,47 @@ async function DELETEHandler(
     // Check if booking exists
     const { data: booking, error: fetchError } = await supabase
       .from('bookings')
-      .select('booking_number, customer_id')
+      .select('booking_number, customer_id, status')
       .eq('id', bookingId)
       .single();
 
     if (fetchError || !booking) {
+      console.error('Booking not found:', fetchError);
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
     }
 
+    console.log('Found booking to delete:', booking.booking_number);
+
+    // Prevent deletion of completed bookings (optional safety check)
+    if (booking.status === 'completed') {
+      return NextResponse.json(
+        { success: false, error: 'Cannot delete completed bookings' },
+        { status: 400 }
+      );
+    }
+
     // Delete extra charges first (from extra_charges table)
-    await supabase
-      .from('extra_charges')  // CHANGED: using correct table name
+    const { error: extraChargesError } = await supabase
+      .from('extra_charges')
       .delete()
       .eq('booking_id', bookingId);
 
+    if (extraChargesError) {
+      console.error('Error deleting extra charges:', extraChargesError);
+    }
+
     // Delete slots (from booking_slots table)
-    await supabase
-      .from('booking_slots')  // CHANGED: using correct table name
+    const { error: slotsError } = await supabase
+      .from('booking_slots')
       .delete()
       .eq('booking_id', bookingId);
+
+    if (slotsError) {
+      console.error('Error deleting slots:', slotsError);
+    }
 
     // Delete booking
     const { error: deleteError } = await supabase
@@ -504,6 +591,8 @@ async function DELETEHandler(
       );
     }
 
+    console.log('Booking deleted successfully:', booking.booking_number);
+
     // Optional: Delete customer if they have no other bookings
     const { data: otherBookings } = await supabase
       .from('bookings')
@@ -515,6 +604,7 @@ async function DELETEHandler(
         .from('customers')
         .delete()
         .eq('id', booking.customer_id);
+      console.log('Customer also deleted (no other bookings)');
     }
 
     return NextResponse.json({
@@ -525,7 +615,10 @@ async function DELETEHandler(
   } catch (error: any) {
     console.error('Delete error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { 
+        success: false, 
+        error: error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }

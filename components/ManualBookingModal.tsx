@@ -52,6 +52,7 @@ export default function ManualBookingModal({
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
+    customerEmail: '', // ADDED: Email field
     bookingDate: new Date(),
     advancePayment: 500,
     advancePaymentMethod: 'cash',
@@ -190,7 +191,7 @@ export default function ManualBookingModal({
       setLoading(true);
 
       // Handle payment proof upload if required
-      let paymentProofUrlToSend = 'manual-booking-no-proof';
+      let paymentProofUrlToSend = null;
       if (formData.advancePaymentMethod !== 'cash' && paymentProofFile) {
         const fakeBookingId = crypto.randomUUID(); // Use a temp ID for path
         const uploadResult = await uploadPaymentProof(
@@ -207,29 +208,59 @@ export default function ManualBookingModal({
           setLoading(false);
           return;
         }
-        paymentProofUrlToSend = uploadResult.data || 'manual-booking-no-proof';
+        paymentProofUrlToSend = uploadResult.data || null;
       }
+
+      // Prepare slots data in correct format for API
+      const slotsData = selectedSlots.map(hour => {
+        const slot = availableSlots?.find(s => s.slot_hour === hour);
+        const slotTime = `${String(hour).padStart(2, '0')}:00:00`;
+        
+        return {
+          slotDate: formData.bookingDate.toISOString().split('T')[0],
+          slotTime: slotTime,
+          slotHour: hour,
+          hourlyRate: slot?.hourly_rate || 0,
+          isNightRate: slot?.is_night_rate || false
+        };
+      });
+
+      // Calculate total hours
+      const totalHours = selectedSlots.length;
+
+      // Calculate total amount
+      const totalAmount = calculateTotal();
+
+      console.log('Sending data to API:', {
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerEmail: formData.customerEmail || null,
+        bookingDate: formData.bookingDate.toISOString().split('T')[0],
+        slots: slotsData,
+        totalHours,
+        totalAmount,
+        advancePayment: formData.advancePayment,
+        advancePaymentMethod: formData.advancePaymentMethod,
+        advancePaymentProof: paymentProofUrlToSend,
+        adminNotes: formData.notes || null,
+        autoApprove: formData.autoApprove,
+      });
 
       const response = await fetch('/api/admin/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: formData.customerName,
-          customerPhone: formData.customerPhone || null,
+          customerPhone: formData.customerPhone,
+          customerEmail: formData.customerEmail || null, // ADDED
           bookingDate: formData.bookingDate.toISOString().split('T')[0],
-          slots: selectedSlots.map(hour => {
-            const slot = availableSlots?.find(s => s.slot_hour === hour);
-            return {
-              hour,
-              isNightRate: slot?.is_night_rate || false,
-              rate: slot?.hourly_rate || 0,
-            };
-          }),
-          totalAmount: calculateTotal(),
+          slots: slotsData, // FIXED: Correct slot format
+          totalHours: totalHours, // ADDED
+          totalAmount: totalAmount,
           advancePayment: formData.advancePayment,
           advancePaymentMethod: formData.advancePaymentMethod,
           advancePaymentProof: paymentProofUrlToSend,
-          notes: formData.notes || null,
+          adminNotes: formData.notes || null,
           autoApprove: formData.autoApprove,
         }),
       });
@@ -268,6 +299,7 @@ export default function ManualBookingModal({
     setFormData({
       customerName: '',
       customerPhone: '',
+      customerEmail: '',
       bookingDate: new Date(),
       advancePayment: 500,
       advancePaymentMethod: 'cash',
@@ -287,7 +319,6 @@ export default function ManualBookingModal({
       title="Create Manual Booking"
       size="xl"
       zIndex={300}
-      // Remove dynamic fullScreen and styles for Mantine Modal (not supported)
     >
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
@@ -309,11 +340,23 @@ export default function ManualBookingModal({
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
-                  label="Phone Number (Optional)"
-                  placeholder="03001234567 (optional)"
+                  label="Phone Number"
+                  placeholder="03001234567"
+                  required
                   value={formData.customerPhone}
                   onChange={(e) =>
                     setFormData({ ...formData, customerPhone: e.target.value })
+                  }
+                  size="sm"
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12 }}>
+                <TextInput
+                  label="Email (Optional)"
+                  placeholder="customer@example.com"
+                  value={formData.customerEmail}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customerEmail: e.target.value })
                   }
                   size="sm"
                 />
@@ -414,6 +457,10 @@ export default function ManualBookingModal({
             )}
 
             <Stack gap="xs" mt="sm">
+              <Group justify="space-between">
+                <Text size="sm">Selected Hours:</Text>
+                <Text size="sm" fw={600}>{selectedSlots.length} hours</Text>
+              </Group>
               <Group justify="space-between">
                 <Text size="sm">Total Amount:</Text>
                 <Text size="sm" fw={600}>Rs {totalAmount.toLocaleString()}</Text>
