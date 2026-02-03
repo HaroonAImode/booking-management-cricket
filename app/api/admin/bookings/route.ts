@@ -2,6 +2,7 @@
  * Admin Bookings API Route
  * 
  * GET: Fetch bookings with filters for admin dashboard
+ * POST: Create a new booking (admin manual booking)
  * DELETE: Delete booking by ID (from query param)
  */
 
@@ -201,6 +202,243 @@ async function GETHandler(
   }
 }
 
+// POST handler for creating a new booking (admin manual booking)
+async function POSTHandler(
+  request: NextRequest,
+  { adminProfile }: { adminProfile: any }
+) {
+  try {
+    const supabase = await createClient();
+    
+    // Parse request body
+    const body = await request.json();
+    
+    const {
+      customerName,
+      customerPhone,
+      customerEmail,
+      bookingDate,
+      slots,
+      totalHours,
+      totalAmount,
+      advancePayment,
+      advancePaymentMethod,
+      advancePaymentProof,
+      adminNotes
+    } = body;
+
+    // Validate required fields
+    if (!customerName || !customerPhone || !bookingDate || !slots || !Array.isArray(slots) || slots.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Customer name, phone, booking date, and at least one slot are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!totalHours || totalHours <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Total hours must be greater than 0' },
+        { status: 400 }
+      );
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Total amount must be greater than 0' },
+        { status: 400 }
+      );
+    }
+
+    // Validate advance payment
+    if (advancePayment && advancePayment > totalAmount) {
+      return NextResponse.json(
+        { success: false, error: 'Advance payment cannot exceed total amount' },
+        { status: 400 }
+      );
+    }
+
+    // Validate slots
+    for (const slot of slots) {
+      if (!slot.slotDate || !slot.slotTime || !slot.slotHour || slot.hourlyRate === undefined) {
+        return NextResponse.json(
+          { success: false, error: 'Each slot must have date, time, hour, and hourly rate' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if slots are available
+    for (const slot of slots) {
+      const { data: existingSlot, error: slotCheckError } = await supabase
+        .from('booking_slots')
+        .select('id')
+        .eq('slot_date', slot.slotDate)
+        .eq('slot_time', slot.slotTime)
+        .eq('slot_hour', slot.slotHour)
+        .eq('status', 'booked')
+        .single();
+
+      if (existingSlot && !slotCheckError) {
+        return NextResponse.json(
+          { success: false, error: `Slot ${slot.slotTime} on ${slot.slotDate} is already booked` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Start transaction
+    let bookingId: string | null = null;
+    
+    try {
+      // Step 1: Create or find customer
+      let customerId: string;
+      
+      // Check if customer already exists by phone
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone', customerPhone)
+        .single();
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+        
+        // Update customer details if provided
+        await supabase
+          .from('customers')
+          .update({
+            name: customerName,
+            email: customerEmail || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', customerId);
+      } else {
+        // Create new customer
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            name: customerName,
+            phone: customerPhone,
+            email: customerEmail || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+
+        if (customerError || !newCustomer) {
+          throw new Error(customerError?.message || 'Failed to create customer');
+        }
+        
+        customerId = newCustomer.id;
+      }
+
+      // Step 2: Generate booking number
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+      const { data: todayBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .gte('created_at', `${today.toISOString().split('T')[0]}T00:00:00`)
+        .lt('created_at', `${today.toISOString().split('T')[0]}T23:59:59`);
+
+      const sequenceNumber = (todayBookings?.length || 0) + 1;
+      const bookingNumber = `BK-${dateStr}-${sequenceNumber.toString().padStart(3, '0')}`;
+
+      // Step 3: Create booking
+      const remainingPayment = totalAmount - (advancePayment || 0);
+      
+      const { data: newBooking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          booking_number: bookingNumber,
+          booking_date: bookingDate,
+          total_hours: totalHours,
+          total_amount: totalAmount,
+          advance_payment: advancePayment || 0,
+          remaining_payment: remainingPayment,
+          advance_payment_method: advancePaymentMethod || null,
+          advance_payment_proof: advancePaymentProof || null,
+          status: 'approved', // Admin bookings are auto-approved
+          customer_id: customerId,
+          created_by: adminProfile.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          admin_notes: adminNotes || null
+        })
+        .select('id')
+        .single();
+
+      if (bookingError || !newBooking) {
+        throw new Error(bookingError?.message || 'Failed to create booking');
+      }
+      
+      bookingId = newBooking.id;
+
+      // Step 4: Create booking slots
+      const slotPromises = slots.map((slot: any) => 
+        supabase.from('booking_slots').insert({
+          booking_id: bookingId,
+          slot_date: slot.slotDate,
+          slot_time: slot.slotTime,
+          slot_hour: slot.slotHour,
+          is_night_rate: slot.isNightRate || false,
+          hourly_rate: slot.hourlyRate || 0,
+          status: 'booked',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      );
+
+      await Promise.all(slotPromises);
+
+      // Step 5: Create notification for admin
+      await supabase.from('notifications').insert({
+        customer_id: customerId,
+        notification_type: 'booking_created',
+        title: 'New Booking Created',
+        message: `Admin created booking ${bookingNumber} for ${customerName}`,
+        booking_id: bookingId,
+        priority: 'normal',
+        created_at: new Date().toISOString()
+      });
+
+      // Step 6: Fetch created booking with details
+      const { data: createdBooking } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          customer:customers(*),
+          slots:booking_slots(*)
+        `)
+        .eq('id', bookingId)
+        .single();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Booking created successfully',
+        booking: createdBooking,
+        bookingNumber,
+      });
+      
+    } catch (error: any) {
+      // Rollback: If booking was partially created, try to delete it
+      if (bookingId) {
+        await supabase.from('booking_slots').delete().eq('booking_id', bookingId);
+        await supabase.from('bookings').delete().eq('id', bookingId);
+      }
+      
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('Create booking error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to create booking' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE handler for deleting bookings by ID
 async function DELETEHandler(
   request: NextRequest,
@@ -293,6 +531,7 @@ async function DELETEHandler(
   }
 }
 
-// Export both GET and DELETE methods
+// Export GET, POST, and DELETE methods
 export const GET = withAdminAuth(GETHandler);
+export const POST = withAdminAuth(POSTHandler);
 export const DELETE = withAdminAuth(DELETEHandler);
