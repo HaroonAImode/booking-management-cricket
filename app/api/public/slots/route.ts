@@ -1,6 +1,6 @@
 /**
  * PUBLIC API for getting available slots
- * No authenticationn required
+ * No authentication required
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,7 +14,25 @@ export async function GET(request: NextRequest) {
     
     if (!date) {
       return NextResponse.json(
-        { error: 'Date parameter is required' },
+        { success: false, error: 'Date parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid date format. Use YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
+    // Parse the date to ensure it's valid
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid date' },
         { status: 400 }
       );
     }
@@ -29,52 +47,61 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Public slots RPC error:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch available slots' },
+        { success: false, error: 'Failed to fetch available slots', details: error.message },
         { status: 500 }
       );
     }
 
-    console.log('📦 Raw RPC data received:', data?.length || 0, 'slots');
+    console.log('📦 Raw RPC data received:', Array.isArray(data) ? data.length : 0, 'slots');
     
-    // Process the data for public consumption
-    const processedSlots = (data || []).map((slot: any) => {
-      // CRITICAL: Convert PostgreSQL boolean to JavaScript boolean
+    // Ensure data is an array
+    const slotData = Array.isArray(data) ? data : [];
+    
+    // Process slots data
+    const processedSlots = slotData.map((slot: any) => {
+      // Convert PostgreSQL boolean to JavaScript boolean
       const isAvailable = typeof slot.is_available === 'boolean' 
         ? slot.is_available 
         : slot.is_available === true || slot.is_available === 'true' || slot.is_available === 't' || slot.is_available === '1';
       
       // Get status from database
-      let status = slot.current_status || 'available';
+      let status = (slot.current_status || 'available').toString().toLowerCase();
       if (!isAvailable && status === 'available') {
-        status = 'booked'; // If not available but marked as available in DB, it's booked
+        status = 'booked';
       }
       
+      // Calculate hourly rate
+      const hour = parseInt(slot.slot_hour) || 0;
+      const isNightRate = hour >= 17 || hour < 7;
+      const hourlyRate = isNightRate ? 2000 : 1500;
+      
       return {
-        slot_hour: slot.slot_hour,
-        slot_time: slot.slot_time || `${slot.slot_hour.toString().padStart(2, '0')}:00`,
+        slot_hour: hour,
+        slot_time: slot.slot_time || `${hour.toString().padStart(2, '0')}:00`,
         is_available: isAvailable,
-        current_status: status.toLowerCase(),
-        hourly_rate: typeof slot.hourly_rate === 'number' 
-          ? slot.hourly_rate 
-          : parseFloat(slot.hourly_rate || '1500')
+        current_status: status,
+        hourly_rate: hourlyRate,
+        is_night_rate: isNightRate
       };
     });
 
     console.log('✅ Processed slots count:', processedSlots.length);
-    if (processedSlots.length > 0) {
-      console.log('Sample slots 17-23:', processedSlots.slice(17, 23));
-    }
 
     return NextResponse.json({
       success: true,
       date,
       slots: processedSlots,
-      count: processedSlots.length
+      count: processedSlots.length,
+      timestamp: new Date().toISOString()
     });
   } catch (error: any) {
     console.error('Public slots API exception:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error.message 
+      },
       { status: 500 }
     );
   }
