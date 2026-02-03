@@ -31,43 +31,106 @@ export default function CalendarFirstBooking() {
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
   const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
 
-  useEffect(() => {
-    setSlotsLoading(true);
-    setSlotsError(null);
-    const dateStr = quickViewDate.toISOString().split('T')[0];
-    fetch(`/api/admin/bookings/check-slots?date=${dateStr}`)
-      .then(res => res.json())
-      .then(data => {
-        const availableHours = data.availableSlots || [];
-        const bookedHours = data.bookedSlots || [];
-        const now = new Date();
-        const isToday = quickViewDate.toDateString() === now.toDateString();
-        
-        // FIX: Only calculate current hour for today, not for future dates
-        const currentHour = isToday ? now.getHours() : -1;
-        
-        const slots = Array.from({ length: 24 }, (_, hour) => {
-          // FIX: Only mark as past if it's today AND hour has passed
-          const isPast = isToday && hour <= currentHour;
-          const isAvailable = availableHours.includes(hour) && !isPast;
-          const isBooked = bookedHours.includes(hour);
-          let status = 'available';
-          if (isBooked) status = 'booked';
-          else if (!isAvailable) status = isPast ? 'past' : 'pending';
-          return {
-            slot_hour: hour,
-            is_available: isAvailable,
-            current_status: status,
-          };
-        });
-        setTodaySlots(slots);
-        setSlotsLoading(false);
-      })
-      .catch(err => {
-        setSlotsError('Failed to load slots');
-        setSlotsLoading(false);
-      });
-  }, [quickViewDate]);
+useEffect(() => {
+  setSlotsLoading(true);
+  setSlotsError(null);
+  const dateStr = quickViewDate.toISOString().split('T')[0];
+  
+  console.log('🔍 Fetching slots for date:', dateStr);
+  
+  // Use a PUBLIC API endpoint instead of admin API
+  fetch(`/api/public/slots?date=${dateStr}`)
+    .then(async res => {
+      console.log('📡 API Response status:', res.status);
+      
+      if (!res.ok) {
+        // Try direct RPC as fallback
+        console.log('🔄 Trying direct RPC fallback...');
+        return fallbackDirectRPC(dateStr);
+      }
+      
+      const data = await res.json();
+      console.log('✅ Public API response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'API error');
+      }
+      
+      return processSlotData(data.slots || [], quickViewDate);
+    })
+    .then(processedSlots => {
+      console.log('🎯 Processed slots:', processedSlots);
+      setTodaySlots(processedSlots);
+      setSlotsLoading(false);
+    })
+    .catch(err => {
+      console.error('❌ Slot fetch error:', err);
+      setSlotsError('Failed to load slots');
+      setSlotsLoading(false);
+      
+      // Show empty slots on error
+      setTodaySlots([]);
+    });
+}, [quickViewDate]);
+
+// Fallback function for direct RPC call
+async function fallbackDirectRPC(dateStr: string) {
+  try {
+    // Import supabase client
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+    
+    const { data, error } = await supabase.rpc('get_available_slots', {
+      p_date: dateStr
+    });
+    
+    if (error) throw error;
+    
+    return processSlotData(data || [], new Date(dateStr));
+  } catch (err) {
+    console.error('Fallback RPC failed:', err);
+    throw err;
+  }
+}
+
+// Process slot data from API
+function processSlotData(apiSlots: any[], date: Date): any[] {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const currentHour = isToday ? now.getHours() : -1;
+  
+  // Create map of all 24 hours
+  const slotsMap = new Map();
+  
+  for (let hour = 0; hour < 24; hour++) {
+    const isPast = isToday && hour < currentHour;
+    slotsMap.set(hour, {
+      slot_hour: hour,
+      is_available: false, // Default to not available
+      current_status: isPast ? 'past' : 'pending', // Default status
+    });
+  }
+  
+  // Update with actual API data
+  apiSlots.forEach(slot => {
+    const hour = slot.slot_hour;
+    const isPast = isToday && hour < currentHour;
+    const isAvailable = slot.is_available && !isPast;
+    
+    let status = 'available';
+    if (!isAvailable) {
+      status = isPast ? 'past' : (slot.current_status || 'booked');
+    }
+    
+    slotsMap.set(hour, {
+      slot_hour: hour,
+      is_available: isAvailable,
+      current_status: status,
+    });
+  });
+  
+  return Array.from(slotsMap.values());
+}
 
   const handleSlotToggle = (hour: number) => {
     setSelectedSlots((prev) => {

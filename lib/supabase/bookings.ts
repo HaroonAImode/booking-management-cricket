@@ -678,3 +678,16 @@ export const getBookingCustomerName = (booking: any): string => {
 export const getBookingCustomerPhone = (booking: any): string => {
   return booking?.customer?.phone || '';
 };
+
+
+console.log('✅ Processed slots FINAL check:', {
+  total: processedData.length,
+  bookedSlots: processedData.filter(s => s.current_status === 'booked').map(s => s.slot_hour),
+  pendingSlots: processedData.filter(s => s.current_status === 'pending').map(s => s.slot_hour),
+  availableSlots: processedData.filter(s => s.current_status === 'available').map(s => s.slot_hour),
+  sample: processedData.slice(17, 23).map(s => ({
+    hour: s.slot_hour,
+    status: s.current_status,
+    available: s.is_available
+  }))
+});

@@ -38,11 +38,12 @@ export default function SlotSelector({
 }: SlotSelectorProps) {
   const [nightStart, setNightStart] = useState(17);
   const [nightEnd, setNightEnd] = useState(7);
+  const [processedSlots, setProcessedSlots] = useState<SlotInfo[]>([]);
 
   // DEBUG: Log what we receive
   useEffect(() => {
-    console.log('🔍 SlotSelector DEBUG:', {
-      selectedDate,
+    console.log('🔍 SlotSelector DEBUG - Props received:', {
+      selectedDate: selectedDate?.toISOString(),
       availableSlotsCount: availableSlots?.length,
       loading,
       error,
@@ -50,12 +51,14 @@ export default function SlotSelector({
     });
     
     if (availableSlots && availableSlots.length > 0) {
+      console.log('📊 ALL SLOTS from API:', availableSlots);
+      
       // Check how many are available vs pending vs booked
       const availableCount = availableSlots.filter(s => s.is_available).length;
       const pendingCount = availableSlots.filter(s => s.current_status === 'pending').length;
       const bookedCount = availableSlots.filter(s => s.current_status === 'booked').length;
       
-      console.log('📊 Slot Status Summary:', {
+      console.log('📊 Slot Status Summary from API:', {
         total: availableSlots.length,
         available: availableCount,
         pending: pendingCount,
@@ -70,25 +73,35 @@ export default function SlotSelector({
                        selectedDate.getFullYear() === today.getFullYear();
         
         if (isToday) {
-          console.log('📅 Today\'s slots (17-22):', 
-            availableSlots
-              .filter(s => s.slot_hour >= 17 && s.slot_hour <= 22)
-              .map(s => `${s.slot_hour}: ${s.current_status} (available: ${s.is_available})`)
-          );
+          const todaySlots = availableSlots
+            .filter(s => s.slot_hour >= 17 && s.slot_hour <= 22)
+            .map(s => ({
+              hour: s.slot_hour,
+              status: s.current_status,
+              is_available: s.is_available,
+              hourly_rate: s.hourly_rate
+            }));
+          console.log('📅 Today\'s slots (17-22):', todaySlots);
         }
       }
+    }
+    
+    // Process slots for display
+    if (availableSlots && availableSlots.length > 0) {
+      const slots = generateDisplaySlots(availableSlots);
+      setProcessedSlots(slots);
+      console.log('✅ Processed display slots:', slots.length);
+    } else {
+      setProcessedSlots([]);
     }
   }, [availableSlots, loading, error, selectedDate]);
 
   // Ensure selectedSlots is always an array
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
 
-  // Generate all 24 slots (0-23)
-  const generateAllSlots = (): SlotInfo[] => {
-    const allSlots: SlotInfo[] = [];
+  // Generate display slots from API data
+  const generateDisplaySlots = (apiSlots: SlotInfo[]): SlotInfo[] => {
     const now = new Date();
-    
-    // Ensure selectedDate is a valid Date object
     const dateObj = selectedDate instanceof Date ? selectedDate : selectedDate ? new Date(selectedDate) : null;
     
     const isToday = dateObj && 
@@ -97,46 +110,43 @@ export default function SlotSelector({
       dateObj.getFullYear() === now.getFullYear();
     const currentHour = now.getHours();
 
+    // Create a map of all 24 hours with default values
+    const allSlotsMap = new Map<number, SlotInfo>();
+    
+    // Initialize all 24 hours with default values
     for (let hour = 0; hour < 24; hour++) {
-      // Find if this slot exists in available slots data
-      const existingSlot = availableSlots?.find(s => s.slot_hour === hour);
-      
-      // For today, check if this hour has passed
       const isPast = isToday && hour < currentHour;
+      const nightRate = isNightRate(hour, nightStart, nightEnd);
       
-      if (existingSlot) {
-        // Use existing slot data but override availability if it's in the past
-        allSlots.push({
-          ...existingSlot,
-          is_available: isPast ? false : existingSlot.is_available,
-          is_past: isPast || undefined,
-        });
-      } else {
-        // Create a slot entry for hours not returned by the API
-        const nightRate = isNightRate(hour, nightStart, nightEnd);
-        allSlots.push({
-          slot_hour: hour,
-          slot_time: `${hour}:00`, // Add required slot_time field
-          time_display: formatTimeDisplay(hour),
-          is_available: !isPast, // Available unless it's in the past
-          is_night_rate: nightRate,
-          hourly_rate: nightRate ? 2000 : 1500,
-          current_status: 'available',
-          is_past: isPast,
-        } as SlotInfo);
-      }
+      allSlotsMap.set(hour, {
+        slot_hour: hour,
+        slot_time: `${hour.toString().padStart(2, '0')}:00`,
+        is_available: !isPast, // Default to available unless past
+        current_status: 'available', // Default status
+        hourly_rate: nightRate ? 2000 : 1500,
+        is_past: isPast,
+      } as any);
     }
     
-    return allSlots;
+    // Override with actual API data
+    apiSlots.forEach(apiSlot => {
+      const hour = apiSlot.slot_hour;
+      const isPast = isToday && hour < currentHour;
+      
+      // Use the API data exactly as it comes
+      allSlotsMap.set(hour, {
+        ...apiSlot,
+        is_available: isPast ? false : apiSlot.is_available,
+        is_past: isPast,
+      });
+    });
+    
+    return Array.from(allSlotsMap.values()).sort((a, b) => a.slot_hour - b.slot_hour);
   };
-
-  const allSlots = generateAllSlots();
 
   // Update night times if available from slots data
   useEffect(() => {
     if (availableSlots && availableSlots.length > 0) {
-      // Night times are embedded in the slot data logic
-      // We'll use 17:00 - 07:00 as default
       setNightStart(17);
       setNightEnd(7);
     }
@@ -166,7 +176,7 @@ export default function SlotSelector({
     );
   }
 
-  if (!availableSlots || availableSlots.length === 0) {
+  if (!availableSlots || availableSlots.length === 0 || processedSlots.length === 0) {
     return (
       <Paper p="md" withBorder>
         <Alert icon={<IconInfoCircle size="1rem" />} color="yellow">
@@ -206,6 +216,8 @@ export default function SlotSelector({
   const isNightSlot = (hour: number) => {
     return isNightRate(hour, nightStart, nightEnd);
   };
+
+  console.log('🎯 Final processed slots to display:', processedSlots.slice(17, 23));
 
   return (
     <Stack gap={{ base: "sm", sm: "md" }} className="animate-fade-in">
@@ -267,7 +279,7 @@ export default function SlotSelector({
         spacing={{ base: 'xs', sm: 'sm' }}
         verticalSpacing={{ base: 'xs', sm: 'sm' }}
       >
-        {allSlots.map((slot) => {
+        {processedSlots.map((slot) => {
           const isPastSlot = (slot as any).is_past;
           
           return (
@@ -280,7 +292,10 @@ export default function SlotSelector({
                   PKR {slot.hourly_rate.toLocaleString()}/hr
                 </Text>
                 <Text size="xs" fw={500}>
-                  {getSlotLabel(slot)}
+                  Status: {slot.current_status}
+                </Text>
+                <Text size="xs" fw={500}>
+                  Available: {slot.is_available ? 'Yes' : 'No'}
                 </Text>
               </Stack>
             }
@@ -391,7 +406,7 @@ export default function SlotSelector({
               {safeSelectedSlots
                 .sort((a, b) => a - b)
                 .map((hour) => {
-                  const slot = allSlots.find((s) => s.slot_hour === hour);
+                  const slot = processedSlots.find((s) => s.slot_hour === hour);
                   return (
                     <Badge
                       key={hour}
