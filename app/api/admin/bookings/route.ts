@@ -166,7 +166,7 @@ async function GETHandler(
         discount_amount: booking.discount_amount,
         status: booking.status,
         created_at: booking.created_at,
-        customer: booking.customer || { name: '', phone: '' }, // Removed email
+        customer: booking.customer || { name: '', phone: '' },
         slots: bookingSlots,
         extra_charges: bookingExtraCharges,
         total_extra_charges: totalExtraCharges,
@@ -228,7 +228,6 @@ async function POSTHandler(
     const {
       customerName,
       customerPhone,
-      customerEmail, // We'll accept it but not use it
       bookingDate,
       slots,
       totalHours,
@@ -443,7 +442,7 @@ async function POSTHandler(
       if (existingCustomer) {
         customerId = existingCustomer.id;
         
-        // Update customer name if provided (no email field)
+        // Update customer name if provided
         await supabase
           .from('customers')
           .update({
@@ -452,7 +451,7 @@ async function POSTHandler(
           })
           .eq('id', customerId);
       } else {
-        // Create new customer (without email field)
+        // Create new customer
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
@@ -484,27 +483,34 @@ async function POSTHandler(
       const sequenceNumber = (todayBookings?.length || 0) + 1;
       const bookingNumber = `BK-${dateStr}-${sequenceNumber.toString().padStart(3, '0')}`;
 
-      // Step 3: Create booking
+      // Step 3: Create booking (without created_by column)
       const remainingPayment = calculatedTotalAmount - finalAdvancePayment;
       
+      const bookingData: any = {
+        booking_number: bookingNumber,
+        booking_date: bookingDate,
+        total_hours: calculatedTotalHours,
+        total_amount: calculatedTotalAmount,
+        advance_payment: finalAdvancePayment,
+        remaining_payment: remainingPayment,
+        advance_payment_method: advancePaymentMethod || null,
+        advance_payment_proof: advancePaymentProof || null,
+        status: autoApprove ? 'approved' : 'pending',
+        customer_id: customerId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Only add admin_notes if provided
+      if (adminNotes) {
+        bookingData.admin_notes = adminNotes;
+      }
+
+      console.log('Creating booking with data:', bookingData);
+
       const { data: newBooking, error: bookingError } = await supabase
         .from('bookings')
-        .insert({
-          booking_number: bookingNumber,
-          booking_date: bookingDate,
-          total_hours: calculatedTotalHours,
-          total_amount: calculatedTotalAmount,
-          advance_payment: finalAdvancePayment,
-          remaining_payment: remainingPayment,
-          advance_payment_method: advancePaymentMethod || null,
-          advance_payment_proof: advancePaymentProof || null,
-          status: autoApprove ? 'approved' : 'pending',
-          customer_id: customerId,
-          created_by: adminProfile.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          admin_notes: adminNotes || null
-        })
+        .insert(bookingData)
         .select('id')
         .single();
 
@@ -551,16 +557,26 @@ async function POSTHandler(
       const slotResults = await Promise.all(slotPromises);
       console.log('Slots created:', slotResults.length);
 
-      // Step 5: Create notification for admin
-      await supabase.from('notifications').insert({
-        customer_id: customerId,
-        notification_type: 'booking_created',
-        title: 'New Booking Created',
-        message: `Admin created booking ${bookingNumber} for ${customerName}`,
-        booking_id: bookingId,
-        priority: 'normal',
-        created_at: new Date().toISOString()
-      });
+      // Step 5: Create notification for admin (only if notifications table exists)
+      try {
+        const { error: notificationError } = await supabase.from('notifications').insert({
+          customer_id: customerId,
+          notification_type: 'booking_created',
+          title: 'New Booking Created',
+          message: `Admin created booking ${bookingNumber} for ${customerName}`,
+          booking_id: bookingId,
+          priority: 'normal',
+          created_at: new Date().toISOString()
+        });
+
+        if (notificationError) {
+          console.warn('Notification creation failed (table might not exist):', notificationError);
+        } else {
+          console.log('Notification created');
+        }
+      } catch (notificationErr) {
+        console.warn('Notification creation skipped:', notificationErr);
+      }
 
       // Step 6: Fetch created booking with details
       const { data: createdBooking } = await supabase

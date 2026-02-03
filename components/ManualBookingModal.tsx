@@ -37,12 +37,6 @@ interface ManualBookingModalProps {
   onSuccess: () => void;
 }
 
-interface Slot {
-  hour: number;
-  isNightRate: boolean;
-  rate: number;
-}
-
 export default function ManualBookingModal({
   opened,
   onClose,
@@ -215,7 +209,6 @@ export default function ManualBookingModal({
         const slotTime = `${String(hour).padStart(2, '0')}:00:00`;
         
         // Send BOTH formats for maximum compatibility
-        // New format (what API expects)
         const newFormat = {
           slotDate: bookingDateStr,
           slotTime: slotTime,
@@ -224,10 +217,8 @@ export default function ManualBookingModal({
           is_night_rate: isNightHour(hour)
         };
         
-        // Also include old format as backup
         return {
           ...newFormat,
-          // Old format fields (for backward compatibility)
           hour: hour,
           rate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
           isNightRate: isNightHour(hour)
