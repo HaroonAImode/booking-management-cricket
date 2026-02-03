@@ -17,8 +17,6 @@ import {
   Group,
   Badge,
   Alert,
-  Table,
-  LoadingOverlay,
   Divider,
 } from '@mantine/core';
 import {
@@ -29,7 +27,6 @@ import {
   IconUser,
   IconPhone,
   IconMail,
-  IconCurrencyRupee,
   IconCheck,
   IconClock as IconPending,
   IconX,
@@ -37,8 +34,6 @@ import {
   IconFileInvoice,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import jsPDF from 'jspdf';
-import { formatSlotRanges } from '@/lib/supabase/bookings';
 
 interface Booking {
   id: string;
@@ -59,6 +54,52 @@ interface Booking {
     slot_hour: number;
     is_night_rate: boolean;
   }>;
+}
+
+// Local function to format slot ranges (replaces problematic import)
+function formatSlotRanges(hours: number[]): string {
+  if (!hours || hours.length === 0) return 'No slots selected';
+  
+  const sortedHours = [...hours].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sortedHours[0];
+  let end = sortedHours[0];
+  
+  for (let i = 1; i < sortedHours.length; i++) {
+    if (sortedHours[i] === end + 1) {
+      end = sortedHours[i];
+    } else {
+      ranges.push(start === end ? formatTime(start) : `${formatTime(start)} - ${formatTime(end + 1)}`);
+      start = sortedHours[i];
+      end = sortedHours[i];
+    }
+  }
+  
+  ranges.push(start === end ? formatTime(start) : `${formatTime(start)} - ${formatTime(end + 1)}`);
+  return ranges.join(', ');
+}
+
+function formatTime(hour: number): string {
+  if (hour === 0) return '12 AM';
+  if (hour === 12) return '12 PM';
+  if (hour > 12) return `${hour - 12} PM`;
+  return `${hour} AM`;
+}
+
+// Helper function for PDF generation status colors
+function getPdfStatusColor(status: string): { r: number; g: number; b: number } {
+  switch (status) {
+    case 'approved':
+      return { r: 34, g: 139, b: 34 };
+    case 'completed':
+      return { r: 46, g: 125, b: 50 };
+    case 'pending':
+      return { r: 255, g: 165, b: 0 };
+    case 'cancelled':
+      return { r: 244, g: 67, b: 54 };
+    default:
+      return { r: 158, g: 158, b: 158 };
+  }
 }
 
 export default function CheckBookingPage() {
@@ -143,7 +184,7 @@ export default function CheckBookingPage() {
       const contentDisposition = response.headers.get('Content-Disposition');
       const filename = contentDisposition
         ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-        : 'Invoice.pdf';
+        : 'Invoice.html';
       
       a.download = filename;
       document.body.appendChild(a);
@@ -172,153 +213,308 @@ export default function CheckBookingPage() {
     }
   };
 
-  const downloadBookingSlip = (booking: Booking) => {
-    const doc = new jsPDF();
+  const downloadBookingSlip = async (booking: Booking) => {
+    try {
+      notifications.show({
+        title: 'Generating Booking Slip',
+        message: 'Please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false,
+        id: 'slip-download',
+      });
+
+      // Generate simple HTML slip instead of using jsPDF
+      const slipHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Slip - ${booking.booking_number}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .slip-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 2px solid #22B573;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #22B573 0%, #1E9E64 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 800;
+        }
+        
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            color: #22B573;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #22B573;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: ${getPdfStatusColor(booking.status).r},${getPdfStatusColor(booking.status).g},${getPdfStatusColor(booking.status).b};
+            color: white;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .payment-highlight {
+            background: #fff9e6;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #F5B800;
+            margin-top: 15px;
+        }
+        
+        .payment-total {
+            font-size: 24px;
+            font-weight: 900;
+            color: #22B573;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .contact-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .slip-container {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slip-container">
+        <div class="header">
+            <h1>POWERPLAY CRICKET ARENA</h1>
+            <h2>Booking Confirmation Slip</h2>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <div class="section-title">Booking Information</div>
+                <div class="info-row">
+                    <span class="info-label">Booking Number:</span>
+                    <span class="info-value">${booking.booking_number}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span>
+                        ${booking.status.toUpperCase()}
+                        <span class="status-badge">${booking.status}</span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Booking Date:</span>
+                    <span class="info-value">${new Date(booking.booking_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })}</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Customer Details</div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">${booking.customer.name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">${booking.customer.phone}</span>
+                </div>
+                ${booking.customer.email ? `
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${booking.customer.email}</span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Time Slots</div>
+                <div class="info-row">
+                    <span class="info-label">Time Slots:</span>
+                    <span class="info-value">${formatSlotRanges(booking.slots.map(s => s.slot_hour))}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duration:</span>
+                    <span class="info-value">${booking.total_hours} hours</span>
+                </div>
+                ${booking.slots.some(s => s.is_night_rate) ? `
+                <div style="margin-top: 10px; padding: 10px; background: #e6f7ff; border-radius: 6px; border-left: 4px solid #1890ff;">
+                    <strong>🌙 Night Rate Applied:</strong> Some slots are charged at night rate (Rs 2000/hr)
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Payment Summary</div>
+                <div class="payment-highlight">
+                    <div class="info-row">
+                        <span class="info-label">Total Amount:</span>
+                        <span class="payment-total">Rs ${booking.total_amount.toLocaleString()}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Advance Paid:</span>
+                        <span style="color: #52c41a; font-weight: 700;">Rs ${booking.advance_payment.toLocaleString()}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Remaining Balance:</span>
+                        <span style="color: ${booking.remaining_payment === 0 ? '#52c41a' : '#f5222d'}; font-weight: 700;">
+                            Rs ${booking.remaining_payment.toLocaleString()}
+                            ${booking.remaining_payment === 0 ? ' (PAID IN FULL)' : ''}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Important Instructions</div>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>Please arrive 5 minutes before your allotted time</li>
+                    <li>Carry this booking slip for verification</li>
+                    <li>Complete remaining payment before play time</li>
+                    <li>Keep the ground clean and tidy</li>
+                    <li>Do not damage nets, equipment, or property</li>
+                    <li>Follow all ground rules and staff instructions</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="contact-info">
+                <strong>For queries, contact:</strong> 03402639174<br/>
+                <strong>Email:</strong> Powerplaycricketarena@gmail.com<br/>
+                <strong>Generated on:</strong> ${new Date().toLocaleString()}
+            </div>
+            <div style="margin-top: 15px; color: #999; font-size: 12px;">
+                Thank you for choosing Powerplay Cricket Arena!
+            </div>
+        </div>
+    </div>
     
-    // Header
-    doc.setFillColor(34, 139, 34);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CRICKET GROUND', 105, 20, { align: 'center' });
-    doc.setFontSize(14);
-    doc.text('Booking Confirmation Slip', 105, 30, { align: 'center' });
-    
-    // Reset colors
-    doc.setTextColor(0, 0, 0);
-    
-    // Booking Number
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Booking #: ${booking.booking_number}`, 20, 55);
-    
-    // Status Badge
-    const statusColor = getStatusColor(booking.status);
-    doc.setFillColor(statusColor.r, statusColor.g, statusColor.b);
-    doc.roundedRect(150, 50, 40, 8, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.text(booking.status.toUpperCase(), 170, 56, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-    
-    // Customer Details Section
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, 65, 170, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('CUSTOMER DETAILS', 25, 70);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    let y = 80;
-    doc.text(`Name: ${booking.customer.name}`, 25, y);
-    y += 7;
-    doc.text(`Phone: ${booking.customer.phone}`, 25, y);
-    y += 7;
-    if (booking.customer.email) {
-      doc.text(`Email: ${booking.customer.email}`, 25, y);
-      y += 7;
+    <script>
+        window.onload = function() {
+            // Auto-print if URL has print=true parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('print') === 'true') {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>`;
+
+      // Create and download HTML file
+      const blob = new Blob([slipHtml], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `booking-slip-${booking.booking_number}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: 'slip-download',
+        title: '✅ Booking Slip Downloaded',
+        message: 'Your booking slip has been downloaded successfully',
+        color: 'green',
+        loading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Booking slip download error:', error);
+      notifications.update({
+        id: 'slip-download',
+        title: 'Error',
+        message: 'Failed to generate booking slip',
+        color: 'red',
+        loading: false,
+        autoClose: 3000,
+      });
     }
-    
-    // Booking Details Section
-    y += 5;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, y, 170, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('BOOKING DETAILS', 25, y + 5);
-    
-    y += 15;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Date: ${new Date(booking.booking_date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })}`, 25, y);
-    
-    y += 7;
-    const slots = formatSlotRanges(booking.slots.map(s => s.slot_hour));
-    doc.text(`Time Slots: ${slots}`, 25, y);
-    
-    y += 7;
-    doc.text(`Total Hours: ${booking.total_hours} hours`, 25, y);
-    
-    // Payment Details
-    y += 10;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, y, 170, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('PAYMENT DETAILS', 25, y + 5);
-    
-    y += 15;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Total Amount: Rs ${booking.total_amount.toLocaleString()}`, 25, y);
-    y += 7;
-    doc.text(`Advance Paid: Rs ${booking.advance_payment.toLocaleString()}`, 25, y);
-    y += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Remaining: Rs ${booking.remaining_payment.toLocaleString()}`, 25, y);
-    
-    // Important Instructions
-    y += 15;
-    doc.setFillColor(255, 245, 230);
-    doc.rect(20, y, 170, 60, 'F');
-    doc.setFillColor(255, 165, 0);
-    doc.rect(20, y, 170, 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('IMPORTANT INSTRUCTIONS', 25, y + 5);
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    y += 12;
-    
-    // Instructions with manual bullet points
-    doc.text('* Please arrive 5 minutes before your allotted time', 25, y);
-    y += 7;
-    doc.text('* Carry this booking slip for verification', 25, y);
-    y += 7;
-    doc.text('* Complete remaining payment before play time', 25, y);
-    y += 7;
-    doc.text('* Keep the ground clean and tidy', 25, y);
-    y += 7;
-    doc.text('* Do not damage nets, equipment, or property', 25, y);
-    y += 7;
-    doc.text('* Follow all ground rules and staff instructions', 25, y);
-    y += 7;
-    
-    // Contact Information
-    y += 5;
-    doc.setFillColor(34, 139, 34);
-    doc.rect(20, y, 170, 15, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('For queries, contact: 03402639174', 105, y + 7, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.text('Email: Powerplaycricketarena@gmail.com', 105, y + 12, { align: 'center' });
-    
-    // Footer
-    doc.setTextColor(128, 128, 128);
-    doc.setFontSize(8);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
-    
-    // Save PDF
-    doc.save(`booking-${booking.booking_number}.pdf`);
-    
-    notifications.show({
-      title: 'Download Complete',
-      message: 'Booking slip downloaded successfully',
-      color: 'green',
-      icon: <IconCheck size={18} />,
-    });
   };
 
   const getStatusColor = (status: string) => {
@@ -595,8 +791,6 @@ export default function CheckBookingPage() {
           </Text>
         </Alert>
       </Stack>
-
-      <LoadingOverlay visible={loading} />
     </Container>
   );
 }
