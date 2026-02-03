@@ -411,7 +411,7 @@ export default function CalendarFirstBooking() {
                     </Button>
                   </Group>
                   
-                  {/* Calendar Button - Added clear date info */}
+                  {/* Caleendar Button - Added clear date info */}
                   <Group justify="center" gap="sm">
                     <Box style={{ 
                       textAlign: 'center',

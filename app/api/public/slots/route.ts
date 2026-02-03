@@ -1,6 +1,6 @@
 /**
  * PUBLIC API for getting available slots
- * No authentication required
+ * No authenticationn required
  */
 
 import { NextRequest, NextResponse } from 'next/server';
