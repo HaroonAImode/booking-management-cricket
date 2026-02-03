@@ -171,6 +171,16 @@ export async function getAvailableSlots(
     console.log('✅ Processed slots:', processedData.length);
     console.log('📊 Sample slots:', processedData.slice(0, 3));
     
+    // Debug log for slots 17-23 (the problem hours)
+    if (processedData.length > 0) {
+      const debugSlots = processedData.filter((s: SlotInfo) => s.slot_hour >= 17 && s.slot_hour <= 23);
+      console.log('🔍 Slots 17-23 details:', debugSlots.map((s: SlotInfo) => ({
+        hour: s.slot_hour,
+        status: s.current_status,
+        available: s.is_available
+      })));
+    }
+    
     return { data: processedData, error: null };
   } catch (err) {
     console.error('💥 Get available slots exception:', err);
@@ -397,8 +407,6 @@ export async function createCompleteBooking(params: {
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
-
-
 
 /**
  * Cleanup expired pending bookings (call periodically)
@@ -678,16 +686,3 @@ export const getBookingCustomerName = (booking: any): string => {
 export const getBookingCustomerPhone = (booking: any): string => {
   return booking?.customer?.phone || '';
 };
-
-
-console.log('✅ Processed slots FINAL check:', {
-  total: processedData.length,
-  bookedSlots: processedData.filter(s => s.current_status === 'booked').map(s => s.slot_hour),
-  pendingSlots: processedData.filter(s => s.current_status === 'pending').map(s => s.slot_hour),
-  availableSlots: processedData.filter(s => s.current_status === 'available').map(s => s.slot_hour),
-  sample: processedData.slice(17, 23).map(s => ({
-    hour: s.slot_hour,
-    status: s.current_status,
-    available: s.is_available
-  }))
-});
