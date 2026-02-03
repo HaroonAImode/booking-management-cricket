@@ -234,7 +234,8 @@ async function POSTHandler(
       advancePayment = 0,
       advancePaymentMethod,
       advancePaymentProof,
-      adminNotes
+      adminNotes,
+      autoApprove = true
     } = body;
 
     console.log('Parsed fields:', {
@@ -247,8 +248,27 @@ async function POSTHandler(
       totalAmount,
       advancePayment,
       advancePaymentMethod,
-      hasAdminNotes: !!adminNotes
+      hasAdminNotes: !!adminNotes,
+      autoApprove
     });
+
+    // Log each slot for debugging
+    if (slots && Array.isArray(slots)) {
+      console.log('=== DEBUG: SLOTS DATA RECEIVED ===');
+      slots.forEach((slot, index) => {
+        console.log(`Slot ${index}:`, {
+          slotDate: slot.slotDate,
+          slotTime: slot.slotTime,
+          slotHour: slot.slotHour,
+          hourlyRate: slot.hourlyRate,
+          rate: slot.rate,
+          isNightRate: slot.isNightRate,
+          is_night_rate: slot.is_night_rate,
+          fullSlot: slot
+        });
+      });
+      console.log('=== END SLOTS DEBUG ===');
+    }
 
     // Validate required fields
     if (!customerName || !customerPhone || !bookingDate) {
@@ -263,6 +283,39 @@ async function POSTHandler(
         { success: false, error: 'At least one time slot is required' },
         { status: 400 }
       );
+    }
+
+    // Validate slots with better error messages
+    for (const slot of slots) {
+      console.log('Validating slot:', slot);
+      
+      // Check for both possible field names
+      const hasRequiredFields = slot.slotDate && slot.slotTime && slot.slotHour !== undefined;
+      if (!hasRequiredFields) {
+        console.error('Slot validation failed:', {
+          hasDate: !!slot.slotDate,
+          hasTime: !!slot.slotTime,
+          hasHour: slot.slotHour !== undefined,
+          slot: slot
+        });
+        return NextResponse.json(
+          { success: false, error: 'Each slot must have date, time, and hour. Received: ' + JSON.stringify(slot) },
+          { status: 400 }
+        );
+      }
+      
+      // Set default hourly rate if not provided
+      if (slot.hourlyRate === undefined && slot.rate === undefined) {
+        slot.hourlyRate = 0;
+      } else if (slot.rate !== undefined && slot.hourlyRate === undefined) {
+        // If rate is provided but hourlyRate is not, copy it
+        slot.hourlyRate = slot.rate;
+      }
+      
+      // Handle both isNightRate and is_night_rate
+      if (slot.isNightRate === undefined && slot.is_night_rate !== undefined) {
+        slot.isNightRate = slot.is_night_rate;
+      }
     }
 
     // Validate totalHours - calculate from slots if not provided
@@ -304,21 +357,6 @@ async function POSTHandler(
         { success: false, error: 'Advance payment cannot exceed total amount' },
         { status: 400 }
       );
-    }
-
-    // Validate slots
-    for (const slot of slots) {
-      if (!slot.slotDate || !slot.slotTime || slot.slotHour === undefined) {
-        return NextResponse.json(
-          { success: false, error: 'Each slot must have date, time, and hour' },
-          { status: 400 }
-        );
-      }
-      
-      // Set default hourly rate if not provided
-      if (slot.hourlyRate === undefined) {
-        slot.hourlyRate = 0;
-      }
     }
 
     // Check if slots are available
@@ -414,7 +452,7 @@ async function POSTHandler(
           remaining_payment: remainingPayment,
           advance_payment_method: advancePaymentMethod || null,
           advance_payment_proof: advancePaymentProof || null,
-          status: 'approved', // Admin bookings are auto-approved
+          status: autoApprove ? 'approved' : 'pending', // Auto-approve based on setting
           customer_id: customerId,
           created_by: adminProfile.id,
           created_at: new Date().toISOString(),
@@ -432,20 +470,37 @@ async function POSTHandler(
       bookingId = newBooking.id;
       console.log('Booking created with ID:', bookingId);
 
-      // Step 4: Create booking slots
-      const slotPromises = slots.map((slot: any) => 
-        supabase.from('booking_slots').insert({
+      // Step 4: Create booking slots with proper field mapping
+      const slotPromises = slots.map((slot: any) => {
+        // Use isNightRate if available, otherwise is_night_rate, otherwise false
+        const isNightRate = slot.isNightRate !== undefined ? slot.isNightRate : 
+                           (slot.is_night_rate !== undefined ? slot.is_night_rate : false);
+        
+        // Use hourlyRate if available, otherwise rate, otherwise 0
+        const hourlyRate = slot.hourlyRate !== undefined ? slot.hourlyRate :
+                          (slot.rate !== undefined ? slot.rate : 0);
+        
+        console.log('Creating slot with:', {
           booking_id: bookingId,
           slot_date: slot.slotDate,
           slot_time: slot.slotTime,
           slot_hour: slot.slotHour,
-          is_night_rate: slot.isNightRate || false,
-          hourly_rate: slot.hourlyRate || 0,
+          is_night_rate: isNightRate,
+          hourly_rate: hourlyRate
+        });
+        
+        return supabase.from('booking_slots').insert({
+          booking_id: bookingId,
+          slot_date: slot.slotDate,
+          slot_time: slot.slotTime,
+          slot_hour: slot.slotHour,
+          is_night_rate: isNightRate,
+          hourly_rate: hourlyRate,
           status: 'booked',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
-      );
+        });
+      });
 
       const slotResults = await Promise.all(slotPromises);
       console.log('Slots created:', slotResults.length);

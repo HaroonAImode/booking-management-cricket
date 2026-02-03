@@ -220,10 +220,12 @@ export default function ManualBookingModal({
           slotDate: formData.bookingDate.toISOString().split('T')[0],
           slotTime: slotTime,
           slotHour: hour,
-          hourlyRate: slot?.hourly_rate || 0,
-          isNightRate: slot?.is_night_rate || false
+          hourlyRate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
+          is_night_rate: isNightHour(hour) // FIXED: Use underscore to match database column name
         };
       });
+
+      console.log('Slots data being sent:', JSON.stringify(slotsData, null, 2));
 
       // Calculate total hours
       const totalHours = selectedSlots.length;
@@ -252,10 +254,10 @@ export default function ManualBookingModal({
         body: JSON.stringify({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
-          customerEmail: formData.customerEmail || null, // ADDED
+          customerEmail: formData.customerEmail || null,
           bookingDate: formData.bookingDate.toISOString().split('T')[0],
-          slots: slotsData, // FIXED: Correct slot format
-          totalHours: totalHours, // ADDED
+          slots: slotsData,
+          totalHours: totalHours,
           totalAmount: totalAmount,
           advancePayment: formData.advancePayment,
           advancePaymentMethod: formData.advancePaymentMethod,
@@ -264,6 +266,13 @@ export default function ManualBookingModal({
           autoApprove: formData.autoApprove,
         }),
       });
+
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+      }
 
       const result = await response.json();
 
@@ -283,11 +292,11 @@ export default function ManualBookingModal({
           color: 'red',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create booking error:', error);
       notifications.show({
         title: 'Error',
-        message: 'Failed to create booking',
+        message: error.message || 'Failed to create booking',
         color: 'red',
       });
     } finally {
@@ -307,6 +316,8 @@ export default function ManualBookingModal({
       autoApprove: true,
     });
     setSelectedSlots([]);
+    setPaymentProofFile(null);
+    setPaymentProofUrl(null);
   };
 
   const totalAmount = calculateTotal();
