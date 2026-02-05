@@ -237,13 +237,30 @@ export async function GET(
     yPos += 12;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Phone: 0340-8149114', 55, yPos);
-    doc.text('Email: Powerplaycricketarena@gmail.com', 55, yPos + 6);
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
     
-    yPos += 8;
+    // Phone
+    doc.text('Phone: 0340-8149114', 15, yPos);
+    
+    // Email
+    yPos += 6;
+    doc.text('Email: ', 15, yPos);
     doc.setTextColor(0, 0, 255);
-    doc.textWithLink('Instagram: @powerplaycricketarena', 55, yPos, { url: 'https://instagram.com/powerplaycricketarena' });
-    doc.text('Tel.in: @powerplaycricketarena', 55, yPos + 6);
+    doc.textWithLink('Powerplaycricketarena@gmail.com', 33, yPos, { url: 'mailto:Powerplaycricketarena@gmail.com' });
+    
+    // Instagram
+    yPos += 6;
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.text('Instagram: ', 15, yPos);
+    doc.setTextColor(0, 0, 255);
+    doc.textWithLink('@powerplaycricketarena', 39, yPos, { url: 'https://www.instagram.com/powerplaycricketarena?igsh=MTA0c3NiOWR5aW9xeg==' });
+    
+    // TikTok
+    yPos += 6;
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.text('Tel.in: ', 15, yPos);
+    doc.setTextColor(0, 0, 255);
+    doc.textWithLink('@powerplaycricketarena', 32, yPos, { url: 'https://www.tiktok.com/@powerplaycricketarena?_r=1&_t=ZS-93SLIpFxSew' });
     
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
     

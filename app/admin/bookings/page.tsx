@@ -303,11 +303,11 @@ export default function AdminBookingsPage() {
     fetchBookings();
   }, [statusFilter, paymentFilter, debouncedSearch, dateFrom, dateTo]);
   
-  // Auto-refresh bookings every 10 seconds
+  // Auto-refresh bookings every 20 seconds
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       fetchBookings();
-    }, 10000); // 10 seconds
+    }, 20000); // 20 seconds
     
     // Cleanup interval on component unmount
     return () => clearInterval(refreshInterval);
