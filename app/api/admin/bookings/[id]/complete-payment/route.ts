@@ -34,6 +34,13 @@ async function handler(
 
     // Parse form data
     const formData = await request.formData();
+    
+    // Split payment data (new feature)
+    const cashAmount = parseFloat(formData.get('cashAmount') as string || '0');
+    const onlineAmount = parseFloat(formData.get('onlineAmount') as string || '0');
+    const onlineMethod = formData.get('onlineMethod') as string | null;
+    
+    // Legacy fields
     const paymentMethod = formData.get('paymentMethod') as string;
     const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
     const discountAmount = parseFloat(formData.get('discountAmount') as string || '0');
@@ -260,10 +267,13 @@ async function handler(
       p_payment_method: paymentMethod,
       p_payment_proof_path: uploadedProofPath,
       p_created_by: adminProfile.id,
-      p_discount_amount: discountAmount
+      p_discount_amount: discountAmount,
+      p_cash_amount: cashAmount,
+      p_online_amount: onlineAmount,
+      p_online_method: onlineMethod
     });
 
-    // Call the updated SQL function with ALL parameters including discount
+    // Call the updated SQL function with ALL parameters including discount and split payment
     const { data: result, error: verifyError } = await supabase.rpc(
       'verify_remaining_payment_with_extra_charges',
       {
@@ -274,7 +284,10 @@ async function handler(
         p_payment_method: paymentMethod,
         p_payment_proof_path: uploadedProofPath,
         p_created_by: adminProfile.id,
-        p_discount_amount: discountAmount
+        p_discount_amount: discountAmount,
+        p_cash_amount: cashAmount,
+        p_online_amount: onlineAmount,
+        p_online_method: onlineMethod
       }
     );
 

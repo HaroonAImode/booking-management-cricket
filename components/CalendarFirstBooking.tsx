@@ -16,7 +16,8 @@ export default function CalendarFirstBooking() {
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [todaySlots, setTodaySlots] = useState<any[]>([]);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  // Track slots with their dates for multi-day booking
+  const [selectedSlots, setSelectedSlots] = useState<{date: string, hour: number}[]>([]);
   const [activeStep, setActiveStep] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -30,6 +31,38 @@ export default function CalendarFirstBooking() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Helper: Get unique dates from selected slots
+  const getSelectedDates = () => {
+    const dates = new Set(selectedSlots.map(s => s.date));
+    return Array.from(dates).sort();
+  };
+
+  // Helper: Check if date is consecutive to existing selections
+  const isConsecutiveDate = (dateStr: string): boolean => {
+    if (selectedSlots.length === 0) return true;
+    
+    const dates = getSelectedDates();
+    const newDate = new Date(dateStr);
+    
+    for (const existingDateStr of dates) {
+      const existingDate = new Date(existingDateStr);
+      const diffDays = Math.abs((newDate.getTime() - existingDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 1) return true; // Allow same day or next/prev day
+    }
+    
+    return false;
+  };
+
+  // Helper: Get slots for current viewing date
+  const getCurrentDateSlots = (): number[] => {
+    const currentDateStr = quickViewDate.toISOString().split('T')[0];
+    return selectedSlots
+      .filter(s => s.date === currentDateStr)
+      .map(s => s.hour)
+      .sort((a, b) => a - b);
+  };
 
   const safeSelectedSlots = Array.isArray(selectedSlots) ? selectedSlots : [];
   const canProceedToForm = safeSelectedSlots.length > 0 && selectedDate;
@@ -128,10 +161,13 @@ export default function CalendarFirstBooking() {
         processedSlots = processSlotData(data.slots || [], quickViewDate);
       }
       
-      // Check for conflicts with selected slots
+      // Check for conflicts with selected slots for current viewing date
       if (selectedSlots.length > 0 && processedSlots.length > 0) {
-        const hasConflict = selectedSlots.some(selectedHour => {
-          const slot = processedSlots.find(s => s.slot_hour === selectedHour);
+        const currentDateStr = quickViewDate.toISOString().split('T')[0];
+        const currentDateSlots = selectedSlots.filter(s => s.date === currentDateStr);
+        
+        const hasConflict = currentDateSlots.some(selectedSlot => {
+          const slot = processedSlots.find(s => s.slot_hour === selectedSlot.hour);
           return slot && !slot.is_available;
         });
         
@@ -139,8 +175,9 @@ export default function CalendarFirstBooking() {
           console.warn('⚠️ CONFLICT DETECTED: Selected slots are no longer available!');
           setConflictDetected(true);
           // Clear conflicting selections
-          const validSlots = selectedSlots.filter(selectedHour => {
-            const slot = processedSlots.find(s => s.slot_hour === selectedHour);
+          const validSlots = selectedSlots.filter(selectedSlot => {
+            if (selectedSlot.date !== currentDateStr) return true; // Keep slots from other dates
+            const slot = processedSlots.find(s => s.slot_hour === selectedSlot.hour);
             return slot && slot.is_available;
           });
           setSelectedSlots(validSlots);
@@ -189,19 +226,67 @@ export default function CalendarFirstBooking() {
   }, [autoRefreshEnabled, activeStep, quickViewDate]);
 
   const handleSlotToggle = (hour: number) => {
+    const currentDateStr = quickViewDate.toISOString().split('T')[0];
+    
+    // Check if this date is consecutive to existing selections
+    if (!isConsecutiveDate(currentDateStr)) {
+      alert('⚠️ You can only select slots from consecutive days!\n\nPlease select slots from adjacent dates only (e.g., Feb 5 + Feb 6).\n\nUse "Clear Selection" to start over.');
+      return;
+    }
+
     setSelectedSlots((prev) => {
-      if (prev.includes(hour)) {
-        return prev.filter((h) => h !== hour);
+      const slotKey = `${currentDateStr}-${hour}`;
+      const exists = prev.some(s => s.date === currentDateStr && s.hour === hour);
+      
+      if (exists) {
+        // Remove this slot
+        return prev.filter(s => !(s.date === currentDateStr && s.hour === hour));
       } else {
-        const newSelection = [...prev, hour].sort((a, b) => a - b);
-        for (let i = 1; i < newSelection.length; i++) {
-          if (newSelection[i] - newSelection[i - 1] !== 1) {
+        // Add this slot
+        const newSlots = [...prev, { date: currentDateStr, hour }];
+        
+        // Sort by date then hour
+        newSlots.sort((a, b) => {
+          if (a.date === b.date) return a.hour - b.hour;
+          return a.date.localeCompare(b.date);
+        });
+        
+        // Validate consecutive hours across dates
+        for (let i = 1; i < newSlots.length; i++) {
+          const prevSlot = newSlots[i - 1];
+          const currSlot = newSlots[i];
+          
+          const prevDate = new Date(prevSlot.date);
+          const currDate = new Date(currSlot.date);
+          const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (dayDiff === 0) {
+            // Same day - hours must be consecutive
+            if (currSlot.hour - prevSlot.hour !== 1) {
+              alert('⚠️ Slots must be consecutive!\n\nYou can only select continuous time slots (e.g., 10 PM, 11 PM, 12 AM).');
+              return prev;
+            }
+          } else if (dayDiff === 1) {
+            // Next day - previous must be 23, current must be 0
+            if (prevSlot.hour !== 23 || currSlot.hour !== 0) {
+              alert('⚠️ Slots must be consecutive!\n\nFor overnight bookings, last slot of first day must be 11 PM (23:00), and first slot of next day must be 12 AM (00:00).');
+              return prev;
+            }
+          } else {
+            // Non-consecutive days
+            alert('⚠️ You can only select slots from consecutive days!');
             return prev;
           }
         }
-        return newSelection;
+        
+        return newSlots;
       }
     });
+    
+    // Set selected date to the first date in selection
+    if (selectedSlots.length === 0) {
+      setSelectedDate(quickViewDate);
+    }
   };
 
   const proceedToForm = () => {
@@ -350,8 +435,12 @@ export default function CalendarFirstBooking() {
                         prevDay.setDate(prevDay.getDate() - 1);
                         if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
                           setQuickViewDate(prevDay);
-                          setSelectedSlots([]); // Clear selected slots when changing date
-                          setSelectedDate(null); // Clear selected date
+                          // Only clear if NOT consecutive
+                          const prevDayStr = prevDay.toISOString().split('T')[0];
+                          if (!isConsecutiveDate(prevDayStr)) {
+                            setSelectedSlots([]);
+                            setSelectedDate(null);
+                          }
                         }
                       }}
                       disabled={quickViewDate.toDateString() === new Date().toDateString()}
@@ -448,8 +537,12 @@ export default function CalendarFirstBooking() {
                         const nextDay = new Date(quickViewDate);
                         nextDay.setDate(nextDay.getDate() + 1);
                         setQuickViewDate(nextDay);
-                        setSelectedSlots([]); // Clear selected slots when changing date
-                        setSelectedDate(null); // Clear selected date
+                        // Only clear if NOT consecutive
+                        const nextDayStr = nextDay.toISOString().split('T')[0];
+                        if (!isConsecutiveDate(nextDayStr)) {
+                          setSelectedSlots([]);
+                          setSelectedDate(null);
+                        }
                       }}
                       style={{
                         background: '#1A1A1A',
@@ -614,9 +707,20 @@ export default function CalendarFirstBooking() {
                             <Text fw={700} size="sm" c="#1A1A1A" mb={4}>
                               SELECTED SLOTS ({safeSelectedSlots.length})
                             </Text>
-                            <Text fw={600} size="lg" c="#1A1A1A">
-                              {safeSelectedSlots.map(h => `${formatTime(h)} ${formatAmPm(h)}`).join(', ')}
-                            </Text>
+                            <Stack gap={4}>
+                              {getSelectedDates().map(dateStr => {
+                                const dateSlots = safeSelectedSlots.filter(s => s.date === dateStr);
+                                const displayDate = new Date(dateStr).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                });
+                                return (
+                                  <Text key={dateStr} fw={600} size="md" c="#1A1A1A">
+                                    {displayDate}: {dateSlots.map(s => `${formatTime(s.hour)} ${formatAmPm(s.hour)}`).join(', ')}
+                                  </Text>
+                                );
+                              })}
+                            </Stack>
                           </Box>
                           <Button
                             variant="filled"
@@ -655,6 +759,12 @@ export default function CalendarFirstBooking() {
                           const isPending = slot.current_status === 'pending';
                           const isPast = slot.current_status === 'past';
                           const isAvailable = slot.current_status === 'available';
+                          
+                          // Check if this slot is selected for the current viewing date
+                          const currentDateStr = quickViewDate.toISOString().split('T')[0];
+                          const isSelected = safeSelectedSlots.some(s => 
+                            s.date === currentDateStr && s.hour === slot.slot_hour
+                          );
 
                           return (
                             <Paper
@@ -664,7 +774,7 @@ export default function CalendarFirstBooking() {
                               style={{
                                 cursor: isAvailable ? 'pointer' : 'not-allowed',
                                 opacity: isPast ? 0.4 : isBooked || isPending ? 0.65 : 1,
-                                background: safeSelectedSlots.includes(slot.slot_hour) && isAvailable
+                                background: isSelected && isAvailable
                                   ? '#F5B800'
                                   : isAvailable 
                                   ? '#1A1A1A' 
@@ -673,20 +783,20 @@ export default function CalendarFirstBooking() {
                                   : isBooked 
                                   ? '#6B7280' 
                                   : '#F59E0B',
-                                color: safeSelectedSlots.includes(slot.slot_hour) && isAvailable ? '#1A1A1A' : 'white',
+                                color: isSelected && isAvailable ? '#1A1A1A' : 'white',
                                 minHeight: '75px',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '8px',
-                                border: safeSelectedSlots.includes(slot.slot_hour) && isAvailable 
+                                border: isSelected && isAvailable 
                                   ? '3px solid #1A1A1A' 
                                   : isAvailable 
                                   ? '2px solid #F5B800' 
                                   : 'none',
                                 transition: 'all 0.2s ease',
-                                transform: safeSelectedSlots.includes(slot.slot_hour) ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
+                                transform: isSelected ? 'scale(1.05)' : isAvailable ? 'scale(1)' : 'scale(0.95)',
                               }}
                               onClick={() => {
                                 if (isAvailable) {
@@ -697,13 +807,13 @@ export default function CalendarFirstBooking() {
                                 }
                               }}
                               onMouseEnter={(e) => {
-                                if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
+                                if (isAvailable && !isSelected) {
                                   e.currentTarget.style.transform = 'scale(1.05)';
                                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 184, 0, 0.4)';
                                 }
                               }}
                               onMouseLeave={(e) => {
-                                if (isAvailable && !safeSelectedSlots.includes(slot.slot_hour)) {
+                                if (isAvailable && !isSelected) {
                                   e.currentTarget.style.transform = 'scale(1)';
                                   e.currentTarget.style.boxShadow = 'none';
                                 }
@@ -876,9 +986,14 @@ export default function CalendarFirstBooking() {
                           <Stack gap="lg">
                             <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
                             <Box style={{ display: 'flex', justifyContent: 'center' }}>
-                              <DatePicker
-                                value={quickViewDate}
-                                onChange={(date) => {
+                              <Datconst newDate = date ? new Date(date) : new Date();
+                                  setQuickViewDate(newDate);
+                                  // Only clear if NOT consecutive
+                                  const newDateStr = newDate.toISOString().split('T')[0];
+                                  if (!isConsecutiveDate(newDateStr)) {
+                                    setSelectedSlots([]);
+                                    setSelectedDate(null);
+                                  }
                                   setSlotsLoading(true);
                                   setQuickViewDate(date ? new Date(date) : new Date());
                                   setSelectedSlots([]); // Clear selected slots when picking new date
@@ -1044,7 +1159,7 @@ export default function CalendarFirstBooking() {
               {/* Pass data to original BookingForm */}
               <BookingForm
                 preSelectedDate={selectedDate ? new Date(selectedDate) : new Date()}
-                preSelectedSlots={[...safeSelectedSlots]}
+                preSelectedSlots={safeSelectedSlots.map(s => s.hour)}
                 hideCalendar={true}
               />
             </Stack>

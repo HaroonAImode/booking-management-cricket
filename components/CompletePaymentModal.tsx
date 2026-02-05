@@ -75,6 +75,12 @@ export default function CompletePaymentModal({
   remainingAmount,
   onSuccess,
 }: CompletePaymentModalProps) {
+  // Split payment state
+  const [cashAmount, setCashAmount] = useState<number>(0);
+  const [onlineAmount, setOnlineAmount] = useState<number>(0);
+  const [onlineMethod, setOnlineMethod] = useState<string>(''); // 'easypaisa' or 'sadapay'
+  
+  // Legacy single payment method (kept for backward compatibility)
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -90,14 +96,71 @@ export default function CompletePaymentModal({
   // Calculate total with extra charges
   const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   const totalPayable = (remainingAmount || 0) + totalExtraCharges;
+  
+  // Split payment total (cash + online)
+  const splitPaymentTotal = (cashAmount || 0) + (onlineAmount || 0);
 
   // Reset form when modal opens
   useEffect(() => {
     if (opened) {
+      // Initialize with full amount in cash by default
+      setCashAmount(remainingAmount || 0);
+      setOnlineAmount(0);
+      setOnlineMethod('');
       setPaymentAmount(remainingAmount || 0);
       setAppliedDiscount(0);
       setExtraCharges([]);
       setPaymentMethod('');
+      setPaymentProof(null);
+      setAdminNotes('');
+      setError(null);
+      setShowExtraCharges(false);
+      setSelectedCategory('');
+      setExtraChargeAmount('');
+    }
+  }, [opened, remainingAmount]);
+  
+  // Auto-adjust cash when online amount changes
+  const handleOnlineAmountChange = (value: number | string) => {
+    const numValue = Number(value) || 0;
+    
+    if (numValue < 0) {
+      setError('Online amount cannot be negative');
+      return;
+    }
+    
+    if (numValue > totalPayable) {
+      setError(`Online amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
+      return;
+    }
+    
+    setOnlineAmount(numValue);
+    // Auto-calculate cash amount
+    const newCashAmount = totalPayable - numValue;
+    setCashAmount(newCashAmount >= 0 ? newCashAmount : 0);
+    setError(null);
+  };
+  
+  // Handle cash amount change manually
+  const handleCashAmountChange = (value: number | string) => {
+    const numValue = Number(value) || 0;
+    
+    if (numValue < 0) {
+      setError('Cash amount cannot be negative');
+      return;
+    }
+    
+    if (numValue > totalPayable) {
+      setError(`Cash amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
+      return;
+    }
+    
+    setCashAmount(numValue);
+    // Auto-calculate online amount
+    const newOnlineAmount = totalPayable - numValue;
+    setOnlineAmount(newOnlineAmount >= 0 ? newOnlineAmount : 0);
+    setError(null);
+  };
       setPaymentProof(null);
       setAdminNotes('');
       setError(null);
@@ -121,48 +184,38 @@ export default function CompletePaymentModal({
   }, [totalExtraCharges, remainingAmount]);
 
   const handleSubmit = async () => {
-    // Validation
-    if (!paymentMethod) {
-      setError('Please select a payment method');
-      return;
-    }
-
-    // Validate payment amount
-    if (!paymentAmount || paymentAmount <= 0) {
-      setError('Please enter a valid payment amount');
-      return;
-    }
-
-    // Payment proof is optional for cash payments, required for digital
-    if (!paymentProof && paymentMethod !== 'cash') {
-      setError('Please upload payment proof for digital payments');
-      return;
-    }
-
-    // Calculate expected total based on remaining + extra charges - discount
-    const expectedTotal = totalPayable - appliedDiscount;
+    // Validation for split payment
+    const totalSplit = (cashAmount || 0) + (onlineAmount || 0);
     
-    // Validate payment matches expected total (allow 1 rupee rounding)
-    if (Math.abs(paymentAmount - expectedTotal) > 1) {
-      setError(`Payment amount (Rs ${paymentAmount.toLocaleString()}) doesn't match expected total (Rs ${expectedTotal.toLocaleString()}). Please adjust payment amount or discount.`);
+    if (totalSplit !== totalPayable) {
+      setError(`Total payment (Cash: Rs ${cashAmount.toLocaleString()} + Online: Rs ${onlineAmount.toLocaleString()} = Rs ${totalSplit.toLocaleString()}) must equal Rs ${totalPayable.toLocaleString()}`);
+      return;
+    }
+    
+    // If online amount > 0, require online method selection
+    if (onlineAmount > 0 && !onlineMethod) {
+      setError('Please select online payment method (EasyPaisa or SadaPay)');
+      return;
+    }
+    
+    // Payment proof validation
+    if (!paymentProof && onlineAmount > 0) {
+      setError('Please upload payment proof for online payments');
       return;
     }
 
-    // Confirm discount if applied
-    if (appliedDiscount > 0) {
+    // Confirm split payment
+    if (onlineAmount > 0 && cashAmount > 0) {
       const confirmed = window.confirm(
-        `You are applying a discount of Rs ${appliedDiscount.toLocaleString()}.\n\n` +
-        `Original Remaining: Rs ${remainingAmount.toLocaleString()}\n` +
-        `Extra Charges: Rs ${totalExtraCharges.toLocaleString()}\n` +
-        `Total Payable: Rs ${totalPayable.toLocaleString()}\n` +
-        `Discount: Rs ${appliedDiscount.toLocaleString()}\n` +
-        `Final Payment: Rs ${paymentAmount.toLocaleString()}\n\n` +
-        `Is this correct?`
+        `Split Payment Confirmation:\n\n` +
+        `Cash Amount: Rs ${cashAmount.toLocaleString()}\n` +
+        `Online (${onlineMethod?.toUpperCase()}): Rs ${onlineAmount.toLocaleString()}\n` +
+        `Total: Rs ${totalSplit.toLocaleString()}\n\n` +
+        (extraCharges.length > 0 ? `Extra Charges: Rs ${totalExtraCharges.toLocaleString()}\n\n` : '') +
+        `Proceed with payment?`
       );
       
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
     }
 
     try {
@@ -171,18 +224,27 @@ export default function CompletePaymentModal({
 
       // Create form data
       const formData = new FormData();
-      formData.append('paymentMethod', paymentMethod);
-      formData.append('paymentAmount', paymentAmount.toString());
+      
+      // Split payment data
+      formData.append('cashAmount', cashAmount.toString());
+      formData.append('onlineAmount', onlineAmount.toString());
+      if (onlineMethod) {
+        formData.append('onlineMethod', onlineMethod);
+      }
+      
+      // Total payment amount
+      formData.append('paymentAmount', totalSplit.toString());
       formData.append('discountAmount', appliedDiscount.toString());
       
-      // ALWAYS send extraCharges field, even if empty array
+      // Extra charges
       const extraChargesData = extraCharges.length > 0 ? extraCharges : [];
       formData.append('extraCharges', JSON.stringify(extraChargesData));
       
-      // Only append proof if it exists (cash payments may not have proof)
+      // Payment proof (only needed if online amount > 0)
       if (paymentProof) {
         formData.append('paymentProof', paymentProof);
       }
+      
       if (adminNotes) {
         formData.append('adminNotes', adminNotes);
       }
@@ -272,6 +334,10 @@ export default function CompletePaymentModal({
 
   const handleClose = () => {
     if (!loading) {
+      // Reset all state
+      setCashAmount(0);
+      setOnlineAmount(0);
+      setOnlineMethod('');
       setPaymentMethod('');
       setPaymentProof(null);
       setAdminNotes('');
@@ -641,37 +707,129 @@ export default function CompletePaymentModal({
             </Alert>
           </Paper>
 
-          {/* Payment Method */}
-          <Select
-            label="Payment Method"
-            placeholder="Select payment method"
-            required
-            data={[
-              { value: 'easypaisa', label: 'Easypaisa' },
-              { value: 'sadapay', label: 'SadaPay' },
-              { value: 'cash', label: 'Cash' },
-            ]}
-            value={paymentMethod}
-            onChange={(value) => setPaymentMethod(value || '')}
-            disabled={loading}
-          />
+          {/* Split Payment Section */}
+          <Paper withBorder p="md" radius="md" style={{ background: '#F5F5F5' }}>
+            <Text fw={700} size="lg" mb="md" c="#1A1A1A">💰 Payment Split</Text>
+            
+            <Stack gap="md">
+              {/* Cash Amount */}
+              <Box>
+                <NumberInput
+                  label="Cash Amount"
+                  placeholder="Enter cash amount"
+                  leftSection={<IconCurrencyRupee size={18} />}
+                  value={cashAmount}
+                  onChange={handleCashAmountChange}
+                  min={0}
+                  max={totalPayable}
+                  thousandSeparator=","
+                  allowNegative={false}
+                  decimalScale={0}
+                  disabled={loading}
+                  styles={{
+                    input: {
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      background: 'white',
+                      border: '2px solid #1A1A1A',
+                    }
+                  }}
+                  description={`Cash portion of payment (Max: Rs ${totalPayable.toLocaleString()})`}
+                />
+              </Box>
 
-          {/* Payment Proof Upload */}
-          <FileInput
-            label="Payment Proof"
-            placeholder="Upload payment proof image"
-            required={paymentMethod !== 'cash'}
-            accept="image/*"
-            leftSection={<IconUpload size={18} />}
-            value={paymentProof}
-            onChange={setPaymentProof}
-            description={
-              paymentMethod === 'cash'
-                ? 'Optional for cash payments'
-                : 'Upload screenshot or photo of payment receipt'
-            }
-            disabled={loading}
-          />
+              {/* Online Payment Section */}
+              <Paper withBorder p="sm" radius="md" style={{ background: 'white' }}>
+                <Text fw={600} size="sm" mb="xs" c="#1A1A1A">Online Payment</Text>
+                
+                <Stack gap="sm">
+                  <NumberInput
+                    label="Online Amount"
+                    placeholder="Enter online amount"
+                    leftSection={<IconCurrencyRupee size={18} />}
+                    value={onlineAmount}
+                    onChange={handleOnlineAmountChange}
+                    min={0}
+                    max={totalPayable}
+                    thousandSeparator=","
+                    allowNegative={false}
+                    decimalScale={0}
+                    disabled={loading}
+                    styles={{
+                      input: {
+                        fontWeight: 600,
+                        fontSize: '1.1rem',
+                        background: '#FFF9E6',
+                        border: '2px solid #F5B800',
+                      }
+                    }}
+                    description="Online portion - Cash will auto-adjust"
+                  />
+                  
+                  {onlineAmount > 0 && (
+                    <Select
+                      label="Online Payment Method"
+                      placeholder="Select method"
+                      required
+                      data={[
+                        { value: 'easypaisa', label: '💳 Easypaisa' },
+                        { value: 'sadapay', label: '💳 SadaPay' },
+                      ]}
+                      value={onlineMethod}
+                      onChange={(value) => setOnlineMethod(value || '')}
+                      disabled={loading}
+                      styles={{
+                        input: {
+                          border: '2px solid #F5B800',
+                        }
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Paper>
+
+              {/* Payment Summary */}
+              <Alert color="blue" icon={<IconInfoCircle size={18} />}>
+                <Stack gap={4}>
+                  <Group justify="space-between">
+                    <Text size="sm">Cash Payment:</Text>
+                    <Text size="sm" fw={700}>Rs {cashAmount.toLocaleString()}</Text>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="sm">Online Payment{onlineMethod && ` (${onlineMethod.toUpperCase()})`}:</Text>
+                    <Text size="sm" fw={700}>Rs {onlineAmount.toLocaleString()}</Text>
+                  </Group>
+                  <Divider my={4} />
+                  <Group justify="space-between">
+                    <Text size="sm" fw={700}>Total Payment:</Text>
+                    <Text size="lg" fw={900} c={splitPaymentTotal === totalPayable ? 'green' : 'red'}>
+                      Rs {splitPaymentTotal.toLocaleString()}
+                    </Text>
+                  </Group>
+                  {splitPaymentTotal !== totalPayable && (
+                    <Text size="xs" c="red" mt={4}>
+                      ⚠️ Total must equal Rs {totalPayable.toLocaleString()}
+                    </Text>
+                  )}
+                </Stack>
+              </Alert>
+            </Stack>
+          </Paper>
+
+          {/* Payment Proof Upload (only if online payment) */}
+          {onlineAmount > 0 && (
+            <FileInput
+              label="Payment Proof"
+              placeholder="Upload payment proof image"
+              required
+              accept="image/*"
+              leftSection={<IconUpload size={18} />}
+              value={paymentProof}
+              onChange={setPaymentProof}
+              description="Upload screenshot or photo of online payment receipt"
+              disabled={loading}
+            />
+          )}
 
           {/* Admin Notes */}
           <Textarea

@@ -82,10 +82,11 @@ function formatTime(hour) {
 
 export async function GET(
   request: NextRequest,
-  { params }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const params = await context.params;
     const bookingId = params.id;
 
     console.log('🔍 Fetching invoice for booking:', bookingId);
