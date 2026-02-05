@@ -32,7 +32,8 @@ async function GETHandler(
       .from('bookings')
       .select(`
         *,
-        customer:customers(*)
+        customer:customers(*),
+        extra_charges
       `)
       .order('created_at', { ascending: false });
 
@@ -148,7 +149,34 @@ async function GETHandler(
     const formattedBookings = bookings.map(booking => {
       const bookingSlots = slotsByBookingId[booking.id] || [];
       const bookingExtraCharges = extraChargesByBookingId[booking.id] || [];
-      const totalExtraCharges = bookingExtraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+      
+      // Merge extra charges from both sources
+      // Priority: JSONB column in bookings table (from complete payment) + extra_charges table
+      let allExtraCharges = [...bookingExtraCharges];
+      
+      // Add extra charges from bookings.extra_charges JSONB column if exists
+      if (booking.extra_charges && Array.isArray(booking.extra_charges)) {
+        // Convert JSONB extra charges to match the format
+        const jsonbCharges = booking.extra_charges.map((charge: any, index: number) => ({
+          id: `jsonb-${booking.id}-${index}`,
+          booking_id: booking.id,
+          category: charge.category,
+          amount: charge.amount,
+          created_at: booking.updated_at || booking.created_at,
+        }));
+        allExtraCharges = [...allExtraCharges, ...jsonbCharges];
+      }
+      
+      // Remove duplicates based on category and amount (in case charge exists in both places)
+      const uniqueCharges = allExtraCharges.reduce((acc, charge) => {
+        const key = `${charge.category}-${charge.amount}`;
+        if (!acc.some((c: any) => `${c.category}-${c.amount}` === key)) {
+          acc.push(charge);
+        }
+        return acc;
+      }, [] as any[]);
+      
+      const totalExtraCharges = uniqueCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
       return {
         id: booking.id,
@@ -171,7 +199,7 @@ async function GETHandler(
         created_at: booking.created_at,
         customer: booking.customer || { name: '', phone: '' },
         slots: bookingSlots,
-        extra_charges: bookingExtraCharges,
+        extra_charges: uniqueCharges,
         total_extra_charges: totalExtraCharges,
       };
     });
