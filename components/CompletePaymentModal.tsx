@@ -104,10 +104,11 @@ export default function CompletePaymentModal({
   useEffect(() => {
     if (opened) {
       // Initialize with full amount in cash by default
-      setCashAmount(remainingAmount || 0);
+      const initialAmount = remainingAmount || 0;
+      setCashAmount(initialAmount);
       setOnlineAmount(0);
       setOnlineMethod('');
-      setPaymentAmount(remainingAmount || 0);
+      setPaymentAmount(initialAmount);
       setAppliedDiscount(0);
       setExtraCharges([]);
       setPaymentMethod('');
@@ -175,6 +176,28 @@ export default function CompletePaymentModal({
       setAppliedDiscount(0);
     }
   }, [totalExtraCharges, remainingAmount]);
+  
+  // Update split payment amounts when totalPayable changes (extra charges/discount applied)
+  useEffect(() => {
+    // Recalculate split payment to match new total payable
+    const currentTotal = (cashAmount || 0) + (onlineAmount || 0);
+    
+    // Only update if current split doesn't match totalPayable
+    if (currentTotal !== totalPayable) {
+      // Maintain the ratio of cash vs online, or default to all cash
+      if (onlineAmount > 0) {
+        const ratio = onlineAmount / currentTotal;
+        const newOnline = Math.round(totalPayable * ratio);
+        const newCash = totalPayable - newOnline;
+        setOnlineAmount(newOnline);
+        setCashAmount(newCash);
+      } else {
+        // Default: all cash
+        setCashAmount(totalPayable);
+        setOnlineAmount(0);
+      }
+    }
+  }, [totalPayable]);
 
   const handleSubmit = async () => {
     // Validation for split payment
