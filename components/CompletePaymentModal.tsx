@@ -161,13 +161,6 @@ export default function CompletePaymentModal({
     setOnlineAmount(newOnlineAmount >= 0 ? newOnlineAmount : 0);
     setError(null);
   };
-      setPaymentProof(null);
-      setAdminNotes('');
-      setError(null);
-      setSelectedCategory('');
-      setExtraChargeAmount('');
-    }
-  }, [opened, remainingAmount]);
 
   // Update payment amount when extra charges change (auto-calculate)
   useEffect(() => {
@@ -541,7 +534,7 @@ export default function CompletePaymentModal({
                     placeholder="Enter amount"
                     leftSection={<IconCurrencyRupee size={16} />}
                     value={extraChargeAmount}
-                    onChange={setExtraChargeAmount}
+                    onChange={(value) => setExtraChargeAmount(String(value))}
                     min={1}
                     thousandSeparator=","
                     allowNegative={false}
@@ -848,7 +841,7 @@ export default function CompletePaymentModal({
               variant="light" 
               onClick={handleClose} 
               disabled={loading}
-              fullWidth={{ base: true, sm: false }}
+              w={{ base: '100%', sm: 'auto' }}
             >
               Cancel
             </Button>
@@ -857,7 +850,7 @@ export default function CompletePaymentModal({
               loading={loading}
               leftSection={<IconCheck size={18} />}
               color="green"
-              fullWidth={{ base: true, sm: false }}
+              w={{ base: '100%', sm: 'auto' }}
             >
               Verify & Complete Booking
             </Button>

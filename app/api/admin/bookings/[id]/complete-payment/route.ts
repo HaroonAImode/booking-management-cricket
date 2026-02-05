@@ -17,8 +17,17 @@ import { uploadPaymentProof } from '@/lib/supabase/storage';
 
 async function handler(
   request: NextRequest,
-  { params, adminProfile }: { params: Promise<{ id: string }>, adminProfile: any }
+  context: { params?: Promise<{ id: string }>, adminProfile: any }
 ) {
+  const { params, adminProfile } = context;
+  
+  if (!params) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid request parameters' },
+      { status: 400 }
+    );
+  }
+  
   const resolvedParams = await params;
   
   if (!resolvedParams?.id) {

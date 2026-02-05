@@ -904,7 +904,7 @@ export default function CalendarFirstBooking() {
                                 textOverflow: 'ellipsis'
                               }}
                             >
-                              {safeSelectedSlots.map(h => formatTime(h) + formatAmPm(h)).join(', ')}
+                              {safeSelectedSlots.map(h => formatTime(h.hour) + formatAmPm(h.hour)).join(', ')}
                             </Text>
                           </Box>
                           <Button
@@ -986,7 +986,10 @@ export default function CalendarFirstBooking() {
                           <Stack gap="lg">
                             <Title order={3} c="#1A1A1A" ta="center" size="h4">Select Date to View</Title>
                             <Box style={{ display: 'flex', justifyContent: 'center' }}>
-                              <Datconst newDate = date ? new Date(date) : new Date();
+                              <DatePicker
+                                value={quickViewDate}
+                                onChange={(date) => {
+                                  const newDate = date ? new Date(date) : new Date();
                                   setQuickViewDate(newDate);
                                   // Only clear if NOT consecutive
                                   const newDateStr = newDate.toISOString().split('T')[0];
@@ -995,9 +998,6 @@ export default function CalendarFirstBooking() {
                                     setSelectedDate(null);
                                   }
                                   setSlotsLoading(true);
-                                  setQuickViewDate(date ? new Date(date) : new Date());
-                                  setSelectedSlots([]); // Clear selected slots when picking new date
-                                  setSelectedDate(null); // Clear selected date
                                   setShowDatePicker(false);
                                 }}
                                 minDate={new Date()}
@@ -1151,7 +1151,7 @@ export default function CalendarFirstBooking() {
                   marginTop: '12px'
                 }}>
                   <Text size="sm" c="#F5B800" fw={600}>
-                    Selected times: {safeSelectedSlots.map(h => formatTime(h) + formatAmPm(h)).join(', ')}
+                    Selected times: {safeSelectedSlots.map(h => formatTime(h.hour) + formatAmPm(h.hour)).join(', ')}
                   </Text>
                 </Box>
               </Paper>
