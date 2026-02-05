@@ -238,8 +238,24 @@ export default function CompletePaymentModal({
       setLoading(true);
       setError(null);
 
+      // Determine payment method based on split payment
+      let determinedPaymentMethod: string;
+      if (onlineAmount > 0 && cashAmount > 0) {
+        // Split payment: use the online method or 'cash' if only cash
+        determinedPaymentMethod = onlineMethod || 'cash';
+      } else if (onlineAmount > 0) {
+        // Online payment only
+        determinedPaymentMethod = onlineMethod || 'easypaisa';
+      } else {
+        // Cash payment only
+        determinedPaymentMethod = 'cash';
+      }
+
       // Create form data
       const formData = new FormData();
+      
+      // Payment method (REQUIRED by backend)
+      formData.append('paymentMethod', determinedPaymentMethod);
       
       // Split payment data
       formData.append('cashAmount', cashAmount.toString());
@@ -269,8 +285,11 @@ export default function CompletePaymentModal({
       console.log('Submitting payment data:', {
         bookingId,
         bookingNumber,
-        paymentMethod,
-        paymentAmount,
+        paymentMethod: determinedPaymentMethod,
+        cashAmount,
+        onlineAmount,
+        onlineMethod,
+        paymentAmount: totalSplit,
         discountAmount: appliedDiscount,
         extraCharges: extraChargesData,
         extraChargesJson: JSON.stringify(extraChargesData),
@@ -311,6 +330,9 @@ export default function CompletePaymentModal({
         });
         
         // Reset form
+        setCashAmount(0);
+        setOnlineAmount(0);
+        setOnlineMethod('');
         setPaymentMethod('');
         setPaymentProof(null);
         setAdminNotes('');

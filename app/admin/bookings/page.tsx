@@ -305,19 +305,19 @@ export default function AdminBookingsPage() {
 
   // Date navigation functions
   const handlePreviousDay = () => {
-    const currentDate = viewingDate || new Date();
+    // Use viewingDate if available, otherwise use dateFrom or today
+    const currentDate = viewingDate || (dateFrom ? new Date(dateFrom) : new Date());
     const previousDay = new Date(currentDate);
     previousDay.setDate(previousDay.getDate() - 1);
-    setViewingDate(previousDay);
     setDateFrom(previousDay);
     setDateTo(previousDay);
   };
 
   const handleNextDay = () => {
-    const currentDate = viewingDate || new Date();
+    // Use viewingDate if available, otherwise use dateTo or today
+    const currentDate = viewingDate || (dateTo ? new Date(dateTo) : new Date());
     const nextDay = new Date(currentDate);
     nextDay.setDate(nextDay.getDate() + 1);
-    setViewingDate(nextDay);
     setDateFrom(nextDay);
     setDateTo(nextDay);
   };
@@ -338,6 +338,27 @@ export default function AdminBookingsPage() {
       icon: <IconFilterOff size={18} />,
     });
   };
+
+  // Sync viewingDate with date filters
+  useEffect(() => {
+    if (dateFrom && dateTo) {
+      // If date range is the same day, show that date
+      const fromDate = new Date(dateFrom).toDateString();
+      const toDate = new Date(dateTo).toDateString();
+      if (fromDate === toDate) {
+        setViewingDate(new Date(dateFrom));
+      } else {
+        // For date ranges, show the "from" date as reference
+        setViewingDate(new Date(dateFrom));
+      }
+    } else if (dateFrom) {
+      setViewingDate(new Date(dateFrom));
+    } else if (dateTo) {
+      setViewingDate(new Date(dateTo));
+    } else {
+      setViewingDate(null);
+    }
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     fetchBookings();
@@ -964,16 +985,31 @@ export default function AdminBookingsPage() {
         {viewingDate && (
           <Paper withBorder p={{ base: 'xs', sm: 'md' }} bg="blue.0">
             <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-              <Group gap="xs">
-                <IconCalendarEvent size={20} />
-                <Text fw={600} size="lg" style={{ fontSize: 'clamp(0.9rem, 3vw, 1.1rem)' }}>
-                  Viewing: {viewingDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </Text>
+              <Group gap="xs" align="flex-start">
+                <IconCalendarEvent size={20} style={{ marginTop: 4 }} />
+                <div>
+                  <Text fw={600} size="lg" style={{ fontSize: 'clamp(0.9rem, 3vw, 1.1rem)' }}>
+                    {dateFrom && dateTo && new Date(dateFrom).toDateString() !== new Date(dateTo).toDateString() ? (
+                      <>
+                        📅 Date Range: {new Date(dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </>
+                    ) : (
+                      <>
+                        📅 {viewingDate.toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </>
+                    )}
+                  </Text>
+                  <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
+                    {dateFrom && dateTo && new Date(dateFrom).toDateString() !== new Date(dateTo).toDateString() 
+                      ? 'Showing bookings within this date range • Use Next/Previous for single day navigation' 
+                      : 'Use Previous/Next buttons to navigate dates • Click "Clear Filters" to see all bookings'}
+                  </Text>
+                </div>
               </Group>
               <Group gap="xs">
                 <Button
@@ -982,6 +1018,7 @@ export default function AdminBookingsPage() {
                   leftSection={<IconChevronLeft size={16} />}
                   onClick={handlePreviousDay}
                   style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                  title="Go to previous day"
                 >
                   <Text visibleFrom="sm">Previous</Text>
                   <Text hiddenFrom="sm">Prev</Text>
@@ -992,6 +1029,7 @@ export default function AdminBookingsPage() {
                   rightSection={<IconChevronRight size={16} />}
                   onClick={handleNextDay}
                   style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                  title="Go to next day"
                 >
                   <Text visibleFrom="sm">Next</Text>
                 </Button>
@@ -1076,6 +1114,20 @@ export default function AdminBookingsPage() {
                 size="sm"
                 minDate={dateFrom || undefined}
               />
+              <Button
+                variant="light"
+                color="cyan"
+                leftSection={<IconCalendarEvent size={16} />}
+                onClick={() => {
+                  const today = new Date();
+                  setDateFrom(today);
+                  setDateTo(today);
+                }}
+                size="sm"
+                style={{ flex: '0 0 auto', fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+              >
+                <Text visibleFrom="sm">Today</Text>
+              </Button>
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}
