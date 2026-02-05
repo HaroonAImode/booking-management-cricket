@@ -350,6 +350,8 @@ export default function CalendarFirstBooking() {
                         prevDay.setDate(prevDay.getDate() - 1);
                         if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
                           setQuickViewDate(prevDay);
+                          setSelectedSlots([]); // Clear selected slots when changing date
+                          setSelectedDate(null); // Clear selected date
                         }
                       }}
                       disabled={quickViewDate.toDateString() === new Date().toDateString()}
@@ -446,6 +448,8 @@ export default function CalendarFirstBooking() {
                         const nextDay = new Date(quickViewDate);
                         nextDay.setDate(nextDay.getDate() + 1);
                         setQuickViewDate(nextDay);
+                        setSelectedSlots([]); // Clear selected slots when changing date
+                        setSelectedDate(null); // Clear selected date
                       }}
                       style={{
                         background: '#1A1A1A',
@@ -594,8 +598,48 @@ export default function CalendarFirstBooking() {
                       </Box>
                     </Group>
                     
+                    {/* Selected Slots Display & Clear Button */}
+                    {safeSelectedSlots.length > 0 && (
+                      <Paper 
+                        p="md" 
+                        radius="md"
+                        style={{
+                          background: '#F5B800',
+                          border: '3px solid #1A1A1A',
+                          boxShadow: '0 4px 12px rgba(245, 184, 0, 0.3)',
+                        }}
+                      >
+                        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+                          <Box style={{ flex: 1, minWidth: '200px' }}>
+                            <Text fw={700} size="sm" c="#1A1A1A" mb={4}>
+                              SELECTED SLOTS ({safeSelectedSlots.length})
+                            </Text>
+                            <Text fw={600} size="lg" c="#1A1A1A">
+                              {safeSelectedSlots.map(h => `${formatTime(h)} ${formatAmPm(h)}`).join(', ')}
+                            </Text>
+                          </Box>
+                          <Button
+                            variant="filled"
+                            color="red"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedSlots([]);
+                              setSelectedDate(null);
+                            }}
+                            style={{
+                              fontWeight: 700,
+                              minWidth: '120px',
+                            }}
+                          >
+                            Clear Selection
+                          </Button>
+                        </Group>
+                      </Paper>
+                    )}
+                    
                     {/* Status Legend */}
                     <Group gap="xs" justify="center" style={{ flexWrap: 'wrap' }}>
+                      <Badge size="md" style={{ background: '#F5B800', color: '#1A1A1A', padding: '8px 12px', fontWeight: 700, border: '2px solid #1A1A1A' }}>★ Selected</Badge>
                       <Badge size="md" style={{ background: '#1A1A1A', color: 'white', padding: '8px 12px', fontWeight: 600 }}>✓ Available</Badge>
                       <Badge size="md" style={{ background: '#6B7280', color: 'white', padding: '8px 12px', fontWeight: 600 }}>✕ Booked</Badge>
                       <Badge size="md" style={{ background: '#F59E0B', color: 'white', padding: '8px 12px', fontWeight: 600 }}>⏳ Pending</Badge>
@@ -837,6 +881,8 @@ export default function CalendarFirstBooking() {
                                 onChange={(date) => {
                                   setSlotsLoading(true);
                                   setQuickViewDate(date ? new Date(date) : new Date());
+                                  setSelectedSlots([]); // Clear selected slots when picking new date
+                                  setSelectedDate(null); // Clear selected date
                                   setShowDatePicker(false);
                                 }}
                                 minDate={new Date()}

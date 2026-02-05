@@ -90,7 +90,7 @@ export async function GET(
 
     console.log('🔍 Fetching invoice for booking:', bookingId);
 
-    // Fetch booking data
+    // Fetch booking data with customer details via JOIN
     const { data: booking, error } = await supabase
       .from('bookings')
       .select(`
@@ -105,8 +105,10 @@ export async function GET(
         remaining_payment_method,
         status,
         created_at,
-        customer_name,
-        customer_phone
+        customers!customer_id (
+          name,
+          phone
+        )
       `)
       .eq('id', bookingId)
       .single();
@@ -452,11 +454,11 @@ function generateInvoiceHTML(booking, slots) {
                 <h3>CUSTOMER DETAILS</h3>
                 <div class="info-row">
                     <span class="info-label">Name:</span>
-                    <span class="info-value">${booking.customer_name || 'N/A'}</span>
+                    <span class="info-value">${booking.customers?.name || 'N/A'}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Phone:</span>
-                    <span class="info-value">${booking.customer_phone || 'N/A'}</span>
+                    <span class="info-value">${booking.customers?.phone || 'N/A'}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Booking Date:</span>
