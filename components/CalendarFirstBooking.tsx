@@ -20,6 +20,9 @@ export default function CalendarFirstBooking() {
   const [activeStep, setActiveStep] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [conflictDetected, setConflictDetected] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -37,33 +40,38 @@ export default function CalendarFirstBooking() {
     const isToday = date.toDateString() === now.toDateString();
     const currentHour = isToday ? now.getHours() : -1;
     
-    // Create map of all 24 hours
+    // Create map of all 24 hours with defaults
     const slotsMap = new Map();
     
     for (let hour = 0; hour < 24; hour++) {
       const isPast = isToday && hour < currentHour;
       slotsMap.set(hour, {
         slot_hour: hour,
-        is_available: false, // Default to not available
-        current_status: isPast ? 'past' : 'pending', // Default status
+        is_available: !isPast, // Default to available unless past
+        current_status: isPast ? 'past' : 'available', // Default to available
       });
     }
     
-    // Update with actual API data
+    // Update with actual API data - TRUST THE API!
     apiSlots.forEach((slot: any) => {
       const hour = slot.slot_hour;
       const isPast = isToday && hour < currentHour;
-      const isAvailable = slot.is_available && !isPast;
       
-      let status = 'available';
-      if (!isAvailable) {
-        status = isPast ? 'past' : (slot.current_status || 'booked');
+      // Use API's current_status directly
+      let finalStatus = slot.current_status || 'available';
+      
+      // Override with 'past' only if it's today and hour has passed
+      if (isPast && finalStatus === 'available') {
+        finalStatus = 'past';
       }
+      
+      // Determine availability based on status
+      const isAvailable = finalStatus === 'available';
       
       slotsMap.set(hour, {
         slot_hour: hour,
         is_available: isAvailable,
-        current_status: status,
+        current_status: finalStatus,
       });
     });
     
@@ -90,51 +98,95 @@ export default function CalendarFirstBooking() {
     }
   };
 
-  useEffect(() => {
-    const fetchSlots = async () => {
-      setSlotsLoading(true);
-      setSlotsError(null);
-      const dateStr = quickViewDate.toISOString().split('T')[0];
+  // Main fetch slots function with conflict detection
+  const fetchSlots = async (silent: boolean = false) => {
+    if (!silent) setSlotsLoading(true);
+    setSlotsError(null);
+    const dateStr = quickViewDate.toISOString().split('T')[0];
+    
+    console.log('🔍 Fetching slots for date:', dateStr, silent ? '(silent refresh)' : '');
+    
+    try {
+      // Add timestamp to prevent caching
+      const cacheBuster = new Date().getTime();
+      const response = await fetch(`/api/public/slots?date=${dateStr}&_t=${cacheBuster}`);
+      console.log('📡 API Response status:', response.status);
       
-      console.log('🔍 Fetching slots for date:', dateStr);
+      let processedSlots;
       
-      try {
-        // Use a PUBLIC API endpoint instead of admin API
-        const response = await fetch(`/api/public/slots?date=${dateStr}`);
-        console.log('📡 API Response status:', response.status);
+      if (!response.ok) {
+        console.log('🔄 Trying direct RPC fallback...');
+        processedSlots = await fallbackDirectRPC(dateStr);
+      } else {
+        const data = await response.json();
+        console.log('✅ Public API response:', data);
         
-        let processedSlots;
-        
-        if (!response.ok) {
-          // Try direct RPC as fallback
-          console.log('🔄 Trying direct RPC fallback...');
-          processedSlots = await fallbackDirectRPC(dateStr);
-        } else {
-          const data = await response.json();
-          console.log('✅ Public API response:', data);
-          
-          if (!data.success) {
-            throw new Error(data.error || 'API error');
-          }
-          
-          processedSlots = processSlotData(data.slots || [], quickViewDate);
+        if (!data.success) {
+          throw new Error(data.error || 'API error');
         }
         
-        console.log('🎯 Processed slots:', processedSlots);
-        setTodaySlots(processedSlots);
-        setSlotsLoading(false);
-      } catch (err: any) {
-        console.error('❌ Slot fetch error:', err);
-        setSlotsError('Failed to load slots');
-        setSlotsLoading(false);
-        
-        // Show empty slots on error
-        setTodaySlots([]);
+        processedSlots = processSlotData(data.slots || [], quickViewDate);
       }
-    };
+      
+      // Check for conflicts with selected slots
+      if (selectedSlots.length > 0 && processedSlots.length > 0) {
+        const hasConflict = selectedSlots.some(selectedHour => {
+          const slot = processedSlots.find(s => s.slot_hour === selectedHour);
+          return slot && !slot.is_available;
+        });
+        
+        if (hasConflict) {
+          console.warn('⚠️ CONFLICT DETECTED: Selected slots are no longer available!');
+          setConflictDetected(true);
+          // Clear conflicting selections
+          const validSlots = selectedSlots.filter(selectedHour => {
+            const slot = processedSlots.find(s => s.slot_hour === selectedHour);
+            return slot && slot.is_available;
+          });
+          setSelectedSlots(validSlots);
+        }
+      }
+      
+      console.log('🎯 Processed slots:', processedSlots);
+      setTodaySlots(processedSlots);
+      setLastRefreshed(new Date());
+      if (!silent) setSlotsLoading(false);
+      setConflictDetected(false);
+    } catch (err: any) {
+      console.error('❌ Slot fetch error:', err);
+      setSlotsError('Failed to load slots');
+      if (!silent) setSlotsLoading(false);
+      setTodaySlots([]);
+    }
+  };
 
+  // Initial fetch and date change
+  useEffect(() => {
     fetchSlots();
   }, [quickViewDate]);
+
+  // Auto-refresh every 10 seconds when viewing slots
+  useEffect(() => {
+    if (!autoRefreshEnabled || activeStep !== 0) {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        setRefreshInterval(null);
+      }
+      return;
+    }
+
+    // Set up auto-refresh
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing slots...');
+      fetchSlots(true); // Silent refresh
+    }, 10000); // Refresh every 10 seconds
+
+    setRefreshInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefreshEnabled, activeStep, quickViewDate]);
 
   const handleSlotToggle = (hour: number) => {
     setSelectedSlots((prev) => {
@@ -450,6 +502,38 @@ export default function CalendarFirstBooking() {
                   </Group>
                 </Stack>
               </Paper>
+
+              {/* Conflict Warning */}
+              {conflictDetected && (
+                <Alert 
+                  color="red" 
+                  title="⚠️ Booking Conflict Detected"
+                  variant="filled"
+                  styles={{
+                    root: { border: '2px solid #DC2626' }
+                  }}
+                >
+                  <Text size="sm" fw={600}>
+                    One or more of your selected slots were just booked by another customer. 
+                    Your selection has been updated to show only available slots.
+                  </Text>
+                </Alert>
+              )}
+
+              {/* Auto-refresh indicator */}
+              {lastRefreshed && autoRefreshEnabled && (
+                <Box style={{
+                  background: '#1A1A1A',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '2px solid #F5B800',
+                  textAlign: 'center'
+                }}>
+                  <Text size="xs" c="#F5B800" fw={600}>
+                    🔄 Live Status • Auto-refreshing every 10s • Last updated: {lastRefreshed.toLocaleTimeString()}
+                  </Text>
+                </Box>
+              )}
 
               {/* Slots Grid */}
               {todaySlots && todaySlots.length > 0 && (

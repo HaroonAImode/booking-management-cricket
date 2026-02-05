@@ -60,7 +60,6 @@ export default function PublicFooter() {
     { label: 'Home', href: '/' },
     { label: 'New Booking', href: '/bookings' },
     { label: 'Check Booking Status', href: '/bookings/check' },
-    { label: 'Pricing & Packages', href: '/pricing' },
     { label: 'Gallery', href: '/gallery' },
   ];
 
@@ -303,26 +302,6 @@ export default function PublicFooter() {
             <span>© 2024 Powerplay Cricket Arena</span>
             <span className={styles.separator}>•</span>
             <span>All rights reserved</span>
-            <span className={styles.separator}>•</span>
-            <Text
-              component={Link}
-              href="/privacy"
-              size="sm"
-              c="rgba(255, 255, 255, 0.7)"
-              className={styles.legalLink}
-            >
-              Privacy Policy
-            </Text>
-            <span className={styles.separator}>•</span>
-            <Text
-              component={Link}
-              href="/terms"
-              size="sm"
-              c="rgba(255, 255, 255, 0.7)"
-              className={styles.legalLink}
-            >
-              Terms of Service
-            </Text>
           </Text>
         </div>
       </Container>

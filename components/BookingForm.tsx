@@ -303,6 +303,53 @@ export default function BookingForm({
 
     setSubmitting(true);
 
+    // STEP 0: Enhanced conflict check with row locking
+    try {
+      console.log('🔒 Performing enhanced conflict check with row locking...');
+      const conflictCheckResponse = await fetch('/api/public/slots/conflict-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: formatDateForSQL(bookingDate),
+          slot_hours: selectedSlots
+        })
+      });
+
+      if (!conflictCheckResponse.ok) {
+        throw new Error('Failed to verify slot availability');
+      }
+
+      const conflictCheckData = await conflictCheckResponse.json();
+      
+      if (!conflictCheckData.success || !conflictCheckData.all_available) {
+        const conflictedSlots = conflictCheckData.conflicts || [];
+        const conflictedHours = conflictedSlots.map((c: any) => c.slot_hour).join(', ');
+        
+        notifications.show({
+          title: '⚠️ Booking Conflict',
+          message: `The following slots were just booked by another customer: ${conflictedHours}. Please refresh and select different slots.`,
+          color: 'red',
+          autoClose: 10000,
+        });
+        setSubmitting(false);
+        
+        // Reload the page to show updated slots
+        window.location.reload();
+        return;
+      }
+      
+      console.log('✅ All slots verified as available');
+    } catch (err) {
+      console.error('❌ Conflict check failed:', err);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to verify slot availability. Please try again.',
+        color: 'red',
+      });
+      setSubmitting(false);
+      return;
+    }
+
     // Duplicate booking prevention: check if any selected slot is already booked
     try {
       const duplicateCheckResponse = await fetch(
