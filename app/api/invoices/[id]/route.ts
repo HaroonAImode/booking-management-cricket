@@ -80,133 +80,175 @@ export async function GET(
     
     const goldColor: [number, number, number] = [245, 184, 0];
     const blackColor: [number, number, number] = [26, 26, 26];
+    const whiteColor: [number, number, number] = [255, 255, 255];
     
-    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
-    doc.rect(0, 0, 210, 35, 'F');
-    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
-    doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
-    doc.text('POWERPLAY', 105, 15, { align: 'center' });
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Cricket Ground Booking', 105, 23, { align: 'center' });
-    
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 105, 45, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    let yPos = 60;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text('Invoice No:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(booking.booking_number, 50, yPos);
-    
-    yPos += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Invoice Date:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 50, yPos);
-    
-    yPos += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Status:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(booking.status === 'completed' ? 0 : 255, booking.status === 'completed' ? 128 : 140, booking.status === 'completed' ? 0 : 0);
-    doc.text(booking.status.toUpperCase(), 50, yPos);
-    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
-    
-    yPos = 60;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bill To:', 120, yPos);
-    yPos += 7;
-    doc.setFont('helvetica', 'normal');
-    
+    // Extract customer info first
     const customers = booking.customers as any;
     const customerName = (Array.isArray(customers) ? customers[0]?.name : customers?.name) || 'N/A';
     const customerPhone = (Array.isArray(customers) ? customers[0]?.phone : customers?.phone) || 'N/A';
     
-    doc.text(customerName, 120, yPos);
-    yPos += 7;
-    doc.text(`Phone: ${customerPhone}`, 120, yPos);
+    // Header - Full width gold banner
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(0, 0, 210, 25, 'F');
     
-    yPos += 15;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, yPos, 170, 8, 'F');
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('BOOKING DETAILS', 105, yPos + 5, { align: 'center' });
+    doc.text('POWERPLAY CRICKET ARENA', 105, 12, { align: 'center' });
     
-    yPos += 15;
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
+    doc.text('Premium Cricket Ground & Sports Facility', 105, 19, { align: 'center' });
     
-    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Invoice title
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(10, 30, 190, 10, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BOOKING CONFIRMATION INVOICE', 105, 37, { align: 'center' });
     
-    doc.text(`Booking Date: ${bookingDate}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Total Hours: ${booking.total_hours}`, 20, yPos);
-    yPos += 7;
+    // Customer Details and Invoice Details side by side with borders
+    let yPos = 45;
+    
+    // Customer Details Box
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.rect(10, yPos, 90, 25);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CUSTOMER DETAILS', 15, yPos + 5);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(customerName, 15, yPos + 11);
+    doc.text(`Phone: ${customerPhone}`, 15, yPos + 17);
+    
+    // Invoice Details Box
+    doc.rect(110, yPos, 90, 25);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE DETAILS', 115, yPos + 5);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`#BK-${booking.booking_number}`, 115, yPos + 11);
+    doc.text(`Date: ${new Date(booking.booking_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}`, 115, yPos + 17);
+    
+    // Booking Details Section
+    yPos += 30;
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(10, yPos, 190, 8, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.text('BOOKING DETAILS', 105, yPos + 5.5, { align: 'center' });
+    
+    yPos += 12;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     
     const slotRanges = formatSlotRanges((slots || []).map((s: any) => s.slot_hour));
-    doc.text(`Time Slots: ${slotRanges}`, 20, yPos);
+    doc.text(`Time Slots:`, 15, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${slotRanges}`, 50, yPos);
     
-    yPos += 15;
+    yPos += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Duration:`, 15, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${booking.total_hours} hour(s)`, 50, yPos);
     
+    // Payment Summary Section
+    yPos += 10;
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(10, yPos, 190, 8, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYMENT SUMMARY', 105, yPos + 5.5, { align: 'center' });
+    
+    yPos += 10;
+    
+    // Payment table
     autoTable(doc, {
       startY: yPos,
-      head: [['Description', 'Amount']],
+      head: [['DESCRIPTION', 'PAYMENT METHOD', 'AMOUNT (PKR)']],
       body: [
-        ['Total Booking Amount', `Rs ${booking.total_amount.toLocaleString()}`],
-        ['Advance Payment', `Rs ${booking.advance_payment.toLocaleString()}`],
-        ['Remaining Payment', `Rs ${booking.remaining_payment.toLocaleString()}`],
+        ['Total Booking Amount', '-', booking.total_amount.toLocaleString()],
+        ['Advance Paid', booking.advance_payment_method || 'CASH', booking.advance_payment.toLocaleString()],
+        ['Remaining Balance', booking.remaining_payment_method || '-', booking.remaining_payment > 0 ? booking.remaining_payment.toLocaleString() : 'PAID IN FULL'],
       ],
-      theme: 'striped',
+      theme: 'plain',
       headStyles: {
-        fillColor: goldColor,
+        fillColor: whiteColor,
         textColor: blackColor,
         fontStyle: 'bold',
-        fontSize: 11
+        fontSize: 9,
+        lineWidth: 0.5,
+        lineColor: [200, 200, 200]
       },
       styles: {
-        fontSize: 10,
-        cellPadding: 5
+        fontSize: 9,
+        cellPadding: 3,
+        lineWidth: 0.5,
+        lineColor: [200, 200, 200]
       },
       columnStyles: {
-        0: { cellWidth: 120 },
-        1: { cellWidth: 50, halign: 'right', fontStyle: 'bold' }
-      }
+        0: { cellWidth: 90 },
+        1: { cellWidth: 50, halign: 'center' },
+        2: { cellWidth: 50, halign: 'right', fontStyle: 'bold' }
+      },
+      margin: { left: 10, right: 10 }
     });
     
-    yPos = (doc as any).lastAutoTable.finalY + 15;
-    
+    // Important Information Section
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(10, yPos, 190, 8, 'F');
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Payment Methods:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    yPos += 7;
-    doc.text(`Advance: ${booking.advance_payment_method || 'N/A'}`, 20, yPos);
-    if (booking.remaining_payment_method) {
-      yPos += 7;
-      doc.text(`Remaining: ${booking.remaining_payment_method}`, 20, yPos);
-    }
+    doc.text('IMPORTANT INFORMATION', 105, yPos + 5.5, { align: 'center' });
     
-    const pageHeight = doc.internal.pageSize.height;
+    yPos += 12;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    
+    const infoItems = [
+      '• Bats, wickets, and tapes will be provided.',
+      '• Please arrive 15 minutes before your slot.',
+      '• Keep the ground clean at all times.',
+      '• Bring your own tennis balls, or purchase them at the venue.'
+    ];
+    
+    infoItems.forEach(item => {
+      doc.text(item, 15, yPos);
+      yPos += 5;
+    });
+    
+    // Contact Details Section
+    yPos += 5;
+    doc.setFillColor(goldColor[0], goldColor[1], goldColor[2]);
+    doc.rect(10, yPos, 190, 8, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.text('CONTACT US', 105, yPos + 5.5, { align: 'center' });
+    
+    yPos += 12;
     doc.setFontSize(9);
-    doc.setTextColor(128, 128, 128);
-    doc.text('Thank you for choosing PowerPlay!', 105, pageHeight - 20, { align: 'center' });
-    doc.text('For queries, contact us at: support@powerplay.com', 105, pageHeight - 15, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.text('Phone: 0340-8149114', 55, yPos);
+    doc.text('Email: Powerplaycricketarena@gmail.com', 55, yPos + 6);
+    
+    yPos += 8;
+    doc.setTextColor(0, 0, 255);
+    doc.textWithLink('Instagram: @powerplaycricketarena', 55, yPos, { url: 'https://instagram.com/powerplaycricketarena' });
+    doc.text('Tel.in: @powerplaycricketarena', 55, yPos + 6);
     
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
     
     const sanitizedName = customerName.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `Invoice_${booking.booking_number}_${sanitizedName}.pdf`;
+    const filename = `${sanitizedName}_${booking.booking_number}.pdf`;
     
     return new NextResponse(pdfBuffer as any, {
       headers: {
