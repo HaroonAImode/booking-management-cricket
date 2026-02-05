@@ -68,6 +68,9 @@ import {
   IconPackage,
   IconDiscount,
   IconInfoCircle,
+  IconChevronLeft,
+  IconChevronRight,
+  IconFilterOff,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -148,6 +151,7 @@ export default function AdminBookingsPage() {
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [viewingDate, setViewingDate] = useState<Date | null>(null);
   const [summary, setSummary] = useState<any>(null);
   
   // Modals
@@ -297,6 +301,42 @@ export default function AdminBookingsPage() {
       case 'cancelled': return 'red';
       default: return 'gray';
     }
+  };
+
+  // Date navigation functions
+  const handlePreviousDay = () => {
+    const currentDate = viewingDate || new Date();
+    const previousDay = new Date(currentDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    setViewingDate(previousDay);
+    setDateFrom(previousDay);
+    setDateTo(previousDay);
+  };
+
+  const handleNextDay = () => {
+    const currentDate = viewingDate || new Date();
+    const nextDay = new Date(currentDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    setViewingDate(nextDay);
+    setDateFrom(nextDay);
+    setDateTo(nextDay);
+  };
+
+  // Clear all filters function
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setPaymentFilter('all');
+    setSearchQuery('');
+    setDateFrom(null);
+    setDateTo(null);
+    setViewingDate(null);
+    notifications.show({
+      title: 'Filters Cleared',
+      message: 'All filters have been reset',
+      color: 'blue',
+      autoClose: 2000,
+      icon: <IconFilterOff size={18} />,
+    });
   };
 
   useEffect(() => {
@@ -769,11 +809,11 @@ export default function AdminBookingsPage() {
   return (
     <Container 
       size="xl" 
-      py="md" 
-      px="sm"
+      py={{ base: 'xs', sm: 'md' }}
+      px={{ base: 'xs', sm: 'sm' }}
       className="animate-fade-in"
     >
-      <Stack gap="xl">
+      <Stack gap={{ base: 'md', sm: 'xl' }}>
         {/* Header */}
         <Stack gap="xs">
           <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -787,25 +827,25 @@ export default function AdminBookingsPage() {
               </Title>
               {summary && (
                 <Group gap="xs" mt="xs" wrap="wrap">
-                  <Badge variant="light" size="sm">
+                  <Badge variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                     Total: {summary.total}
                   </Badge>
-                  <Badge color="orange" variant="light" size="sm">
+                  <Badge color="orange" variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                     Pending: {summary.pending}
                   </Badge>
-                  <Badge color="green" variant="light" size="sm">
+                  <Badge color="green" variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                     Approved: {summary.approved}
                   </Badge>
-                  <Badge color="blue" variant="light" size="sm">
+                  <Badge color="blue" variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                     Completed: {summary.completed}
                   </Badge>
                   {summary.totalExtraCharges > 0 && (
-                    <Badge color="blue" variant="light" size="sm">
+                    <Badge color="blue" variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                       Extra Charges: Rs {summary.totalExtraCharges.toLocaleString()}
                     </Badge>
                   )}
                   {summary.totalDiscount > 0 && (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                       Discount: Rs {summary.totalDiscount.toLocaleString()}
                     </Badge>
                   )}
@@ -813,12 +853,13 @@ export default function AdminBookingsPage() {
               )}
             </div>
 
-            <Group wrap="wrap">
+            <Group wrap="wrap" gap="xs">
               {isAdmin && (
                 <Button
                   leftSection={<IconPlus size={16} />}
                   size="sm"
                   onClick={() => setManualBookingOpened(true)}
+                  style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
                 >
                   <Text visibleFrom="sm">Add Manual Booking</Text>
                   <Text hiddenFrom="sm">Add</Text>
@@ -831,8 +872,10 @@ export default function AdminBookingsPage() {
                     variant="light"
                     leftSection={<IconDownload size={16} />}
                     size="sm"
+                    style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
                   >
                     <Text visibleFrom="sm">Export</Text>
+                    <Text hiddenFrom="sm">Export</Text>
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
@@ -908,7 +951,7 @@ export default function AdminBookingsPage() {
                     btn.value === 'cancelled' ? 'red' : 'gray'
                   }
                   onClick={() => setStatusFilter(btn.value)}
-                  style={{ fontWeight: 600, minWidth: 90 }}
+                  style={{ fontWeight: 600, minWidth: 70, fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                 >
                   {btn.label}
                 </Button>
@@ -917,16 +960,69 @@ export default function AdminBookingsPage() {
           )}
         </Stack>
 
+        {/* Current Date Display & Navigation */}
+        {viewingDate && (
+          <Paper withBorder p={{ base: 'xs', sm: 'md' }} bg="blue.0">
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+              <Group gap="xs">
+                <IconCalendarEvent size={20} />
+                <Text fw={600} size="lg" style={{ fontSize: 'clamp(0.9rem, 3vw, 1.1rem)' }}>
+                  Viewing: {viewingDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </Text>
+              </Group>
+              <Group gap="xs">
+                <Button
+                  size="sm"
+                  variant="light"
+                  leftSection={<IconChevronLeft size={16} />}
+                  onClick={handlePreviousDay}
+                  style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                >
+                  <Text visibleFrom="sm">Previous</Text>
+                  <Text hiddenFrom="sm">Prev</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  rightSection={<IconChevronRight size={16} />}
+                  onClick={handleNextDay}
+                  style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                >
+                  <Text visibleFrom="sm">Next</Text>
+                </Button>
+              </Group>
+            </Group>
+          </Paper>
+        )}
+
         {/* Filters */}
-        <Paper withBorder p="sm">
+        <Paper withBorder p={{ base: 'xs', sm: 'sm' }}>
           <Stack gap="sm">
-            <TextInput
-              placeholder="Search by booking #, customer, phone..."
-              leftSection={<IconSearch size={16} />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              size="sm"
-            />
+            <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+              <TextInput
+                placeholder="Search by booking #, customer, phone..."
+                leftSection={<IconSearch size={16} />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                size="sm"
+                style={{ flex: '1 1 200px', minWidth: 200 }}
+              />
+              <Button
+                variant="outline"
+                color="red"
+                leftSection={<IconFilterOff size={16} />}
+                onClick={handleClearFilters}
+                size="sm"
+              >
+                <Text visibleFrom="sm">Clear Filters</Text>
+                <Text hiddenFrom="sm">Clear</Text>
+              </Button>
+            </Group>
             <Group wrap="wrap">
               {isAdmin && (
                 <Select
@@ -986,7 +1082,7 @@ export default function AdminBookingsPage() {
                 onClick={fetchBookings}
                 loading={loading}
                 size="sm"
-                style={{ flex: '0 0 auto' }}
+                style={{ flex: '0 0 auto', fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
               >
                 <Text visibleFrom="sm">Refresh</Text>
               </Button>
@@ -1000,21 +1096,21 @@ export default function AdminBookingsPage() {
         ) : (
           <Paper withBorder radius="md">
             <Table.ScrollContainer minWidth={900}>
-              <Table striped style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+              <Table striped highlightOnHover style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Booking #</Table.Th>
-                    <Table.Th>Customer</Table.Th>
-                    <Table.Th>Date</Table.Th>
-                    <Table.Th>Slots</Table.Th>
-                    <Table.Th>Amount</Table.Th>
-                    <Table.Th>Total Paid</Table.Th>
-                    <Table.Th>Cash</Table.Th>
-                    <Table.Th>Online</Table.Th>
-                    <Table.Th>Payment Proofs</Table.Th>
-                    <Table.Th>Extra Charges</Table.Th>
-                    <Table.Th>Status</Table.Th>
-                    <Table.Th>Actions</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Booking #</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Customer</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Date</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Slots</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Amount</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Total Paid</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Cash</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Online</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Payment Proofs</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Extra Charges</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Status</Table.Th>
+                    <Table.Th style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)', fontWeight: 700 }}>Actions</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -1037,61 +1133,61 @@ export default function AdminBookingsPage() {
                         className={booking.status === 'completed' ? 'completed-row' : ''}
                       >
                         <Table.Td>
-                          <Text size="sm" fw={500}>
+                          <Text size="sm" fw={500} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                             {booking.booking_number || ''}
                           </Text>
-                          <Text size="xs" c="dimmed">
+                          <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                             {new Date(booking.created_at).toLocaleDateString()}
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm">{booking.customer?.name || ''}</Text>
-                          <Text size="xs" c="dimmed">
+                          <Text size="sm" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>{booking.customer?.name || ''}</Text>
+                          <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                             {booking.customer?.phone || ''}
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm">
+                          <Text size="sm" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                             {new Date(booking.booking_date).toLocaleDateString()}
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" fw={500}>
+                          <Text size="sm" fw={500} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                             {formatSlotRanges(slots.map(s => s.slot_hour))}
                           </Text>
-                          <Text size="xs" c="dimmed">
+                          <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                             {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
                           </Text>
                         </Table.Td>
                         <Table.Td>
                           <Stack gap={2}>
-                            <Text size="sm" fw={600}>
+                            <Text size="sm" fw={600} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                               Rs {(booking.total_amount || 0).toLocaleString()}
                             </Text>
                             {totalExtraCharges > 0 && (
-                              <Text size="xs" c="blue" fw={500}>
+                              <Text size="xs" c="blue" fw={500} style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                                 (+Rs {totalExtraCharges.toLocaleString()})
                               </Text>
                             )}
-                            <Text size="xs" c="dimmed">
+                            <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                               {booking.total_hours || 0} hours
                             </Text>
                           </Stack>
                         </Table.Td>
                         <Table.Td>
                           <Stack gap={4}>
-                            <Text size="sm" fw={700} c={totalPaid === totalPayable ? 'green' : 'orange'}>
+                            <Text size="sm" fw={700} c={totalPaid === totalPayable ? 'green' : 'orange'} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                               Rs {totalPaid.toLocaleString()}
                             </Text>
                             {discount > 0 ? (
                               <Group gap={4} wrap="nowrap">
                                 <IconDiscount size={12} />
-                                <Text size="xs" c="green" fw={600}>
+                                <Text size="xs" c="green" fw={600} style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                                   Discount: Rs {discount.toLocaleString()}
                                 </Text>
                               </Group>
                             ) : totalPaid < totalPayable && booking.status !== 'completed' ? (
-                              <Text size="xs" c="red">
+                              <Text size="xs" c="red" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                                 Due: Rs {(totalPayable - totalPaid).toLocaleString()}
                               </Text>
                             ) : null}
@@ -1099,18 +1195,18 @@ export default function AdminBookingsPage() {
                         </Table.Td>
                         <Table.Td>
                           {cash === 0 ? (
-                            <Text size="xs" c="dimmed">-</Text>
+                            <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>-</Text>
                           ) : (
                             <Stack gap={4}>
-                              <Text size="sm" fw={600}>
+                              <Text size="sm" fw={600} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                                 Rs {cash.toLocaleString()}
                               </Text>
                               <Group gap={4} wrap="nowrap">
                                 {booking.advance_payment_method === 'cash' && (
-                                  <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                  <Badge size="xs" color="green" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>Cash</Badge>
                                 )}
                                 {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
-                                  <Badge size="xs" color="green" variant="dot">Cash</Badge>
+                                  <Badge size="xs" color="green" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>Cash</Badge>
                                 )}
                               </Group>
                             </Stack>
@@ -1118,20 +1214,20 @@ export default function AdminBookingsPage() {
                         </Table.Td>
                         <Table.Td>
                           {online === 0 ? (
-                            <Text size="xs" c="dimmed">-</Text>
+                            <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>-</Text>
                           ) : (
                             <Stack gap={4}>
-                              <Text size="sm" fw={600}>
+                              <Text size="sm" fw={600} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                                 Rs {online.toLocaleString()}
                               </Text>
                               <Group gap={4} wrap="nowrap">
                                 {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
-                                  <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot">
+                                  <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
                                     {getPaymentMethodBadge(booking.advance_payment_method).label}
                                   </Badge>
                                 )}
                                 {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
-                                  <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot">
+                                  <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
                                     {getPaymentMethodBadge(booking.remaining_payment_method).label}
                                   </Badge>
                                 )}
@@ -1155,6 +1251,7 @@ export default function AdminBookingsPage() {
                                   });
                                   setPaymentModalOpened(true);
                                 }}
+                                style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                               >
                                 Advance
                               </Button>
@@ -1173,6 +1270,7 @@ export default function AdminBookingsPage() {
                                   });
                                   setPaymentModalOpened(true);
                                 }}
+                                style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                               >
                                 Remaining
                               </Button>
@@ -1180,7 +1278,7 @@ export default function AdminBookingsPage() {
                             {/* Show dash if no proofs available */}
                             {(!booking.advance_payment_proof || booking.advance_payment_method === 'cash') && 
                              (!booking.remaining_payment_proof || booking.remaining_payment_method === 'cash' || booking.status !== 'completed') && (
-                              <Text size="xs" c="dimmed" ta="center">-</Text>
+                              <Text size="xs" c="dimmed" ta="center" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>-</Text>
                             )}
                           </Stack>
                         </Table.Td>
@@ -1192,12 +1290,12 @@ export default function AdminBookingsPage() {
                             color={getStatusColor(booking.status)}
                             variant="light"
                             size="md"
-                            style={{ textTransform: 'capitalize', letterSpacing: 0.2 }}
+                            style={{ textTransform: 'capitalize', letterSpacing: 0.2, fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                           >
                             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                           </Badge>
                           {booking.remaining_payment > 0 && booking.status === 'approved' && (
-                            <Text size="xs" c="red" fw={500} mt={4}>
+                            <Text size="xs" c="red" fw={500} mt={4} style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
                               Remaining: Rs {(booking.remaining_payment || 0).toLocaleString()}
                             </Text>
                           )}
@@ -1221,22 +1319,24 @@ export default function AdminBookingsPage() {
                                   size="xs"
                                   color="green"
                                   variant="light"
-                                  leftSection={<IconCheck size={16} />}
+                                  leftSection={<IconCheck size={14} />}
                                   onClick={() => handleApprove(booking.id)}
+                                  style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                                 >
-                                  Approve
+                                  <Text visibleFrom="sm">Approve</Text>
                                 </Button>
                                 <Button
                                   size="xs"
                                   color="red"
                                   variant="light"
-                                  leftSection={<IconX size={16} />}
+                                  leftSection={<IconX size={14} />}
                                   onClick={() => {
                                     const reason = prompt('Reason for rejection:');
                                     if (reason) handleReject(booking.id, reason);
                                   }}
+                                  style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                                 >
-                                  Reject
+                                  <Text visibleFrom="sm">Reject</Text>
                                 </Button>
                               </>
                             )}
@@ -1245,7 +1345,7 @@ export default function AdminBookingsPage() {
                                 size="xs"
                                 color="blue"
                                 variant="filled"
-                                leftSection={<IconCurrencyRupee size={16} />}
+                                leftSection={<IconCurrencyRupee size={14} />}
                                 onClick={() => {
                                   setSelectedPaymentBooking({
                                     id: booking.id,
@@ -1254,8 +1354,10 @@ export default function AdminBookingsPage() {
                                   });
                                   setCompletePaymentOpened(true);
                                 }}
+                                style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
                               >
-                                Complete Payment
+                                <Text visibleFrom="sm">Complete Payment</Text>
+                                <Text hiddenFrom="sm">Pay</Text>
                               </Button>
                             )}
                             <Menu shadow="md">
