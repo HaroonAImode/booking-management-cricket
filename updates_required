@@ -151,3 +151,18 @@ if remaing payment amount get updated if any booking has extra amount added
 so give me sql queries and also if want to verify anything then i can also run those sql in supabase and share output with you
 
 so please implement these professiaonlly 
+
+
+
+
+- i want to add new thing like currently while adding remaining amount admin and ground manager can add all remaining amount with only 1 option ( cash ,  online)
+so 2 options should appear there 
+like cash , online (and for onlien we can able to selelct sadapay or easypiasa) and proper option for online options
+
+and alos like suppose whatever total remaing amount is like total remain amount is 4500 
+and cash showing 4500 and online showing 0 
+so first user cna selelct online option like easypaisa , sadaypay
+then whatever amount he enter there like 2000
+then cash should automatially subtract that and should show 2500
+
+so please i want this implemented professioan

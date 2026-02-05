@@ -109,6 +109,9 @@ interface Booking {
   remaining_payment_proof: string;
   remaining_payment_method?: string;
   remaining_payment_amount?: number;
+  remaining_cash_amount?: number;
+  remaining_online_amount?: number;
+  remaining_online_method?: string;
   discount_amount?: number;
   status: string;
   created_at: string;
@@ -177,12 +180,19 @@ export default function AdminBookingsPage() {
     }
 
     // Count remaining payment (only if paid - status is completed)
-    if (booking.status === 'completed' && booking.remaining_payment_method) {
-      const remainingPaid = booking.remaining_payment_amount || 0;
-      if (booking.remaining_payment_method === 'cash') {
-        cash += remainingPaid;
-      } else {
-        online += remainingPaid;
+    if (booking.status === 'completed') {
+      // Check if split payment data exists (new format)
+      if (booking.remaining_cash_amount !== undefined || booking.remaining_online_amount !== undefined) {
+        cash += booking.remaining_cash_amount || 0;
+        online += booking.remaining_online_amount || 0;
+      } else if (booking.remaining_payment_method) {
+        // Legacy format - use remaining_payment_amount
+        const remainingPaid = booking.remaining_payment_amount || 0;
+        if (booking.remaining_payment_method === 'cash') {
+          cash += remainingPaid;
+        } else {
+          online += remainingPaid;
+        }
       }
     }
 
@@ -1253,14 +1263,18 @@ export default function AdminBookingsPage() {
                               <Text size="sm" fw={600} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                                 Rs {cash.toLocaleString()}
                               </Text>
-                              <Group gap={4} wrap="nowrap">
+                              <Stack gap={2}>
                                 {booking.advance_payment_method === 'cash' && (
-                                  <Badge size="xs" color="green" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>Cash</Badge>
+                                  <Badge size="xs" color="green" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
+                                    Adv: Rs {booking.advance_payment.toLocaleString()}
+                                  </Badge>
                                 )}
-                                {booking.status === 'completed' && booking.remaining_payment_method === 'cash' && (
-                                  <Badge size="xs" color="green" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>Cash</Badge>
+                                {booking.status === 'completed' && booking.remaining_cash_amount && booking.remaining_cash_amount > 0 && (
+                                  <Badge size="xs" color="teal" variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
+                                    Rem: Rs {booking.remaining_cash_amount.toLocaleString()}
+                                  </Badge>
                                 )}
-                              </Group>
+                              </Stack>
                             </Stack>
                           )}
                         </Table.Td>
@@ -1272,18 +1286,18 @@ export default function AdminBookingsPage() {
                               <Text size="sm" fw={600} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
                                 Rs {online.toLocaleString()}
                               </Text>
-                              <Group gap={4} wrap="nowrap">
+                              <Stack gap={2}>
                                 {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && (
                                   <Badge size="xs" color={getPaymentMethodBadge(booking.advance_payment_method).color} variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
-                                    {getPaymentMethodBadge(booking.advance_payment_method).label}
+                                    Adv: Rs {booking.advance_payment.toLocaleString()} ({getPaymentMethodBadge(booking.advance_payment_method).label})
                                   </Badge>
                                 )}
-                                {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && (
-                                  <Badge size="xs" color={getPaymentMethodBadge(booking.remaining_payment_method).color} variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
-                                    {getPaymentMethodBadge(booking.remaining_payment_method).label}
+                                {booking.status === 'completed' && booking.remaining_online_amount && booking.remaining_online_amount > 0 && (
+                                  <Badge size="xs" color={booking.remaining_online_method ? getPaymentMethodBadge(booking.remaining_online_method).color : 'blue'} variant="dot" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)' }}>
+                                    Rem: Rs {booking.remaining_online_amount.toLocaleString()} ({booking.remaining_online_method ? getPaymentMethodBadge(booking.remaining_online_method).label : 'Online'})
                                   </Badge>
                                 )}
-                              </Group>
+                              </Stack>
                             </Stack>
                           )}
                         </Table.Td>

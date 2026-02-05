@@ -57,6 +57,11 @@ export async function GET(
         remaining_payment,
         advance_payment_method,
         remaining_payment_method,
+        remaining_payment_amount,
+        remaining_cash_amount,
+        remaining_online_amount,
+        remaining_online_method,
+        discount_amount,
         status,
         created_at,
         customers!customer_id (
@@ -75,6 +80,14 @@ export async function GET(
       .from('booking_slots')
       .select('slot_hour, is_night_rate, hourly_rate')
       .eq('booking_id', bookingId);
+
+    // Fetch extra charges
+    const { data: extraCharges } = await supabase
+      .from('extra_charges')
+      .select('*')
+      .eq('booking_id', bookingId);
+
+    const totalExtraCharges = (extraCharges || []).reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
     const doc = new jsPDF();
     
@@ -168,15 +181,63 @@ export async function GET(
     
     yPos += 10;
     
+    // Build payment table body
+    const paymentTableBody: any[] = [
+      ['Total Booking Amount', '-', booking.total_amount.toLocaleString()],
+    ];
+
+    // Add extra charges if any
+    if (extraCharges && extraCharges.length > 0) {
+      extraCharges.forEach((charge: any) => {
+        const categoryLabel = charge.category === 'mineral water' ? 'Mineral Water' : 
+                             charge.category === 'tape' ? 'Tape' :
+                             charge.category === 'ball' ? 'Ball' : 'Other';
+        paymentTableBody.push([`Extra Charge - ${categoryLabel}`, '-', `+${charge.amount.toLocaleString()}`]);
+      });
+      paymentTableBody.push(['Total Extra Charges', '-', `+${totalExtraCharges.toLocaleString()}`]);
+    }
+
+    // Add discount if any
+    if (booking.discount_amount && booking.discount_amount > 0) {
+      paymentTableBody.push(['Discount Applied', '-', `-${booking.discount_amount.toLocaleString()}`]);
+    }
+
+    // Add grand total if extra charges or discount exist
+    if (totalExtraCharges > 0 || (booking.discount_amount && booking.discount_amount > 0)) {
+      const grandTotal = booking.total_amount + totalExtraCharges - (booking.discount_amount || 0);
+      paymentTableBody.push(['Grand Total', '-', grandTotal.toLocaleString()]);
+    }
+
+    // Add advance payment
+    paymentTableBody.push(['Advance Paid', (booking.advance_payment_method || 'CASH').toUpperCase(), `-${booking.advance_payment.toLocaleString()}`]);
+
+    // Add remaining payment with split payment details if applicable
+    if (booking.status === 'completed') {
+      if (booking.remaining_cash_amount > 0 || booking.remaining_online_amount > 0) {
+        // Split payment
+        if (booking.remaining_cash_amount > 0) {
+          paymentTableBody.push(['Remaining Paid (Cash)', 'CASH', `-${booking.remaining_cash_amount.toLocaleString()}`]);
+        }
+        if (booking.remaining_online_amount > 0) {
+          const onlineMethod = (booking.remaining_online_method || 'Online').toUpperCase();
+          paymentTableBody.push([`Remaining Paid (${onlineMethod})`, onlineMethod, `-${booking.remaining_online_amount.toLocaleString()}`]);
+        }
+      } else if (booking.remaining_payment_method) {
+        // Legacy single payment
+        const remainingAmount = booking.remaining_payment_amount || 0;
+        paymentTableBody.push(['Remaining Paid', (booking.remaining_payment_method || 'CASH').toUpperCase(), `-${remainingAmount.toLocaleString()}`]);
+      }
+      paymentTableBody.push(['Balance', '-', 'PAID IN FULL']);
+    } else {
+      // Still pending payment
+      paymentTableBody.push(['Remaining Balance', booking.remaining_payment_method || '-', booking.remaining_payment > 0 ? booking.remaining_payment.toLocaleString() : 'PAID IN FULL']);
+    }
+    
     // Payment table
     autoTable(doc, {
       startY: yPos,
       head: [['DESCRIPTION', 'PAYMENT METHOD', 'AMOUNT (PKR)']],
-      body: [
-        ['Total Booking Amount', '-', booking.total_amount.toLocaleString()],
-        ['Advance Paid', booking.advance_payment_method || 'CASH', booking.advance_payment.toLocaleString()],
-        ['Remaining Balance', booking.remaining_payment_method || '-', booking.remaining_payment > 0 ? booking.remaining_payment.toLocaleString() : 'PAID IN FULL'],
-      ],
+      body: paymentTableBody,
       theme: 'plain',
       headStyles: {
         fillColor: whiteColor,
