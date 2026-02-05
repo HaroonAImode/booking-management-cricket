@@ -1011,6 +1011,7 @@ export default function AdminBookingsPage() {
                     <Table.Th>Total Paid</Table.Th>
                     <Table.Th>Cash</Table.Th>
                     <Table.Th>Online</Table.Th>
+                    <Table.Th>Payment Proofs</Table.Th>
                     <Table.Th>Extra Charges</Table.Th>
                     <Table.Th>Status</Table.Th>
                     <Table.Th>Actions</Table.Th>
@@ -1137,6 +1138,51 @@ export default function AdminBookingsPage() {
                               </Group>
                             </Stack>
                           )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Stack gap={4}>
+                            {/* Advance Payment Proof Button */}
+                            {booking.advance_payment_method && booking.advance_payment_method !== 'cash' && booking.advance_payment_proof && (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="blue"
+                                leftSection={<IconEye size={14} />}
+                                onClick={() => {
+                                  setSelectedPaymentProof({
+                                    path: booking.advance_payment_proof,
+                                    number: booking.booking_number,
+                                  });
+                                  setPaymentModalOpened(true);
+                                }}
+                              >
+                                Advance
+                              </Button>
+                            )}
+                            {/* Remaining Payment Proof Button */}
+                            {booking.status === 'completed' && booking.remaining_payment_method && booking.remaining_payment_method !== 'cash' && booking.remaining_payment_proof && (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="green"
+                                leftSection={<IconEye size={14} />}
+                                onClick={() => {
+                                  setSelectedPaymentProof({
+                                    path: booking.remaining_payment_proof,
+                                    number: booking.booking_number,
+                                  });
+                                  setPaymentModalOpened(true);
+                                }}
+                              >
+                                Remaining
+                              </Button>
+                            )}
+                            {/* Show dash if no proofs available */}
+                            {(!booking.advance_payment_proof || booking.advance_payment_method === 'cash') && 
+                             (!booking.remaining_payment_proof || booking.remaining_payment_method === 'cash' || booking.status !== 'completed') && (
+                              <Text size="xs" c="dimmed" ta="center">-</Text>
+                            )}
+                          </Stack>
                         </Table.Td>
                         <Table.Td>
                           {getExtraChargesDisplay(booking)}
