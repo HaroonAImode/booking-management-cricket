@@ -85,7 +85,7 @@ export async function GET(
   { params }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const bookingId = params.id;
 
     console.log('🔍 Fetching invoice for booking:', bookingId);
