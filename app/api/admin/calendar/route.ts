@@ -49,7 +49,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
 
     console.log('📅 Fetching calendar bookings:', { startDate, endDate, status });
 
-    // Use direct query instead of RPC to avoid processedData issues
+    // Use direct query with JOIN to get customer details
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select(`
@@ -62,10 +62,12 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
         remaining_payment,
         status,
         created_at,
-        customer_name,
-        customer_phone,
         customer_notes,
         admin_notes,
+        customers!customer_id (
+          name,
+          phone
+        ),
         booking_slots(slot_hour)
       `)
       .gte('booking_date', startDate)
@@ -88,6 +90,10 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       // Extract slot hours from booking_slots
       const slotHours = (booking.booking_slots || []).map((slot: any) => slot.slot_hour).sort((a: number, b: number) => a - b);
       
+      // Get customer details from joined table
+      const customerName = booking.customers?.name || 'Unknown Customer';
+      const customerPhone = booking.customers?.phone || '';
+      
       // Get first and last slot
       const firstSlot = slotHours.length > 0 ? slotHours[0] : 8;
       const lastSlot = slotHours.length > 0 ? slotHours[slotHours.length - 1] : 9;
@@ -105,7 +111,7 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
       return {
         id: booking.id,
         bookingId: booking.id,
-        title: `${booking.customer_name} - ${slotRanges}`,
+        title: `${customerName} - ${slotRanges}`,
         start: `${booking.booking_date}T${startHour}:00:00`,
         end: `${booking.booking_date}T${endHour}:00:00`,
         backgroundColor: getStatusColor(booking.status),
@@ -114,8 +120,8 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
         extendedProps: {
           bookingId: booking.id,
           bookingNumber: booking.booking_number,
-          customerName: booking.customer_name,
-          customerPhone: booking.customer_phone,
+          customerName: customerName,
+          customerPhone: customerPhone,
           status: booking.status,
           totalHours: booking.total_hours,
           totalAmount: booking.total_amount,
