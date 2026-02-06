@@ -34,14 +34,22 @@ BEGIN
   -- Clean up expired bookings first
   PERFORM cleanup_expired_pending_bookings();
   
-  -- Get night rate config
-  SELECT start_time, end_time 
-  INTO night_start, night_end
-  FROM rate_config 
-  WHERE rate_type = 'night' 
-  LIMIT 1;
+  -- Get current rates from settings
+  SELECT setting_value::NUMERIC INTO day_rate
+  FROM settings WHERE setting_key = 'day_rate_per_hour';
   
-  -- Default night hours if not configured
+  SELECT setting_value::NUMERIC INTO night_rate
+  FROM settings WHERE setting_key = 'night_rate_per_hour';
+  
+  SELECT setting_value::TIME INTO night_start
+  FROM settings WHERE setting_key = 'night_start_time';
+  
+  SELECT setting_value::TIME INTO night_end
+  FROM settings WHERE setting_key = 'night_end_time';
+  
+  -- Set defaults if settings are missing
+  day_rate := COALESCE(day_rate, 1500);
+  night_rate := COALESCE(night_rate, 2000);
   night_start := COALESCE(night_start, '17:00:00'::TIME);
   night_end := COALESCE(night_end, '07:00:00'::TIME);
   
