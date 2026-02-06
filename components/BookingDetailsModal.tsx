@@ -410,23 +410,115 @@ export default function BookingDetailsModal({
             </Text>
             <Stack gap="xs">
               <Group justify="space-between">
-                <Text size="sm">Total Amount:</Text>
+                <Text size="sm">Booking Amount:</Text>
                 <Text size="sm" fw={600}>
                   {formatCurrency(booking.total_amount)}
                 </Text>
               </Group>
+              
+              {/* Extra Charges */}
+              {booking.extra_charges && Array.isArray(booking.extra_charges) && booking.extra_charges.length > 0 && (
+                <>
+                  {booking.extra_charges.map((charge: any, index: number) => (
+                    <Group justify="space-between" key={index}>
+                      <Text size="sm" c="blue">
+                        + Extra ({charge.category || 'Other'}):
+                      </Text>
+                      <Text size="sm" c="blue" fw={500}>
+                        {formatCurrency(charge.amount)}
+                      </Text>
+                    </Group>
+                  ))}
+                  <Group justify="space-between">
+                    <Text size="sm" fw={600}>Subtotal:</Text>
+                    <Text size="sm" fw={600}>
+                      {formatCurrency(booking.total_amount + booking.extra_charges.reduce((sum: number, c: any) => sum + (c.amount || 0), 0))}
+                    </Text>
+                  </Group>
+                </>
+              )}
+              
+              {/* Discount */}
+              {booking.discount_amount && booking.discount_amount > 0 && (
+                <Group justify="space-between">
+                  <Text size="sm" c="green">
+                    - Discount:
+                  </Text>
+                  <Text size="sm" c="green" fw={500}>
+                    {formatCurrency(booking.discount_amount)}
+                  </Text>
+                </Group>
+              )}
+              
+              {/* Total Payable */}
+              {((booking.extra_charges && booking.extra_charges.length > 0) || (booking.discount_amount && booking.discount_amount > 0)) && (
+                <>
+                  <Divider />
+                  <Group justify="space-between">
+                    <Text size="md" fw={700}>Total Payable:</Text>
+                    <Text size="md" fw={700} c="blue">
+                      {formatCurrency(
+                        booking.total_amount + 
+                        (booking.extra_charges?.reduce((sum: number, c: any) => sum + (c.amount || 0), 0) || 0) - 
+                        (booking.discount_amount || 0)
+                      )}
+                    </Text>
+                  </Group>
+                  <Divider />
+                </>
+              )}
+              
               <Group justify="space-between">
                 <Text size="sm">Advance Paid:</Text>
                 <Text size="sm" c="green" fw={500}>
                   {formatCurrency(booking.advance_payment)}
                 </Text>
               </Group>
-              <Group justify="space-between">
-                <Text size="sm">Remaining:</Text>
-                <Text size="sm" c="orange" fw={500}>
-                  {formatCurrency(booking.remaining_payment)}
-                </Text>
-              </Group>
+              
+              {/* Show total remaining payment for completed bookings */}
+              {booking.status === 'completed' && (booking.remaining_cash_amount || booking.remaining_online_amount) && (
+                <>
+                  <Group justify="space-between">
+                    <Text size="sm">Remaining Paid:</Text>
+                    <Text size="sm" c="green" fw={500}>
+                      {formatCurrency((booking.remaining_cash_amount || 0) + (booking.remaining_online_amount || 0))}
+                    </Text>
+                  </Group>
+                  {booking.remaining_cash_amount > 0 && (
+                    <Group justify="space-between" pl="md">
+                      <Text size="xs" c="dimmed">Cash:</Text>
+                      <Text size="xs" c="dimmed">
+                        {formatCurrency(booking.remaining_cash_amount)}
+                      </Text>
+                    </Group>
+                  )}
+                  {booking.remaining_online_amount > 0 && (
+                    <Group justify="space-between" pl="md">
+                      <Text size="xs" c="dimmed">{booking.remaining_online_method || 'Online'}:</Text>
+                      <Text size="xs" c="dimmed">
+                        {formatCurrency(booking.remaining_online_amount)}
+                      </Text>
+                    </Group>
+                  )}
+                  <Group justify="space-between">
+                    <Text size="md" fw={700}>Total Paid:</Text>
+                    <Text size="md" fw={700} c="green">
+                      {formatCurrency(booking.advance_payment + (booking.remaining_cash_amount || 0) + (booking.remaining_online_amount || 0))}
+                    </Text>
+                  </Group>
+                </>
+              )}
+              
+              {/* Remaining payment for non-completed bookings */}
+              {booking.status !== 'completed' && (
+                <Group justify="space-between">
+                  <Text size="sm">Remaining:</Text>
+                  <Text size="sm" c="orange" fw={500}>
+                    {formatCurrency(booking.remaining_payment)}
+                  </Text>
+                </Group>
+              )}
+              
               <Divider my="sm" />
               
               {/* Payment Proofs - Two Boxes Side by Side */}
