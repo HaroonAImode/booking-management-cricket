@@ -79,8 +79,34 @@ export async function GET(
 
     const { data: slots } = await supabase
       .from('booking_slots')
-      .select('slot_hour, is_night_rate, hourly_rate')
-      .eq('booking_id', bookingId);
+      .select('slot_hour, slot_date, is_night_rate, hourly_rate')
+      .eq('booking_id', bookingId)
+      .order('slot_date', { ascending: true })
+      .order('slot_hour', { ascending: true });
+    
+    // Format date range for multi-day bookings
+    let dateDisplay = new Date(booking.booking_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    
+    if (slots && slots.length > 0) {
+      const dates = slots.map(s => new Date(s.slot_date)).sort((a, b) => a.getTime() - b.getTime());
+      const firstDate = dates[0];
+      const lastDate = dates[dates.length - 1];
+      
+      if (firstDate.toDateString() !== lastDate.toDateString()) {
+        // Multi-day booking: show date range
+        const startDay = firstDate.getDate();
+        const startMonth = firstDate.toLocaleDateString('en-US', { month: 'short' });
+        const endDay = lastDate.getDate();
+        const endMonth = lastDate.toLocaleDateString('en-US', { month: 'short' });
+        const year = lastDate.getFullYear();
+        
+        if (firstDate.getMonth() === lastDate.getMonth()) {
+          dateDisplay = `${startDay} - ${endDay} ${endMonth} ${year}`;
+        } else {
+          dateDisplay = `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
+        }
+      }
+    }
 
     // Fetch extra charges from extra_charges table
     const { data: extraChargesTable } = await supabase
@@ -170,7 +196,7 @@ export async function GET(
     
     doc.setFont('helvetica', 'normal');
     doc.text(`#BK-${booking.booking_number}`, 115, yPos + 11);
-    doc.text(`Date: ${new Date(booking.booking_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}`, 115, yPos + 17);
+    doc.text(`Date: ${dateDisplay}`, 115, yPos + 17);
     
     // Booking Details Section
     yPos += 30;
