@@ -77,7 +77,7 @@ export default function CalendarFirstBooking() {
     const slotsMap = new Map();
     
     for (let hour = 0; hour < 24; hour++) {
-      const isPast = isToday && hour < currentHour;
+      const isPast = isToday && hour <= currentHour;
       slotsMap.set(hour, {
         slot_hour: hour,
         is_available: !isPast, // Default to available unless past
@@ -88,7 +88,7 @@ export default function CalendarFirstBooking() {
     // Update with actual API data - TRUST THE API!
     apiSlots.forEach((slot: any) => {
       const hour = slot.slot_hour;
-      const isPast = isToday && hour < currentHour;
+      const isPast = isToday && hour <= currentHour;
       
       // Use API's current_status directly
       let finalStatus = slot.current_status || 'available';
