@@ -6,6 +6,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Helper function to get current hour in Pakistan timezone
+function getCurrentHourPKT(): number {
+  const now = new Date();
+  // Convert to Pakistan timezone (UTC+5)
+  const pktTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+  return pktTime.getHours();
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client - use await since createClient might be async
@@ -112,9 +120,11 @@ export async function GET(request: NextRequest) {
           // Determine if slot is past current time (for today's date)
           let finalStatus = status;
           const now = new Date();
-          const isToday = parsedDate.toDateString() === now.toDateString();
+          const pktDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+          const isToday = parsedDate.toDateString() === pktDate.toDateString();
+          const currentHourPKT = getCurrentHourPKT();
           
-          if (isToday && hour < now.getHours() && status === 'available') {
+          if (isToday && hour <= currentHourPKT && status === 'available') {
             finalStatus = 'past';
           }
           
@@ -223,8 +233,9 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
     // Generate 24-hour slots
     const slots = [];
     const now = new Date();
-    const isToday = new Date(date).toDateString() === now.toDateString();
-    const currentHour = isToday ? now.getHours() : -1;
+    const pktDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+    const isToday = new Date(date).toDateString() === pktDate.toDateString();
+    const currentHour = isToday ? getCurrentHourPKT() : -1;
     
     for (let hour = 0; hour < 24; hour++) {
       let status = 'available';
@@ -266,8 +277,7 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
 function generateDefaultSlots(): any[] {
   console.log('⚠️ Generating default slots structure');
   const slots = [];
-  const now = new Date();
-  const currentHour = now.getHours();
+  const currentHour = getCurrentHourPKT();
   
   for (let hour = 0; hour < 24; hour++) {
     const isNightRate = hour >= 17 || hour < 7;

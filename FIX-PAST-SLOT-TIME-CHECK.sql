@@ -112,7 +112,8 @@ BEGIN
     
     -- ✅ CRITICAL FIX: Check if slot is in the past (for today only)
     -- Changed from < to <= so current hour is also marked as past
-    IF p_date = CURRENT_DATE AND current_hour <= EXTRACT(HOUR FROM CURRENT_TIME) THEN
+    -- Use Asia/Karachi timezone for Pakistan local time
+    IF p_date = CURRENT_DATE AND current_hour <= EXTRACT(HOUR FROM (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Karachi')) THEN
       v_slot_status := 'past';
     END IF;
     
@@ -179,7 +180,8 @@ BEGIN
     
     -- ✅ CRITICAL FIX: Check if slot is in the past (including current hour)
     -- Changed from < to <= so current hour cannot be booked
-    IF p_date = CURRENT_DATE AND v_hour <= EXTRACT(HOUR FROM CURRENT_TIME) THEN
+    -- Use Asia/Karachi timezone for Pakistan local time
+    IF p_date = CURRENT_DATE AND v_hour <= EXTRACT(HOUR FROM (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Karachi')) THEN
       v_conflict := true;
       v_conflict_reason := 'Cannot book past time slots';
     END IF;
