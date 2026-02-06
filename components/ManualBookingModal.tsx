@@ -25,7 +25,7 @@ import {
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react';
 import { formatTimeDisplay, formatTimeRange } from '@/lib/supabase/bookings';
 import SlotSelector from './SlotSelector';
 import { uploadPaymentProof } from '@/lib/supabase/storage';
@@ -35,6 +35,11 @@ interface ManualBookingModalProps {
   opened: boolean;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface SlotWithDate {
+  date: string;
+  hour: number;
 }
 
 export default function ManualBookingModal({
@@ -52,7 +57,8 @@ export default function ManualBookingModal({
     notes: '',
     autoApprove: true,
   });
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [selectedSlots, setSelectedSlots] = useState<SlotWithDate[]>([]);
+  const [viewingDate, setViewingDate] = useState<Date>(new Date());
   const [availableSlots, setAvailableSlots] = useState<SlotInfo[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
@@ -66,19 +72,26 @@ export default function ManualBookingModal({
     return hour >= 17 || hour <= 6;
   };
 
-  // Fetch available slots when bookingDate changes
+  // Initialize viewing date when modal opens
   useEffect(() => {
-    if (!formData.bookingDate) return;
+    if (opened) {
+      setViewingDate(formData.bookingDate);
+    }
+  }, [opened]);
+
+  // Fetch available slots when viewingDate changes
+  useEffect(() => {
+    if (!viewingDate) return;
     setSlotsLoading(true);
     setSlotsError(null);
-    const url = `/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`;
+    const url = `/api/admin/bookings/check-slots?date=${viewingDate.toISOString().split('T')[0]}`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
         const availableHours: number[] = data.availableSlots || [];
         const bookedHours: number[] = data.bookedSlots || [];
         const now = new Date();
-        const isToday = formData.bookingDate.toDateString() === now.toDateString();
+        const isToday = viewingDate.toDateString() === now.toDateString();
         const currentHour = isToday ? now.getHours() : -1;
         const slots: SlotInfo[] = Array.from({ length: 24 }, (_, hour) => {
           const isPast = isToday && hour <= currentHour;
@@ -100,14 +113,38 @@ export default function ManualBookingModal({
         setSlotsError('Failed to load slots');
         setSlotsLoading(false);
       });
-  }, [formData.bookingDate]);
+  }, [viewingDate]);
+
+  // Date navigation handlers
+  const handlePreviousDay = () => {
+    const newDate = new Date(viewingDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setViewingDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(viewingDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setViewingDate(newDate);
+  };
+
+  // Get selected dates for display
+  const getSelectedDates = () => {
+    const dateGroups: Record<string, SlotWithDate[]> = {};
+    selectedSlots.forEach(slot => {
+      if (!dateGroups[slot.date]) {
+        dateGroups[slot.date] = [];
+      }
+      dateGroups[slot.date].push(slot);
+    });
+    return dateGroups;
+  };
 
   // Calculate total from selected slots
   const calculateTotal = () => {
-    if (!availableSlots) return 0;
-    return selectedSlots.reduce((sum, hour) => {
-      const slot = availableSlots.find(s => s.slot_hour === hour);
-      return sum + (slot ? slot.hourly_rate : 0);
+    return selectedSlots.reduce((sum, slot) => {
+      const rate = isNightHour(slot.hour) ? nightRate : dayRate;
+      return sum + rate;
     }, 0);
   };
 
@@ -132,51 +169,34 @@ export default function ManualBookingModal({
       return;
     }
 
-    // Check for non-sequential slots
-    const sorted = [...selectedSlots].sort((a, b) => a - b);
-    let isSequential = true;
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i] !== sorted[i - 1] + 1) {
-        isSequential = false;
-        break;
+    // Group slots by date and check sequential within each date
+    const slotsByDate: Record<string, number[]> = {};
+    selectedSlots.forEach(slot => {
+      if (!slotsByDate[slot.date]) {
+        slotsByDate[slot.date] = [];
       }
-    }
-    if (!isSequential) {
-      notifications.show({
-        title: 'Warning',
-        message: 'Selected slots are not in sequence. Please select consecutive hours.',
-        color: 'yellow',
-      });
-      return;
+      slotsByDate[slot.date].push(slot.hour);
+    });
+
+    // Check for sequential slots within each date
+    for (const [date, hours] of Object.entries(slotsByDate)) {
+      const sorted = [...hours].sort((a, b) => a - b);
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] !== sorted[i - 1] + 1) {
+          // Allow crossing midnight (23 -> 0)
+          if (!(sorted[i - 1] === 23 && sorted[i] === 0)) {
+            notifications.show({
+              title: 'Warning',
+              message: `Slots on ${new Date(date).toLocaleDateString()} are not consecutive. Please select continuous hours.`,
+              color: 'yellow',
+            });
+            return;
+          }
+        }
+      }
     }
 
-    // Duplicate booking prevention
-    try {
-      setLoading(true);
-      const duplicateCheckResponse = await fetch(
-        `/api/admin/bookings/check-slots?date=${formData.bookingDate.toISOString().split('T')[0]}`
-      );
-      const duplicateCheckData = await duplicateCheckResponse.json();
-      const bookedHours = duplicateCheckData.bookedSlots || [];
-      const hasDuplicate = selectedSlots.some(hour => bookedHours.includes(hour));
-      if (hasDuplicate) {
-        notifications.show({
-          title: 'Error',
-          message: 'One or more selected slots are already booked. Please choose different slots.',
-          color: 'red',
-        });
-        setLoading(false);
-        return;
-      }
-    } catch (err) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to check for duplicate bookings.',
-        color: 'red',
-      });
-      setLoading(false);
-      return;
-    }
+    // No duplicate checking needed - slots already validated when selected
 
     try {
       setLoading(true);
@@ -202,26 +222,23 @@ export default function ManualBookingModal({
         paymentProofUrlToSend = uploadResult.data || null;
       }
 
-      // Prepare slots data in correct format for API
-      const bookingDateStr = formData.bookingDate.toISOString().split('T')[0];
-      const slotsData = selectedSlots.map(hour => {
-        const slot = availableSlots?.find(s => s.slot_hour === hour);
-        const slotTime = `${String(hour).padStart(2, '0')}:00:00`;
-        
-        // Send BOTH formats for maximum compatibility
-        const newFormat = {
-          slotDate: bookingDateStr,
-          slotTime: slotTime,
-          slotHour: hour,
-          hourlyRate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
-          is_night_rate: isNightHour(hour)
-        };
+      // Prepare slots data with slot_date for each slot
+      const allDates = Object.keys(getSelectedDates());
+      const firstDate = allDates.sort()[0] || formData.bookingDate.toISOString().split('T')[0];
+      
+      const slotsData = selectedSlots.map(slot => {
+        const slotTime = `${String(slot.hour).padStart(2, '0')}:00:00`;
+        const rate = isNightHour(slot.hour) ? nightRate : dayRate;
         
         return {
-          ...newFormat,
-          hour: hour,
-          rate: slot?.hourly_rate || (isNightHour(hour) ? nightRate : dayRate),
-          isNightRate: isNightHour(hour)
+          slotDate: slot.date,
+          slotTime: slotTime,
+          slotHour: slot.hour,
+          hourlyRate: rate,
+          is_night_rate: isNightHour(slot.hour),
+          hour: slot.hour,
+          rate: rate,
+          isNightRate: isNightHour(slot.hour)
         };
       });
 
@@ -237,7 +254,7 @@ export default function ManualBookingModal({
       console.log({
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
-        bookingDate: bookingDateStr,
+        bookingDate: firstDate,
         slots: slotsData,
         totalHours,
         totalAmount,
@@ -255,7 +272,7 @@ export default function ManualBookingModal({
         body: JSON.stringify({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
-          bookingDate: bookingDateStr,
+          bookingDate: firstDate,
           slots: slotsData,
           totalHours: totalHours,
           totalAmount: totalAmount,
@@ -305,16 +322,18 @@ export default function ManualBookingModal({
   };
 
   const resetForm = () => {
+    const newDate = new Date();
     setFormData({
       customerName: '',
       customerPhone: '',
-      bookingDate: new Date(),
+      bookingDate: newDate,
       advancePayment: 500,
       advancePaymentMethod: 'cash',
       notes: '',
       autoApprove: true,
     });
     setSelectedSlots([]);
+    setViewingDate(newDate);
     setPaymentProofFile(null);
     setPaymentProofUrl(null);
   };
@@ -374,6 +393,7 @@ export default function ManualBookingModal({
               onChange={(value) => {
                 const date = typeof value === 'string' ? new Date(value) : (value || new Date());
                 setFormData({ ...formData, bookingDate: date });
+                setViewingDate(date);
                 setSelectedSlots([]);
               }}
               minDate={new Date()}
@@ -381,23 +401,97 @@ export default function ManualBookingModal({
             />
           </Paper>
 
-          {/* Slots Selection */}
+          {/* Slots Selection with Multi-Day Support */}
           <Paper withBorder p={{ base: 'xs', sm: 'md' }}>
-            <Text fw={600} mb="sm" size="sm">Select Time Slots</Text>
-            <SlotSelector
-              selectedDate={formData.bookingDate}
-              selectedSlots={selectedSlots}
-              onSlotToggle={(hour) => {
-                setSelectedSlots((prev) =>
-                  prev.includes(hour)
-                    ? prev.filter((h) => h !== hour)
-                    : [...prev, hour]
-                );
-              }}
-              availableSlots={availableSlots}
-              loading={slotsLoading}
-              error={slotsError}
-            />
+            <Stack gap="md">
+              <Text fw={600} size="sm">Select Time Slots</Text>
+              
+              {/* Date Navigation */}
+              <Group justify="space-between" align="center">
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconChevronLeft size={14} />}
+                  onClick={handlePreviousDay}
+                >
+                  Previous Day
+                </Button>
+                <Group gap="xs">
+                  <IconCalendar size={16} />
+                  <Text size="sm" fw={500}>
+                    {viewingDate.toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </Group>
+                <Button
+                  variant="light"
+                  size="xs"
+                  rightSection={<IconChevronRight size={14} />}
+                  onClick={handleNextDay}
+                >
+                  Next Day
+                </Button>
+              </Group>
+
+              {/* Selected Slots Display */}
+              {selectedSlots.length > 0 && (
+                <Paper withBorder p="sm" bg="blue.0">
+                  <Text size="xs" fw={600} mb="xs" c="blue">
+                    Selected: {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''}
+                  </Text>
+                  <Stack gap="xs">
+                    {Object.entries(getSelectedDates()).map(([date, slots]) => (
+                      <Group key={date} gap="xs" wrap="wrap">
+                        <Text size="xs" fw={500} style={{ minWidth: 100 }}>
+                          {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}:
+                        </Text>
+                        {slots
+                          .sort((a, b) => a.hour - b.hour)
+                          .map(slot => (
+                            <Badge 
+                              key={`${slot.date}-${slot.hour}`} 
+                              size="sm"
+                              color={isNightHour(slot.hour) ? 'indigo' : 'yellow'}
+                            >
+                              {formatTimeDisplay(slot.hour)} {isNightHour(slot.hour) ? '🌙' : ''}
+                            </Badge>
+                          ))
+                        }
+                      </Group>
+                    ))}
+                  </Stack>
+                </Paper>
+              )}
+
+              {/* Slot Selector */}
+              <SlotSelector
+                selectedDate={viewingDate}
+                selectedSlots={selectedSlots
+                  .filter(s => s.date === viewingDate.toISOString().split('T')[0])
+                  .map(s => s.hour)}
+                onSlotToggle={(hour) => {
+                  const dateStr = viewingDate.toISOString().split('T')[0];
+                  const slotIndex = selectedSlots.findIndex(
+                    s => s.date === dateStr && s.hour === hour
+                  );
+                  
+                  if (slotIndex >= 0) {
+                    // Remove slot
+                    setSelectedSlots(prev => prev.filter((_, i) => i !== slotIndex));
+                  } else {
+                    // Add slot
+                    setSelectedSlots(prev => [...prev, { date: dateStr, hour }]);
+                  }
+                }}
+                availableSlots={availableSlots}
+                loading={slotsLoading}
+                error={slotsError}
+              />
+            </Stack>
           </Paper>
 
           {/* Payment Details */}
