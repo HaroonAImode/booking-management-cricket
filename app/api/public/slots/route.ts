@@ -236,7 +236,7 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
       } else if (pendingSlots.has(hour)) {
         status = 'pending';
         isAvailable = false;
-      } else if (isToday && hour < currentHour) {
+      } else if (isToday && hour <= currentHour) {
         status = 'past';
         isAvailable = false;
       }
@@ -271,7 +271,7 @@ function generateDefaultSlots(): any[] {
   
   for (let hour = 0; hour < 24; hour++) {
     const isNightRate = hour >= 17 || hour < 7;
-    const isPast = hour < currentHour;
+    const isPast = hour <= currentHour;
     
     slots.push({
       slot_hour: hour,

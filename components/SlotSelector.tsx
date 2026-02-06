@@ -115,7 +115,7 @@ export default function SlotSelector({
     
     // Initialize all 24 hours with default values
     for (let hour = 0; hour < 24; hour++) {
-      const isPast = isToday && hour < currentHour;
+      const isPast = isToday && hour <= currentHour;
       const nightRate = isNightRate(hour, nightStart, nightEnd);
       
       allSlotsMap.set(hour, {
@@ -131,7 +131,7 @@ export default function SlotSelector({
     // Override with actual API data
     apiSlots.forEach(apiSlot => {
       const hour = apiSlot.slot_hour;
-      const isPast = isToday && hour < currentHour;
+      const isPast = isToday && hour <= currentHour;
       
       // Use the API data exactly as it comes
       allSlotsMap.set(hour, {
