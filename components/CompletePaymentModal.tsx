@@ -287,26 +287,43 @@ export default function CompletePaymentModal({
         formData.append('adminNotes', adminNotes);
       }
 
-      // Debug logging
-      console.log('Submitting payment data:', {
+      // Debug logging BEFORE sending
+      console.log('=== PAYMENT SUBMISSION DEBUG ===');
+      console.log('Frontend calculations:', {
         bookingId,
         bookingNumber,
-        paymentMethod: determinedPaymentMethod,
-        cashAmount,
-        onlineAmount,
-        onlineMethod,
-        paymentAmount: totalSplit,
-        discountAmount: appliedDiscount,
-        extraCharges: extraChargesData,
-        extraChargesJson: JSON.stringify(extraChargesData),
-        extraChargesCount: extraChargesData.length,
         remainingAmount,
         totalExtraCharges,
         totalPayable,
-        expectedTotal: totalPayable - appliedDiscount,
-        hasPaymentProof: !!paymentProof,
-        adminNotes,
+        appliedDiscount,
+        finalPayableAmount,
+        cashAmount,
+        onlineAmount,
+        totalSplit,
+        paymentMethod: determinedPaymentMethod,
+        onlineMethod,
       });
+      
+      console.log('Values being sent in FormData:', {
+        paymentMethod: determinedPaymentMethod,
+        cashAmount: cashAmount.toString(),
+        onlineAmount: onlineAmount.toString(),
+        onlineMethod,
+        paymentAmount: totalSplit.toString(),
+        discountAmount: appliedDiscount.toString(),
+        extraCharges: JSON.stringify(extraChargesData),
+        extraChargesCount: extraChargesData.length,
+        hasPaymentProof: !!paymentProof,
+        hasAdminNotes: !!adminNotes,
+      });
+      
+      console.log('Expected backend calculation:', {
+        backendTotalPayable: remainingAmount + totalExtraCharges,
+        backendExpectedPayment: (remainingAmount + totalExtraCharges) - appliedDiscount,
+        frontendTotalSplit: totalSplit,
+        shouldMatch: totalSplit === (remainingAmount + totalExtraCharges - appliedDiscount),
+      });
+      console.log('=== END DEBUG ===');
 
       // Submit to API
       const response = await fetch(

@@ -167,8 +167,12 @@ async function handler(
     const totalPayable = (booking.remaining_payment || 0) + totalExtraCharges;
 
     console.log('Payment calculation:', {
+      bookingId,
+      bookingNumber: booking.booking_number,
       remainingPayment: booking.remaining_payment,
       totalExtraCharges,
+      extraChargesReceived: extraCharges,
+      extraChargesCount: extraCharges.length,
       totalPayable,
       discountAmount,
       paymentAmount,
@@ -224,10 +228,21 @@ async function handler(
 
     // Validate actual payment matches expected payment (with small tolerance for rounding)
     if (Math.abs(paymentAmount - expectedPayment) > 1) {
+      console.error('PAYMENT MISMATCH ERROR:', {
+        expectedPayment,
+        paymentAmount,
+        difference: paymentAmount - expectedPayment,
+        totalPayable,
+        discountAmount,
+        remainingPayment: booking.remaining_payment,
+        extraCharges,
+        totalExtraCharges,
+      });
+      
       return NextResponse.json(
         { 
           success: false, 
-          error: `Payment amount mismatch. Expected: Rs ${expectedPayment.toFixed(0)}, Provided: Rs ${paymentAmount.toFixed(0)}. Total payable: Rs ${totalPayable.toFixed(0)} (Remaining: Rs ${booking.remaining_payment} + Extra: Rs ${totalExtraCharges}) minus discount: Rs ${discountAmount}` 
+          error: `Payment amount mismatch.\n\nExpected: Rs ${expectedPayment.toFixed(2)}\nReceived: Rs ${paymentAmount.toFixed(2)}\n\nBreakdown:\n- Remaining Payment: Rs ${booking.remaining_payment}\n- Extra Charges: Rs ${totalExtraCharges} (${extraCharges.length} item(s))\n- Total Payable: Rs ${totalPayable.toFixed(2)}\n- Discount: Rs ${discountAmount}\n- Expected After Discount: Rs ${expectedPayment.toFixed(2)}\n\nPlease verify the amounts match.` 
         },
         { status: 400 }
       );
