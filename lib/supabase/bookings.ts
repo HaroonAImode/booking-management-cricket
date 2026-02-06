@@ -371,7 +371,7 @@ export async function createCompleteBooking(params: {
     }));
 
     // Call atomic database function
-    const { data, error } = await supabase.rpc('create_booking_with_slots', {
+    const rpcParams = {
       p_customer_name: params.customer.name,
       p_booking_date: params.booking.booking_date,
       p_total_hours: params.booking.total_hours,
@@ -382,7 +382,13 @@ export async function createCompleteBooking(params: {
       p_slots: slotsJson,
       p_customer_phone: params.customer.phone || null,
       p_customer_notes: params.booking.customer_notes || null,
-    });
+    };
+    
+    console.log('🚀 RPC Call Parameters:', Object.keys(rpcParams));
+    console.log('✅ p_advance_payment_proof included:', 'p_advance_payment_proof' in rpcParams);
+    console.log('📦 Full params:', rpcParams);
+    
+    const { data, error } = await supabase.rpc('create_booking_with_slots', rpcParams);
 
     if (error) {
       console.error('Create booking RPC error:', error);
