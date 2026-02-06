@@ -97,6 +97,9 @@ export default function CompletePaymentModal({
   const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   const totalPayable = (remainingAmount || 0) + totalExtraCharges;
   
+  // Final payable amount after discount
+  const finalPayableAmount = totalPayable - appliedDiscount;
+  
   // Split payment total (cash + online)
   const splitPaymentTotal = (cashAmount || 0) + (onlineAmount || 0);
 
@@ -124,20 +127,21 @@ export default function CompletePaymentModal({
   // Auto-adjust cash when online amount changes
   const handleOnlineAmountChange = (value: number | string) => {
     const numValue = Number(value) || 0;
+    const currentFinalAmount = finalPayableAmount;
     
     if (numValue < 0) {
       setError('Online amount cannot be negative');
       return;
     }
     
-    if (numValue > totalPayable) {
-      setError(`Online amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
+    if (numValue > currentFinalAmount) {
+      setError(`Online amount cannot exceed final payable amount (Rs ${currentFinalAmount.toLocaleString()})`);
       return;
     }
     
     setOnlineAmount(numValue);
-    // Auto-calculate cash amount
-    const newCashAmount = totalPayable - numValue;
+    // Auto-calculate cash amount based on final payable (after discount)
+    const newCashAmount = currentFinalAmount - numValue;
     setCashAmount(newCashAmount >= 0 ? newCashAmount : 0);
     setError(null);
   };
@@ -145,20 +149,21 @@ export default function CompletePaymentModal({
   // Handle cash amount change manually
   const handleCashAmountChange = (value: number | string) => {
     const numValue = Number(value) || 0;
+    const currentFinalAmount = finalPayableAmount;
     
     if (numValue < 0) {
       setError('Cash amount cannot be negative');
       return;
     }
     
-    if (numValue > totalPayable) {
-      setError(`Cash amount cannot exceed total payable amount (Rs ${totalPayable.toLocaleString()})`);
+    if (numValue > currentFinalAmount) {
+      setError(`Cash amount cannot exceed final payable amount (Rs ${currentFinalAmount.toLocaleString()})`);
       return;
     }
     
     setCashAmount(numValue);
-    // Auto-calculate online amount
-    const newOnlineAmount = totalPayable - numValue;
+    // Auto-calculate online amount based on final payable (after discount)
+    const newOnlineAmount = currentFinalAmount - numValue;
     setOnlineAmount(newOnlineAmount >= 0 ? newOnlineAmount : 0);
     setError(null);
   };
@@ -177,34 +182,35 @@ export default function CompletePaymentModal({
     }
   }, [totalExtraCharges, remainingAmount]);
   
-  // Update split payment amounts when totalPayable changes (extra charges/discount applied)
+  // Update split payment amounts when finalPayableAmount changes (extra charges/discount applied)
   useEffect(() => {
-    // Recalculate split payment to match new total payable
+    const currentFinalAmount = finalPayableAmount;
     const currentTotal = (cashAmount || 0) + (onlineAmount || 0);
     
-    // Only update if current split doesn't match totalPayable
-    if (currentTotal !== totalPayable) {
+    // Only update if current split doesn't match final payable amount
+    if (currentTotal !== currentFinalAmount) {
       // Maintain the ratio of cash vs online, or default to all cash
-      if (onlineAmount > 0) {
+      if (onlineAmount > 0 && currentTotal > 0) {
         const ratio = onlineAmount / currentTotal;
-        const newOnline = Math.round(totalPayable * ratio);
-        const newCash = totalPayable - newOnline;
+        const newOnline = Math.round(currentFinalAmount * ratio);
+        const newCash = currentFinalAmount - newOnline;
         setOnlineAmount(newOnline);
         setCashAmount(newCash);
       } else {
         // Default: all cash
-        setCashAmount(totalPayable);
+        setCashAmount(currentFinalAmount);
         setOnlineAmount(0);
       }
     }
-  }, [totalPayable]);
+  }, [finalPayableAmount]);
 
   const handleSubmit = async () => {
     // Validation for split payment
     const totalSplit = (cashAmount || 0) + (onlineAmount || 0);
+    const currentFinalAmount = finalPayableAmount;
     
-    if (totalSplit !== totalPayable) {
-      setError(`Total payment (Cash: Rs ${cashAmount.toLocaleString()} + Online: Rs ${onlineAmount.toLocaleString()} = Rs ${totalSplit.toLocaleString()}) must equal Rs ${totalPayable.toLocaleString()}`);
+    if (totalSplit !== currentFinalAmount) {
+      setError(`Total payment (Cash: Rs ${cashAmount.toLocaleString()} + Online: Rs ${onlineAmount.toLocaleString()} = Rs ${totalSplit.toLocaleString()}) must equal Rs ${currentFinalAmount.toLocaleString()}`);
       return;
     }
     
@@ -759,7 +765,7 @@ export default function CompletePaymentModal({
                   value={cashAmount}
                   onChange={handleCashAmountChange}
                   min={0}
-                  max={totalPayable}
+                  max={finalPayableAmount}
                   thousandSeparator=","
                   allowNegative={false}
                   decimalScale={0}
@@ -772,7 +778,7 @@ export default function CompletePaymentModal({
                       border: '2px solid #1A1A1A',
                     }
                   }}
-                  description={`Cash portion of payment (Max: Rs ${totalPayable.toLocaleString()})`}
+                  description={`Cash portion of payment (Max: Rs ${finalPayableAmount.toLocaleString()})${appliedDiscount > 0 ? ' - After discount' : ''}`}
                 />
               </Box>
 
@@ -788,7 +794,7 @@ export default function CompletePaymentModal({
                     value={onlineAmount}
                     onChange={handleOnlineAmountChange}
                     min={0}
-                    max={totalPayable}
+                    max={finalPayableAmount}
                     thousandSeparator=","
                     allowNegative={false}
                     decimalScale={0}
@@ -801,7 +807,7 @@ export default function CompletePaymentModal({
                         border: '2px solid #F5B800',
                       }
                     }}
-                    description="Online portion - Cash will auto-adjust"
+                    description={`Online portion - Cash will auto-adjust${appliedDiscount > 0 ? ' (After discount)' : ''}`}
                   />
                   
                   {onlineAmount > 0 && (
@@ -838,15 +844,28 @@ export default function CompletePaymentModal({
                     <Text size="sm" fw={700}>Rs {onlineAmount.toLocaleString()}</Text>
                   </Group>
                   <Divider my={4} />
+                  {appliedDiscount > 0 && (
+                    <>
+                      <Group justify="space-between">
+                        <Text size="sm">Subtotal (Before Discount):</Text>
+                        <Text size="sm" fw={600}>Rs {totalPayable.toLocaleString()}</Text>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Discount Applied:</Text>
+                        <Text size="sm" fw={600} c="red">- Rs {appliedDiscount.toLocaleString()}</Text>
+                      </Group>
+                      <Divider my={4} />
+                    </>
+                  )}
                   <Group justify="space-between">
                     <Text size="sm" fw={700}>Total Payment:</Text>
-                    <Text size="lg" fw={900} c={splitPaymentTotal === totalPayable ? 'green' : 'red'}>
+                    <Text size="lg" fw={900} c={splitPaymentTotal === finalPayableAmount ? 'green' : 'red'}>
                       Rs {splitPaymentTotal.toLocaleString()}
                     </Text>
                   </Group>
-                  {splitPaymentTotal !== totalPayable && (
+                  {splitPaymentTotal !== finalPayableAmount && (
                     <Text size="xs" c="red" mt={4}>
-                      ⚠️ Total must equal Rs {totalPayable.toLocaleString()}
+                      ⚠️ Total must equal Rs {finalPayableAmount.toLocaleString()}
                     </Text>
                   )}
                 </Stack>

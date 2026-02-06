@@ -1113,22 +1113,26 @@ export default function CalendarFirstBooking() {
                   boxShadow: '0 4px 16px rgba(245, 184, 0, 0.15)',
                 }}
               >
-                <Group justify="space-between" wrap="wrap">
+                <Group justify="space-between" wrap="wrap" mb="md">
                   <Box>
                     <Text size="xs" c="#666666" mb={2} fw={600}>
-                      SELECTED DATE
+                      {getSelectedDates().length > 1 ? 'SELECTED DATES' : 'SELECTED DATE'}
                     </Text>
-                    <Text fw={700} size="lg" c="#1A1A1A">
-                      {selectedDate 
-                        ? (selectedDate instanceof Date ? selectedDate : new Date(selectedDate)).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })
-                        : 'No date selected'
-                      }
-                    </Text>
+                    <Stack gap={4}>
+                      {getSelectedDates().map(dateStr => {
+                        const date = new Date(dateStr);
+                        return (
+                          <Text key={dateStr} fw={700} size="lg" c="#1A1A1A">
+                            {date.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </Text>
+                        );
+                      })}
+                    </Stack>
                   </Box>
                   <Box>
                     <Text size="xs" c="#666666" mb={2} fw={600}>
@@ -1144,22 +1148,43 @@ export default function CalendarFirstBooking() {
                     </Badge>
                   </Box>
                 </Group>
-                <Box style={{
-                  background: '#1A1A1A',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  marginTop: '12px'
-                }}>
-                  <Text size="sm" c="#F5B800" fw={600}>
-                    Selected times: {safeSelectedSlots.map(h => formatTime(h.hour) + formatAmPm(h.hour)).join(', ')}
-                  </Text>
-                </Box>
+                
+                {/* Show slots grouped by date */}
+                <Stack gap="xs">
+                  {getSelectedDates().map(dateStr => {
+                    const dateSlots = safeSelectedSlots.filter(s => s.date === dateStr);
+                    const displayDate = new Date(dateStr).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    });
+                    return (
+                      <Box 
+                        key={dateStr}
+                        style={{
+                          background: '#1A1A1A',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        <Text size="xs" c="#F5B800" fw={700} mb={4}>
+                          📅 {displayDate}
+                        </Text>
+                        <Text size="sm" c="#F5B800" fw={600}>
+                          {dateSlots.map(s => `${formatTime(s.hour)} ${formatAmPm(s.hour)}`).join(', ')}
+                        </Text>
+                      </Box>
+                    );
+                  })}
+                </Stack>
               </Paper>
 
               {/* Pass data to original BookingForm */}
               <BookingForm
                 preSelectedDate={selectedDate ? new Date(selectedDate) : new Date()}
                 preSelectedSlots={safeSelectedSlots.map(s => s.hour)}
+                preSelectedSlotsWithDates={safeSelectedSlots}
                 hideCalendar={true}
               />
             </Stack>

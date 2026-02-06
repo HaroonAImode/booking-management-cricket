@@ -79,18 +79,26 @@ self.addEventListener('notificationclick', (event) => {
 
   event.notification.close();
 
+  // ✅ ALWAYS use the correct production URL
+  const PRODUCTION_URL = 'https://cricket-booking-peach.vercel.app';
   const relativeUrl = event.notification.data?.url || '/admin/bookings';
-  const targetUrl = new URL(relativeUrl, self.location.origin).href;
+  const targetUrl = new URL(relativeUrl, PRODUCTION_URL).href;
+
+  console.log('🔗 Opening URL:', targetUrl);
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientsList) => {
+        // Check if already open
         for (const client of clientsList) {
           if (client.url === targetUrl && 'focus' in client) {
+            console.log('✅ Focusing existing window');
             return client.focus();
           }
         }
+        // Open new window
         if (self.clients.openWindow) {
+          console.log('🆕 Opening new window');
           return self.clients.openWindow(targetUrl);
         }
       })

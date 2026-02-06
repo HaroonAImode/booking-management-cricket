@@ -62,6 +62,7 @@ export async function GET(
         remaining_online_amount,
         remaining_online_method,
         discount_amount,
+        extra_charges,
         status,
         created_at,
         customers!customer_id (
@@ -81,13 +82,37 @@ export async function GET(
       .select('slot_hour, is_night_rate, hourly_rate')
       .eq('booking_id', bookingId);
 
-    // Fetch extra charges
-    const { data: extraCharges } = await supabase
+    // Fetch extra charges from extra_charges table
+    const { data: extraChargesTable } = await supabase
       .from('extra_charges')
       .select('*')
       .eq('booking_id', bookingId);
 
-    const totalExtraCharges = (extraCharges || []).reduce((sum, charge) => sum + (charge.amount || 0), 0);
+    // Merge extra charges from both sources
+    let allExtraCharges = [...(extraChargesTable || [])];
+    
+    // Add extra charges from bookings.extra_charges JSONB column if exists
+    if (booking.extra_charges && Array.isArray(booking.extra_charges)) {
+      const jsonbCharges = booking.extra_charges.map((charge: any, index: number) => ({
+        id: `jsonb-${bookingId}-${index}`,
+        booking_id: bookingId,
+        category: charge.category,
+        amount: charge.amount,
+        created_at: booking.created_at,
+      }));
+      allExtraCharges = [...allExtraCharges, ...jsonbCharges];
+    }
+    
+    // Remove duplicates based on category and amount
+    const extraCharges = allExtraCharges.reduce((acc, charge) => {
+      const key = `${charge.category}-${charge.amount}`;
+      if (!acc.some((c: any) => `${c.category}-${c.amount}` === key)) {
+        acc.push(charge);
+      }
+      return acc;
+    }, [] as any[]);
+
+    const totalExtraCharges = extraCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
 
     const doc = new jsPDF();
     

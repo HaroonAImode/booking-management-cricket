@@ -63,12 +63,14 @@ const PAYMENT_ACCOUNTS = {
 interface BookingFormProps {
   preSelectedDate?: Date | null;
   preSelectedSlots?: number[];
+  preSelectedSlotsWithDates?: {date: string, hour: number}[];
   hideCalendar?: boolean;
 }
 
 export default function BookingForm({ 
   preSelectedDate = null, 
   preSelectedSlots = [], 
+  preSelectedSlotsWithDates = [],
   hideCalendar = false 
 }: BookingFormProps = {}) {
   const router = useRouter();
@@ -78,6 +80,7 @@ export default function BookingForm({
   const [phone, setPhone] = useState('');
   const [bookingDate, setBookingDate] = useState<Date | null>(preSelectedDate);
   const [selectedSlots, setSelectedSlots] = useState<number[]>(preSelectedSlots);
+  const [slotsWithDates, setSlotsWithDates] = useState<{date: string, hour: number}[]>(preSelectedSlotsWithDates);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [customerNotes, setCustomerNotes] = useState('');
@@ -110,7 +113,12 @@ export default function BookingForm({
     if (Array.isArray(preSelectedSlots) && preSelectedSlots.length > 0) {
       setSelectedSlots(preSelectedSlots);
     }
-  }, [preSelectedDate, preSelectedSlots]);
+    if (Array.isArray(preSelectedSlotsWithDates) && preSelectedSlotsWithDates.length > 0) {
+      setSlotsWithDates(preSelectedSlotsWithDates);
+      // Also set selectedSlots for backward compatibility
+      setSelectedSlots(preSelectedSlotsWithDates.map(s => s.hour));
+    }
+  }, [preSelectedDate, preSelectedSlots, preSelectedSlotsWithDates]);
 
   // Load slots when date changes
   useEffect(() => {
@@ -306,36 +314,83 @@ export default function BookingForm({
     // STEP 0: Enhanced conflict check with row locking
     try {
       console.log('🔒 Performing enhanced conflict check with row locking...');
-      const conflictCheckResponse = await fetch('/api/public/slots/conflict-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: formatDateForSQL(bookingDate),
-          slot_hours: selectedSlots
-        })
-      });
-
-      if (!conflictCheckResponse.ok) {
-        throw new Error('Failed to verify slot availability');
-      }
-
-      const conflictCheckData = await conflictCheckResponse.json();
       
-      if (!conflictCheckData.success || !conflictCheckData.all_available) {
-        const conflictedSlots = conflictCheckData.conflicts || [];
-        const conflictedHours = conflictedSlots.map((c: any) => c.slot_hour).join(', ');
+      // For multi-day bookings, check each date
+      if (slotsWithDates.length > 0) {
+        // Group slots by date
+        const slotsByDate = slotsWithDates.reduce((acc, slot) => {
+          if (!acc[slot.date]) acc[slot.date] = [];
+          acc[slot.date].push(slot.hour);
+          return acc;
+        }, {} as Record<string, number[]>);
         
-        notifications.show({
-          title: '⚠️ Booking Conflict',
-          message: `The following slots were just booked by another customer: ${conflictedHours}. Please refresh and select different slots.`,
-          color: 'red',
-          autoClose: 10000,
+        // Check each date separately
+        for (const [date, hours] of Object.entries(slotsByDate)) {
+          const conflictCheckResponse = await fetch('/api/public/slots/conflict-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              date: date,
+              slot_hours: hours
+            })
+          });
+
+          if (!conflictCheckResponse.ok) {
+            throw new Error('Failed to verify slot availability');
+          }
+
+          const conflictCheckData = await conflictCheckResponse.json();
+          
+          if (!conflictCheckData.success || !conflictCheckData.all_available) {
+            const conflictedSlots = conflictCheckData.conflicts || [];
+            const conflictedHours = conflictedSlots.map((c: any) => c.slot_hour).join(', ');
+            
+            notifications.show({
+              title: '⚠️ Booking Conflict',
+              message: `The following slots on ${new Date(date).toLocaleDateString()} were just booked by another customer: ${conflictedHours}. Please refresh and select different slots.`,
+              color: 'red',
+              autoClose: 10000,
+            });
+            setSubmitting(false);
+            
+            // Reload the page to show updated slots
+            window.location.reload();
+            return;
+          }
+        }
+      } else {
+        // Single day booking - original logic
+        const conflictCheckResponse = await fetch('/api/public/slots/conflict-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: formatDateForSQL(bookingDate),
+            slot_hours: selectedSlots
+          })
         });
-        setSubmitting(false);
+
+        if (!conflictCheckResponse.ok) {
+          throw new Error('Failed to verify slot availability');
+        }
+
+        const conflictCheckData = await conflictCheckResponse.json();
         
-        // Reload the page to show updated slots
-        window.location.reload();
-        return;
+        if (!conflictCheckData.success || !conflictCheckData.all_available) {
+          const conflictedSlots = conflictCheckData.conflicts || [];
+          const conflictedHours = conflictedSlots.map((c: any) => c.slot_hour).join(', ');
+          
+          notifications.show({
+            title: '⚠️ Booking Conflict',
+            message: `The following slots were just booked by another customer: ${conflictedHours}. Please refresh and select different slots.`,
+            color: 'red',
+            autoClose: 10000,
+          });
+          setSubmitting(false);
+          
+          // Reload the page to show updated slots
+          window.location.reload();
+          return;
+        }
       }
       
       console.log('✅ All slots verified as available');
@@ -383,14 +438,18 @@ export default function BookingForm({
           total_amount: bookingSummary.total_amount,
           advance_payment: bookingSummary.advance_payment,
           advance_payment_method: bookingSummary.advance_payment_method,
-          advance_payment_proof: uploadData,
+          advance_payment_proof: uploadData || undefined,
           customer_notes: bookingSummary.customer_notes,
         },
         slots: selectedSlots.map((hour) => {
+          // Find the correct date for this slot hour from slotsWithDates
+          const slotWithDate = slotsWithDates.find(s => s.hour === hour);
+          const slotDate = slotWithDate ? slotWithDate.date : bookingSummary.booking_date;
+          
           const slot = availableSlots?.find((s) => s.slot_hour === hour);
           const hourTime = `${hour.toString().padStart(2, '0')}:00:00`;
           return {
-            slot_date: bookingSummary.booking_date,
+            slot_date: slotDate,
             slot_time: hourTime,
             slot_hour: hour,
             is_night_rate:
@@ -680,20 +739,81 @@ export default function BookingForm({
 
           {/* Additional Notes (when calendar is hidden) */}
           {hideCalendar && (
-            <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
-              <Stack gap="md">
-                <Title order={3} size="h3">Additional Information</Title>
-                <Divider />
+            <>
+              {/* Selected Slots Summary for multi-day bookings */}
+              {slotsWithDates.length > 0 && (
+                <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift" bg="yellow.0">
+                  <Stack gap="md">
+                    <Group justify="space-between">
+                      <Title order={3} size="h3">Selected Time Slots</Title>
+                      <Badge size="lg" color="yellow">
+                        {slotsWithDates.length} slot{slotsWithDates.length !== 1 ? 's' : ''}
+                      </Badge>
+                    </Group>
+                    <Divider />
+                    
+                    {(() => {
+                      // Group slots by date
+                      const slotsByDate = slotsWithDates.reduce((acc, slot) => {
+                        if (!acc[slot.date]) acc[slot.date] = [];
+                        acc[slot.date].push(slot.hour);
+                        return acc;
+                      }, {} as Record<string, number[]>);
+                      
+                      return Object.entries(slotsByDate).map(([date, hours]) => {
+                        const displayDate = new Date(date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        });
+                        
+                        const formatTime = (hour: number) => {
+                          if (hour === 0) return '12:00';
+                          if (hour > 12) return `${hour - 12}:00`;
+                          return `${hour}:00`;
+                        };
+                        
+                        const formatAmPm = (hour: number) => hour < 12 ? 'AM' : 'PM';
+                        
+                        return (
+                          <Box 
+                            key={date}
+                            style={{
+                              background: '#1A1A1A',
+                              padding: '12px 16px',
+                              borderRadius: '8px',
+                            }}
+                          >
+                            <Text size="sm" fw={700} c="#F5B800" mb={6}>
+                              📅 {displayDate}
+                            </Text>
+                            <Text size="sm" c="#F5B800" fw={600}>
+                              {hours.sort((a, b) => a - b).map(h => `${formatTime(h)} ${formatAmPm(h)}`).join(', ')}
+                            </Text>
+                          </Box>
+                        );
+                      });
+                    })()}
+                  </Stack>
+                </Paper>
+              )}
+              
+              <Paper p={{ base: "md", sm: "lg" }} withBorder className="hover-lift">
+                <Stack gap="md">
+                  <Title order={3} size="h3">Additional Information</Title>
+                  <Divider />
 
-                <Textarea
-                  label="Additional Notes"
-                  placeholder="Any special requests or notes (optional)"
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.currentTarget.value)}
-                  minRows={3}
-                />
-              </Stack>
-            </Paper>
+                  <Textarea
+                    label="Additional Notes"
+                    placeholder="Any special requests or notes (optional)"
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.currentTarget.value)}
+                    minRows={3}
+                  />
+                </Stack>
+              </Paper>
+            </>
           )}
 
           {/* Payment Information */}
