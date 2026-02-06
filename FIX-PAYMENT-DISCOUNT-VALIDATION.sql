@@ -203,7 +203,7 @@ BEGIN
     UPDATE bookings SET
         status = 'completed',
         remaining_payment = 0, -- Payment complete
-        remaining_payment_amount = 0, -- FIXED: Set to 0 when payment is complete
+        remaining_payment_amount = p_payment_amount, -- Actual amount paid (after discount)
         total_amount = v_new_total,
         discount_amount = COALESCE(v_booking_record.discount_amount, 0) + p_discount_amount,
         remaining_payment_method = p_payment_method,
