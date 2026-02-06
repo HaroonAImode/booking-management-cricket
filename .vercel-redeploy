@@ -1,0 +1,8 @@
+# Force Vercel Redeploy - Feb 7, 2026
+
+This file triggers a fresh deployment to clear Vercel build cache.
+
+Issue: Old bundled JavaScript being served despite code updates.
+Solution: Force new build with this dummy file change.
+
+Timestamp: 2026-02-07 19:30 UTC
