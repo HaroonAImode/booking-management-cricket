@@ -122,6 +122,7 @@ interface Booking {
   };
   slots: Array<{
     slot_hour: number;
+    slot_date: string;
     is_night_rate: boolean;
   }>;
   extra_charges: ExtraCharge[];
@@ -166,6 +167,53 @@ export default function AdminBookingsPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [selectedPaymentProof, setSelectedPaymentProof] = useState<{ path: string; number: string } | null>(null);
   const [selectedPaymentBooking, setSelectedPaymentBooking] = useState<{ id: string; number: string; remaining: number } | null>(null);
+
+  // Helper function to format date range for multi-day bookings
+  const formatBookingDateRange = (booking: Booking) => {
+    const slots = Array.isArray(booking.slots) ? booking.slots : [];
+    
+    if (slots.length === 0) {
+      return new Date(booking.booking_date).toLocaleDateString('en-US', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+    }
+
+    // Get unique dates from slots
+    const dates = slots
+      .map(s => new Date(s.slot_date))
+      .sort((a, b) => a.getTime() - b.getTime());
+    
+    const firstDate = dates[0];
+    const lastDate = dates[dates.length - 1];
+
+    // Check if all slots are on the same date
+    const isSameDate = firstDate.toDateString() === lastDate.toDateString();
+
+    if (isSameDate) {
+      return firstDate.toLocaleDateString('en-US', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+    } else {
+      // Multi-day booking: "10 Feb - 11 Feb 2026"
+      const startDay = firstDate.getDate();
+      const startMonth = firstDate.toLocaleDateString('en-US', { month: 'short' });
+      const endDay = lastDate.getDate();
+      const endMonth = lastDate.toLocaleDateString('en-US', { month: 'short' });
+      const year = lastDate.getFullYear();
+
+      if (firstDate.getMonth() === lastDate.getMonth()) {
+        // Same month: "10 - 11 Feb 2026"
+        return `${startDay} - ${endDay} ${endMonth} ${year}`;
+      } else {
+        // Different months: "31 Jan - 1 Feb 2026"
+        return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
+      }
+    }
+  };
 
   // Helper function to calculate payment breakdown
   const getPaymentBreakdown = (booking: Booking) => {
@@ -746,7 +794,7 @@ export default function AdminBookingsPage() {
         b.booking_number || '',
         b.customer?.name || '',
         b.customer?.phone || '',
-        new Date(b.booking_date).toLocaleDateString(),
+        formatBookingDateRange(b),
         formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
         `Rs ${(b.total_amount || 0).toLocaleString()}`,
         `Rs ${totalExtraCharges.toLocaleString()}`,
@@ -803,7 +851,7 @@ export default function AdminBookingsPage() {
         'Customer Name': b.customer?.name || '',
         'Phone': b.customer?.phone || '',
         'Email': b.customer?.email || '',
-        'Booking Date': new Date(b.booking_date).toLocaleDateString(),
+        'Booking Date': formatBookingDateRange(b),
         'Total Hours': b.total_hours || 0,
         'Total Amount': b.total_amount || 0,
         'Extra Charges': extraChargesTotal,
@@ -1210,7 +1258,7 @@ export default function AdminBookingsPage() {
                         </Table.Td>
                         <Table.Td>
                           <Text size="sm" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
-                            {new Date(booking.booking_date).toLocaleDateString()}
+                            {formatBookingDateRange(booking)}
                           </Text>
                         </Table.Td>
                         <Table.Td>

@@ -15,8 +15,8 @@ SELECT * FROM public.create_booking_with_slots(
   'cash',
   'proof.jpg',
   '[
-    {"slot_hour": 23, "slot_time": "11:00 PM", "is_night_rate": true, "hourly_rate": 1200},
-    {"slot_hour": 0, "slot_time": "12:00 AM", "is_night_rate": true, "hourly_rate": 1200}
+    {"slot_date": "2026-02-10", "slot_hour": 23, "slot_time": "11:00 PM", "is_night_rate": true, "hourly_rate": 1200},
+    {"slot_date": "2026-02-11", "slot_hour": 0, "slot_time": "12:00 AM", "is_night_rate": true, "hourly_rate": 1200}
   ]'::jsonb,
   '0300-8888888',
   'Testing multi-day slots'
