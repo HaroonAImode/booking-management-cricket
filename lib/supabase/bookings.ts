@@ -365,6 +365,7 @@ export async function createCompleteBooking(params: {
     const slotsJson = params.slots.map((slot) => ({
       slot_hour: slot.slot_hour,
       slot_time: slot.slot_time,
+      slot_date: slot.slot_date,
       is_night_rate: slot.is_night_rate,
       hourly_rate: slot.hourly_rate,
     }));
