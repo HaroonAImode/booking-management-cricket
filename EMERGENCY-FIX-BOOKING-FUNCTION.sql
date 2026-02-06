@@ -212,7 +212,7 @@ WHERE routine_schema = 'public'
 -- (Will fail with slot conflict since we're using test data)
 SELECT * FROM public.create_booking_with_slots(
   'Test Customer',                    -- p_customer_name
-  CURRENT_DATE + INTERVAL '7 days',   -- p_booking_date (future date)
+  '2026-02-13'::DATE,                 -- p_booking_date (explicit DATE cast)
   2,                                  -- p_total_hours
   3000.00,                            -- p_total_amount
   500.00,                             -- p_advance_payment
