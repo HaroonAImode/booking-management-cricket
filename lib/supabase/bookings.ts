@@ -378,7 +378,7 @@ export async function createCompleteBooking(params: {
       p_total_amount: params.booking.total_amount,
       p_advance_payment: params.booking.advance_payment,
       p_advance_payment_method: params.booking.advance_payment_method,
-      p_advance_payment_proof: params.booking.advance_payment_proof,
+      p_advance_payment_proof: params.booking.advance_payment_proof || null,
       p_slots: slotsJson,
       p_customer_phone: params.customer.phone || null,
       p_customer_notes: params.booking.customer_notes || null,
