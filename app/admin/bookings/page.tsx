@@ -795,7 +795,7 @@ export default function AdminBookingsPage() {
         b.customer?.name || '',
         b.customer?.phone || '',
         formatBookingDateRange(b),
-        formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
+        (Array.isArray(b.slots) && b.slots.length > 0) ? formatSlotRanges(b.slots.map(s => s.slot_hour)) : '⚠️ No slots',
         `Rs ${(b.total_amount || 0).toLocaleString()}`,
         `Rs ${totalExtraCharges.toLocaleString()}`,
         `Rs ${(b.discount_amount || 0).toLocaleString()}`,
@@ -867,7 +867,7 @@ export default function AdminBookingsPage() {
         'Remaining Method': b.remaining_payment_method || '',
         'Status': b.status || '',
         'Created At': new Date(b.created_at).toLocaleString(),
-        'Slots': formatSlotRanges(Array.isArray(b.slots) ? b.slots.map(s => s.slot_hour) : []),
+        'Slots': (Array.isArray(b.slots) && b.slots.length > 0) ? formatSlotRanges(b.slots.map(s => s.slot_hour)) : 'No slots',
       };
     });
 
@@ -1262,12 +1262,23 @@ export default function AdminBookingsPage() {
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" fw={500} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
-                            {formatSlotRanges(slots.map(s => s.slot_hour))}
-                          </Text>
-                          <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
-                            {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
-                          </Text>
+                          {slots.length === 0 ? (
+                            <Group gap={4}>
+                              <IconAlertCircle size={16} color="red" />
+                              <Text size="sm" c="red" fw={500} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                                No slots data
+                              </Text>
+                            </Group>
+                          ) : (
+                            <>
+                              <Text size="sm" fw={500} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                                {formatSlotRanges(slots.map(s => s.slot_hour))}
+                              </Text>
+                              <Text size="xs" c="dimmed" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
+                                {slots.some(s => s.is_night_rate) && '🌙 Night rates'}
+                              </Text>
+                            </>
+                          )}
                         </Table.Td>
                         <Table.Td>
                           <Stack gap={2}>
