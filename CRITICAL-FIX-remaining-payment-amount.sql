@@ -174,6 +174,7 @@ WHERE status = 'completed'
 SELECT 
   '=== BEFORE AND AFTER FIX ===' as section,
   '' as booking_number,
+  NULL::date as booking_date,
   NULL::numeric as advance,
   NULL::numeric as remaining_amount,
   NULL::numeric as cash_split,
@@ -185,6 +186,7 @@ UNION ALL
 SELECT 
   'Fixed Bookings' as section,
   booking_number,
+  booking_date,
   advance_payment as advance,
   remaining_payment_amount as remaining_amount,
   COALESCE(remaining_cash_amount, 0) as cash_split,
@@ -193,7 +195,7 @@ SELECT
 FROM bookings
 WHERE status = 'completed'
   AND (remaining_cash_amount > 0 OR remaining_online_amount > 0)
-ORDER BY created_at DESC;
+ORDER BY booking_date DESC;
 
 -- Verify totals now match
 SELECT 
@@ -260,4 +262,4 @@ SELECT
   END as validation
 FROM bookings
 WHERE status = 'completed'
-ORDER BY created_at DESC;
+ORDER BY booking_date DESC;
