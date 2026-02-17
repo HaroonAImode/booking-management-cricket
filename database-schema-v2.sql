@@ -615,31 +615,31 @@ RETURNS TABLE (
 DECLARE
   day_rate NUMERIC;
   night_rate NUMERIC;
-  night_start TIME;
-  night_end TIME;
+  night_start_hour INTEGER;
+  night_end_hour INTEGER;
   current_hour INTEGER;
   slot_time_val TIME;
   slot_exists BOOLEAN;
   slot_status TEXT;
 BEGIN
-  -- Get current rates from settings
-  SELECT setting_value::NUMERIC INTO day_rate
-  FROM settings WHERE setting_key = 'day_rate_per_hour';
+  -- Get rates from system_settings (NEW TABLE)
+  SELECT (setting_value->>'day_rate')::NUMERIC INTO day_rate
+  FROM system_settings WHERE setting_key = 'booking_rates';
   
-  SELECT setting_value::NUMERIC INTO night_rate
-  FROM settings WHERE setting_key = 'night_rate_per_hour';
+  SELECT (setting_value->>'night_rate')::NUMERIC INTO night_rate
+  FROM system_settings WHERE setting_key = 'booking_rates';
   
-  SELECT setting_value::TIME INTO night_start
-  FROM settings WHERE setting_key = 'night_start_time';
+  SELECT (setting_value->>'start_hour')::INTEGER INTO night_start_hour
+  FROM system_settings WHERE setting_key = 'night_rate_hours';
   
-  SELECT setting_value::TIME INTO night_end
-  FROM settings WHERE setting_key = 'night_end_time';
+  SELECT (setting_value->>'end_hour')::INTEGER INTO night_end_hour
+  FROM system_settings WHERE setting_key = 'night_rate_hours';
   
   -- Generate all 24 hours
   FOR current_hour IN 0..23 LOOP
     slot_time_val := (current_hour || ':00:00')::TIME;
     
-    -- Check if slot exists in booking_slots (with table alias)
+    -- Check if slot exists in booking_slots
     SELECT EXISTS(
       SELECT 1 FROM booking_slots bs
       WHERE bs.slot_date = p_date
@@ -647,7 +647,7 @@ BEGIN
       AND bs.status IN ('pending', 'booked')
     ) INTO slot_exists;
     
-    -- Get slot status if exists (with table alias)
+    -- Get slot status if exists
     IF slot_exists THEN
       SELECT bs.status INTO slot_status
       FROM booking_slots bs
@@ -659,14 +659,14 @@ BEGIN
       slot_status := 'available';
     END IF;
     
-    -- Determine rate (night vs day) - use explicit column names
+    -- Determine rate (night vs day) using hour-based comparison
     RETURN QUERY SELECT
       current_hour AS slot_hour,
       slot_time_val AS slot_time,
       NOT slot_exists AS is_available,
       slot_status AS current_status,
       CASE
-        WHEN (slot_time_val >= night_start OR slot_time_val < night_end) THEN night_rate
+        WHEN (current_hour >= night_start_hour OR current_hour < night_end_hour) THEN night_rate
         ELSE day_rate
       END AS hourly_rate;
   END LOOP;
@@ -683,30 +683,27 @@ DECLARE
   total NUMERIC := 0;
   day_rate NUMERIC;
   night_rate NUMERIC;
-  night_start TIME;
-  night_end TIME;
+  night_start_hour INTEGER;
+  night_end_hour INTEGER;
   hour_val INTEGER;
-  hour_time TIME;
 BEGIN
-  -- Get rates from settings
-  SELECT setting_value::NUMERIC INTO day_rate
-  FROM settings WHERE setting_key = 'day_rate_per_hour';
+  -- Get rates from system_settings (NEW TABLE)
+  SELECT (setting_value->>'day_rate')::NUMERIC INTO day_rate
+  FROM system_settings WHERE setting_key = 'booking_rates';
   
-  SELECT setting_value::NUMERIC INTO night_rate
-  FROM settings WHERE setting_key = 'night_rate_per_hour';
+  SELECT (setting_value->>'night_rate')::NUMERIC INTO night_rate
+  FROM system_settings WHERE setting_key = 'booking_rates';
   
-  SELECT setting_value::TIME INTO night_start
-  FROM settings WHERE setting_key = 'night_start_time';
+  SELECT (setting_value->>'start_hour')::INTEGER INTO night_start_hour
+  FROM system_settings WHERE setting_key = 'night_rate_hours';
   
-  SELECT setting_value::TIME INTO night_end
-  FROM settings WHERE setting_key = 'night_end_time';
+  SELECT (setting_value->>'end_hour')::INTEGER INTO night_end_hour
+  FROM system_settings WHERE setting_key = 'night_rate_hours';
   
-  -- Calculate total for each hour
+  -- Calculate total for each hour using hour-based comparison
   FOREACH hour_val IN ARRAY p_slot_hours
   LOOP
-    hour_time := (hour_val || ':00:00')::TIME;
-    
-    IF (hour_time >= night_start OR hour_time < night_end) THEN
+    IF (hour_val >= night_start_hour OR hour_val < night_end_hour) THEN
       total := total + night_rate;
     ELSE
       total := total + day_rate;
