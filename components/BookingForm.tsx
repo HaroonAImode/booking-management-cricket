@@ -446,16 +446,18 @@ export default function BookingForm({
           const slotWithDate = slotsWithDates.find(s => s.hour === hour);
           const slotDate = slotWithDate ? slotWithDate.date : bookingSummary.booking_date;
           
-          const slot = availableSlots?.find((s) => s.slot_hour === hour);
           const hourTime = `${hour.toString().padStart(2, '0')}:00:00`;
+          const isNight = settings && isNightRate(hour, settings.night_start_time, settings.night_end_time);
+          
+          // ✅ Calculate rate from settings directly (don't rely on API response)
+          const rate = isNight ? settings.night_rate : settings.day_rate;
+          
           return {
             slot_date: slotDate,
             slot_time: hourTime,
             slot_hour: hour,
-            is_night_rate:
-              settings &&
-              isNightRate(hour, settings.night_start_time, settings.night_end_time),
-            hourly_rate: slot?.hourly_rate || 0,
+            is_night_rate: isNight,
+            hourly_rate: rate,
           };
         }),
       };
