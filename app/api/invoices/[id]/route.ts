@@ -31,8 +31,9 @@ function formatSlotRanges(hours: number[]): string {
 }
 
 function formatTime(hour: number): string {
-  const h = hour % 12 || 12;
-  const ampm = hour < 12 ? 'AM' : 'PM';
+  const normalized = hour % 24; // normalize 24 (midnight end-of-range) → 0
+  const h = normalized % 12 || 12;
+  const ampm = normalized < 12 ? 'AM' : 'PM';
   return `${h}${ampm}`;
 }
 

@@ -31,10 +31,11 @@ function formatSlotRanges(slots: number[]): string {
 }
 
 function formatTime(hour: number): string {
-  if (hour === 0) return '12:00 AM';
-  if (hour === 12) return '12:00 PM';
-  if (hour > 12) return `${hour - 12}:00 PM`;
-  return `${hour}:00 AM`;
+  const h = hour % 24; // normalize 24 (midnight end-of-range) → 0
+  if (h === 0) return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  if (h > 12) return `${h - 12}:00 PM`;
+  return `${h}:00 AM`;
 }
 
 // GET /api/admin/calendar - Fetch calendar bookings

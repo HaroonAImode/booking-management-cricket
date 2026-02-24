@@ -382,10 +382,11 @@ export default function EditBookingModal({
     const endHour = hour + 1;
     
     const formatHour = (h: number) => {
-      if (h === 0) return '12AM';
-      if (h < 12) return `${h}AM`;
-      if (h === 12) return '12PM';
-      return `${h - 12}PM`;
+      const n = h % 24; // normalize 24 (midnight end-of-range) → 0
+      if (n === 0) return '12AM';
+      if (n < 12) return `${n}AM`;
+      if (n === 12) return '12PM';
+      return `${n - 12}PM`;
     };
     
     return `${formatHour(startHour)} - ${formatHour(endHour)}`;

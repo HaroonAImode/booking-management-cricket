@@ -471,10 +471,11 @@ export function isNightRate(hour: number, nightStartHour: number, nightEndHour: 
  * @returns Formatted time string (e.g., "2:00 PM", "12:00 AM")
  */
 export function formatTimeDisplay(hour: number): string {
-  if (hour === 0) return '12:00 AM';
-  if (hour === 12) return '12:00 PM';
-  if (hour < 12) return `${hour}:00 AM`;
-  return `${hour - 12}:00 PM`;
+  const h = hour % 24; // normalize 24 (midnight end-of-range) → 0
+  if (h === 0) return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  if (h < 12) return `${h}:00 AM`;
+  return `${h - 12}:00 PM`;
 }
 
 /**
