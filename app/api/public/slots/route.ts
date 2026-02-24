@@ -213,7 +213,7 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
     
     if (bookingsError) {
       console.error('Fallback bookings error:', bookingsError);
-      return generateDefaultSlots();
+      return generateDefaultSlots(date); // ✅ Pass date
     }
     
     // Get all booked/pending slot hours
@@ -233,8 +233,10 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
     // Generate 24-hour slots
     const slots = [];
     const now = new Date();
-    const pktDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
-    const isToday = new Date(date).toDateString() === pktDate.toDateString();
+    // ✅ FIX: Compare date strings directly in PKT to avoid UTC midnight mismatch
+    const pktDateStr = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }))
+      .toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const isToday = date === pktDateStr;
     const currentHour = isToday ? getCurrentHourPKT() : -1;
     
     for (let hour = 0; hour < 24; hour++) {
@@ -274,15 +276,22 @@ async function getSlotsFallback(supabase: any, date: string): Promise<any[]> {
 }
 
 // Generate default slots when all else fails
-function generateDefaultSlots(): any[] {
-  console.log('⚠️ Generating default slots structure');
+// ✅ FIX: Requires date string so past-slot logic only fires for today (PKT)
+function generateDefaultSlots(date: string): any[] {
+  console.log('⚠️ Generating default slots structure for date:', date);
   const slots = [];
   const currentHour = getCurrentHourPKT();
-  
+
+  // ✅ Compare requested date with PKT today — never mark future-date slots as past
+  const now = new Date();
+  const pktDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+  const pktDateStr = pktDate.toLocaleDateString('en-CA'); // YYYY-MM-DD in PKT
+  const isToday = date === pktDateStr;
+
   for (let hour = 0; hour < 24; hour++) {
     const isNightRate = hour >= 17 || hour < 7;
-    const isPast = hour <= currentHour;
-    
+    const isPast = isToday && hour <= currentHour; // ✅ Only past for today
+
     slots.push({
       slot_hour: hour,
       slot_time: `${hour.toString().padStart(2, '0')}:00`,
@@ -292,6 +301,6 @@ function generateDefaultSlots(): any[] {
       is_night_rate: isNightRate
     });
   }
-  
+
   return slots;
 }

@@ -69,9 +69,12 @@ export default function CalendarFirstBooking() {
 
   // Helper function to process slot data
   const processSlotData = (apiSlots: any[], date: Date): any[] => {
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const currentHour = isToday ? now.getHours() : -1;
+    // ✅ FIX: Use PKT-aware date comparison and PKT current hour
+    const nowPKT   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+    const datePKT  = getDateStrPKT(date);
+    const todayPKT = getDateStrPKT(new Date());
+    const isToday  = datePKT === todayPKT;
+    const currentHour = isToday ? nowPKT.getHours() : -1;
     
     // Create map of all 24 hours with defaults
     const slotsMap = new Map();
@@ -131,11 +134,17 @@ export default function CalendarFirstBooking() {
     }
   };
 
+  // ✅ FIX: Get date string in PKT timezone (not UTC via toISOString)
+  // toISOString() returns UTC, so between midnight-5AM PKT it gives yesterday's date.
+  const getDateStrPKT = (date: Date): string => {
+    return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }); // en-CA = YYYY-MM-DD
+  };
+
   // Main fetch slots function with conflict detection
   const fetchSlots = async (silent: boolean = false) => {
     if (!silent) setSlotsLoading(true);
     setSlotsError(null);
-    const dateStr = quickViewDate.toISOString().split('T')[0];
+    const dateStr = getDateStrPKT(quickViewDate); // ✅ PKT date, not UTC
     
     console.log('🔍 Fetching slots for date:', dateStr, silent ? '(silent refresh)' : '');
     
@@ -163,7 +172,7 @@ export default function CalendarFirstBooking() {
       
       // Check for conflicts with selected slots for current viewing date
       if (selectedSlots.length > 0 && processedSlots.length > 0) {
-        const currentDateStr = quickViewDate.toISOString().split('T')[0];
+        const currentDateStr = getDateStrPKT(quickViewDate); // ✅ PKT date
         const currentDateSlots = selectedSlots.filter(s => s.date === currentDateStr);
         
         const hasConflict = currentDateSlots.some(selectedSlot => {
@@ -226,7 +235,7 @@ export default function CalendarFirstBooking() {
   }, [autoRefreshEnabled, activeStep, quickViewDate]);
 
   const handleSlotToggle = (hour: number) => {
-    const currentDateStr = quickViewDate.toISOString().split('T')[0];
+    const currentDateStr = getDateStrPKT(quickViewDate); // ✅ PKT date
     
     // Check if this date is consecutive to existing selections
     if (!isConsecutiveDate(currentDateStr)) {
@@ -237,7 +246,7 @@ export default function CalendarFirstBooking() {
     setSelectedSlots((prev) => {
       const slotKey = `${currentDateStr}-${hour}`;
       const exists = prev.some(s => s.date === currentDateStr && s.hour === hour);
-      
+
       if (exists) {
         // Remove this slot
         return prev.filter(s => !(s.date === currentDateStr && s.hour === hour));
