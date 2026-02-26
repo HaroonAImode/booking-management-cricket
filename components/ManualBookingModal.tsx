@@ -84,7 +84,9 @@ export default function ManualBookingModal({
     if (!viewingDate) return;
     setSlotsLoading(true);
     setSlotsError(null);
-    const url = `/api/admin/bookings/check-slots?date=${viewingDate.toISOString().split('T')[0]}`;
+    // Use locale date string in Asia/Karachi timezone to avoid UTC midnight mismatch
+    const dateStr = viewingDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+    const url = `/api/admin/bookings/check-slots?date=${dateStr}`;
     fetch(url)
       .then(res => res.json())
       .then(data => {

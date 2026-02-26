@@ -28,30 +28,20 @@ async function handler(req: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get all bookings for the date (not cancelled)
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('booking_date', date)
-      .in('status', ['pending', 'approved', 'completed']);
+    // Query booking_slots directly by slot_date so that cross-midnight bookings
+    // (whose booking_date is the START day but whose slot rows have a LATER slot_date)
+    // are correctly detected as booked on the actual calendar date.
+    let slotsQuery = supabase
+      .from('booking_slots')
+      .select('slot_hour, booking_id, bookings!inner(id, status)')
+      .eq('slot_date', date)
+      .in('bookings.status', ['pending', 'approved', 'completed']);
 
-    if (bookingsError) {
-      console.error('Error fetching bookings:', bookingsError);
-      throw bookingsError;
+    if (excludeBookingId) {
+      slotsQuery = slotsQuery.neq('booking_id', excludeBookingId);
     }
 
-    // Filter out the current booking if editing
-    const bookingIds = (bookings || [])
-      .map(b => b.id)
-      .filter(id => id !== excludeBookingId);
-
-    // Get slots for these bookings
-    const { data: bookedSlots, error } = bookingIds.length > 0
-      ? await supabase
-          .from('booking_slots')
-          .select('slot_hour')
-          .in('booking_id', bookingIds)
-      : { data: [], error: null };
+    const { data: bookedSlotRows, error } = await slotsQuery;
 
     if (error) {
       console.error('Error fetching booked slots:', error);
@@ -59,7 +49,7 @@ async function handler(req: NextRequest) {
     }
 
     // Extract booked slot hours
-    const bookedHours = new Set(bookedSlots?.map((slot: any) => slot.slot_hour) || []);
+    const bookedHours = new Set(bookedSlotRows?.map((slot: any) => slot.slot_hour) || []);
 
     // Generate all available hours (0-23)
     const availableSlots = Array.from({ length: 24 }, (_, i) => i)
