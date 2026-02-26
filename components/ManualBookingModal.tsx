@@ -120,12 +120,14 @@ export default function ManualBookingModal({
     const newDate = new Date(viewingDate);
     newDate.setDate(newDate.getDate() - 1);
     setViewingDate(newDate);
+    setFormData(prev => ({ ...prev, bookingDate: newDate }));
   };
 
   const handleNextDay = () => {
     const newDate = new Date(viewingDate);
     newDate.setDate(newDate.getDate() + 1);
     setViewingDate(newDate);
+    setFormData(prev => ({ ...prev, bookingDate: newDate }));
   };
 
   // Get selected dates for display
