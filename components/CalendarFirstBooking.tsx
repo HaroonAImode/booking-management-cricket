@@ -57,7 +57,7 @@ export default function CalendarFirstBooking() {
 
   // Helper: Get slots for current viewing date
   const getCurrentDateSlots = (): number[] => {
-    const currentDateStr = quickViewDate.toISOString().split('T')[0];
+    const currentDateStr = getDateStrPKT(quickViewDate);
     return selectedSlots
       .filter(s => s.date === currentDateStr)
       .map(s => s.hour)
@@ -445,7 +445,7 @@ export default function CalendarFirstBooking() {
                         if (prevDay >= new Date(new Date().setHours(0, 0, 0, 0))) {
                           setQuickViewDate(prevDay);
                           // Only clear if NOT consecutive
-                          const prevDayStr = prevDay.toISOString().split('T')[0];
+                          const prevDayStr = getDateStrPKT(prevDay);
                           if (!isConsecutiveDate(prevDayStr)) {
                             setSelectedSlots([]);
                             setSelectedDate(null);
@@ -547,7 +547,7 @@ export default function CalendarFirstBooking() {
                         nextDay.setDate(nextDay.getDate() + 1);
                         setQuickViewDate(nextDay);
                         // Only clear if NOT consecutive
-                        const nextDayStr = nextDay.toISOString().split('T')[0];
+                        const nextDayStr = getDateStrPKT(nextDay);
                         if (!isConsecutiveDate(nextDayStr)) {
                           setSelectedSlots([]);
                           setSelectedDate(null);
@@ -770,7 +770,7 @@ export default function CalendarFirstBooking() {
                           const isAvailable = slot.current_status === 'available';
                           
                           // Check if this slot is selected for the current viewing date
-                          const currentDateStr = quickViewDate.toISOString().split('T')[0];
+                          const currentDateStr = getDateStrPKT(quickViewDate);
                           const isSelected = safeSelectedSlots.some(s => 
                             s.date === currentDateStr && s.hour === slot.slot_hour
                           );
@@ -1001,7 +1001,7 @@ export default function CalendarFirstBooking() {
                                   const newDate = date ? new Date(date) : new Date();
                                   setQuickViewDate(newDate);
                                   // Only clear if NOT consecutive
-                                  const newDateStr = newDate.toISOString().split('T')[0];
+                                  const newDateStr = getDateStrPKT(newDate);
                                   if (!isConsecutiveDate(newDateStr)) {
                                     setSelectedSlots([]);
                                     setSelectedDate(null);

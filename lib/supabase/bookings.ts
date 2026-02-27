@@ -626,7 +626,8 @@ export function formatDateForSQL(date: Date | string | null): string {
     throw new Error('Invalid date provided');
   }
   
-  return dateObj.toISOString().split('T')[0];
+  // ✅ FIX: Use PKT timezone to avoid midnight UTC rollback (between midnight-5AM PKT gives yesterday in UTC)
+  return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
 }
 
 /**

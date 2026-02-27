@@ -44,8 +44,10 @@ export const GET = withAdminAuth(async (request, { adminProfile }) => {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     
-    const startDate = searchParams.get('start') || new Date().toISOString().split('T')[0];
-    const endDate = searchParams.get('end') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // ✅ FIX: Use PKT date for defaults (not UTC)
+    const todayPKT = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+    const startDate = searchParams.get('start') || todayPKT;
+    const endDate = searchParams.get('end') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
     const status = searchParams.get('status') || null;
 
     console.log('📅 Fetching calendar bookings:', { startDate, endDate, status });

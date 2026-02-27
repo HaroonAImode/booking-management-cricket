@@ -447,10 +447,10 @@ export default function AdminBookingsPage() {
       
       // Add date range filters
       if (dateFrom) {
-        params.append('dateFrom', dateFrom.toISOString().split('T')[0]);
+        params.append('dateFrom', dateFrom.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }));
       }
       if (dateTo) {
-        params.append('dateTo', dateTo.toISOString().split('T')[0]);
+        params.append('dateTo', dateTo.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }));
       }
       
       // Ground managers only see bookings with remaining payment

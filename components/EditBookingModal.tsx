@@ -254,7 +254,7 @@ export default function EditBookingModal({
     
     try {
       setCheckingSlots(true);
-      const dateStr = bookingDate.toISOString().split('T')[0];
+      const dateStr = getDateStrPKT(bookingDate);
       
       const response = await fetch(
         `/api/admin/bookings/check-slots?date=${dateStr}&excludeBookingId=${bookingId}`
@@ -269,6 +269,12 @@ export default function EditBookingModal({
     } finally {
       setCheckingSlots(false);
     }
+  };
+
+  // ✅ FIX: Get date string in PKT timezone (not UTC via toISOString)
+  // toISOString() returns UTC, so between midnight-5AM PKT it gives yesterday's date.
+  const getDateStrPKT = (date: Date): string => {
+    return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }); // en-CA = YYYY-MM-DD
   };
 
   const isNightHour = (hour: number): boolean => {
@@ -434,7 +440,7 @@ export default function EditBookingModal({
           throw new Error(validation.error || 'Invalid payment proof file');
         }
 
-        const dateStr = bookingDate.toISOString().split('T')[0];
+        const dateStr = getDateStrPKT(bookingDate);
         const timestamp = Date.now();
         const fileExt = newAdvanceProof.name.split('.').pop();
         const filePath = `${dateStr}/${bookingId}-advance-${timestamp}.${fileExt}`;
@@ -459,7 +465,7 @@ export default function EditBookingModal({
           throw new Error(validation.error || 'Invalid payment proof file');
         }
 
-        const dateStr = bookingDate.toISOString().split('T')[0];
+        const dateStr = getDateStrPKT(bookingDate);
         const timestamp = Date.now();
         const fileExt = newRemainingProof.name.split('.').pop();
         const filePath = `${dateStr}/${bookingId}-remaining-${timestamp}.${fileExt}`;
@@ -527,7 +533,7 @@ export default function EditBookingModal({
       const { error: updateError } = await supabase
         .from('bookings')
         .update({
-          booking_date: bookingDate.toISOString().split('T')[0],
+          booking_date: getDateStrPKT(bookingDate),
           total_amount: finalTotalAmount,
           total_hours: finalTotalHours,
           advance_payment: finalAdvancePayment, // Keep original advance
@@ -551,7 +557,7 @@ export default function EditBookingModal({
         if (deleteError) throw deleteError;
 
         // Insert new slots
-        const bookingDateStr = bookingDate.toISOString().split('T')[0];
+        const bookingDateStr = getDateStrPKT(bookingDate);
         const slotsToInsert = slots.map(slot => {
           // Format slot_time as HH:00:00
           const slotTime = `${slot.hour.toString().padStart(2, '0')}:00:00`;
@@ -677,8 +683,8 @@ export default function EditBookingModal({
                     let dateObj: Date | null = null;
                     if (date && typeof date === 'object' && 'getTime' in date) dateObj = date as Date;
                     else if (typeof date === 'string') dateObj = new Date(date);
-                    const previousDate = bookingDate ? new Date(bookingDate).toISOString().split('T')[0] : null;
-                    const newDate = dateObj ? dateObj.toISOString().split('T')[0] : null;
+                    const previousDate = bookingDate ? getDateStrPKT(new Date(bookingDate)) : null;
+                    const newDate = dateObj ? getDateStrPKT(dateObj) : null;
                     setBookingDate(dateObj);
                     // If date actually changed (not just same date selected), clear slots and require new selection
                     if (dateObj && previousDate !== newDate) {

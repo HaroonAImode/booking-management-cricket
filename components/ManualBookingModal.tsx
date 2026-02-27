@@ -191,7 +191,8 @@ export default function ManualBookingModal({
           if (!(sorted[i - 1] === 23 && sorted[i] === 0)) {
             notifications.show({
               title: 'Warning',
-              message: `Slots on ${new Date(date).toLocaleDateString()} are not consecutive. Please select continuous hours.`,
+              message: `Slots on ${new Date(date + 'T00:00:00').toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', month: 'short', day: 'numeric', year: 'numeric' })} are not consecutive. Please select continuous hours.`,
+
               color: 'yellow',
             });
             return;
@@ -212,7 +213,7 @@ export default function ManualBookingModal({
         const uploadResult = await uploadPaymentProof(
           paymentProofFile,
           fakeBookingId,
-          formData.bookingDate.toISOString().split('T')[0]
+          formData.bookingDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' })
         );
         if (uploadResult.error) {
           notifications.show({
@@ -228,7 +229,7 @@ export default function ManualBookingModal({
 
       // Prepare slots data with slot_date for each slot
       const allDates = Object.keys(getSelectedDates());
-      const firstDate = allDates.sort()[0] || formData.bookingDate.toISOString().split('T')[0];
+      const firstDate = allDates.sort()[0] || formData.bookingDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
       
       const slotsData = selectedSlots.map(slot => {
         const slotTime = `${String(slot.hour).padStart(2, '0')}:00:00`;
@@ -451,7 +452,7 @@ export default function ManualBookingModal({
                     {Object.entries(getSelectedDates()).map(([date, slots]) => (
                       <Group key={date} gap="xs" wrap="wrap">
                         <Text size="xs" fw={500} style={{ minWidth: 100 }}>
-                          {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}:
+                          {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', month: 'short', day: 'numeric' })}:
                         </Text>
                         {slots
                           .sort((a, b) => a.hour - b.hour)
@@ -475,10 +476,10 @@ export default function ManualBookingModal({
               <SlotSelector
                 selectedDate={viewingDate}
                 selectedSlots={selectedSlots
-                  .filter(s => s.date === viewingDate.toISOString().split('T')[0])
+                  .filter(s => s.date === viewingDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }))
                   .map(s => s.hour)}
                 onSlotToggle={(hour) => {
-                  const dateStr = viewingDate.toISOString().split('T')[0];
+                  const dateStr = viewingDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
                   const slotIndex = selectedSlots.findIndex(
                     s => s.date === dateStr && s.hour === hour
                   );

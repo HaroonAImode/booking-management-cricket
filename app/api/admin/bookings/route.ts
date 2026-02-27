@@ -504,12 +504,16 @@ async function POSTHandler(
 
       // Step 2: Generate booking number
       const today = new Date();
-      const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+      // ✅ FIX: Use PKT date, not UTC (avoids wrong date between midnight-5AM PKT)
+      const todayPKT = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+      const dateStr = todayPKT.replace(/-/g, '');
+      const todayStart = `${todayPKT}T00:00:00`;
+      const todayEnd   = `${todayPKT}T23:59:59`;
       const { data: todayBookings } = await supabase
         .from('bookings')
         .select('id')
-        .gte('created_at', `${today.toISOString().split('T')[0]}T00:00:00`)
-        .lt('created_at', `${today.toISOString().split('T')[0]}T23:59:59`);
+        .gte('created_at', todayStart)
+        .lt('created_at', todayEnd);
 
       const sequenceNumber = (todayBookings?.length || 0) + 1;
       const bookingNumber = `BK-${dateStr}-${sequenceNumber.toString().padStart(3, '0')}`;

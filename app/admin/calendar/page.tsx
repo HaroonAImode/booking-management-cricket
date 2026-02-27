@@ -76,8 +76,8 @@ export default function AdminCalendarPage() {
   const [mobileView, setMobileView] = useState<'calendar' | 'list'>('calendar');
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('month');
   const [dateRange, setDateRange] = useState({
-    start: new Date().toISOString().split('T')[0],
-    end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    start: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }),
+    end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }),
   });
   const [quickFilters, setQuickFilters] = useState<string[]>([]);
   const [eventModalOpened, setEventModalOpened] = useState(false);
