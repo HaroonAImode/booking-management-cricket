@@ -176,7 +176,7 @@ async function GETHandler(
         return acc;
       }, [] as any[]);
       
-      const totalExtraCharges = uniqueCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+      const totalExtraCharges = uniqueCharges.reduce((sum: number, charge: any) => sum + (charge.amount || 0), 0);
 
       return {
         id: booking.id,
@@ -267,7 +267,13 @@ async function POSTHandler(
       advancePaymentMethod,
       advancePaymentProof,
       adminNotes,
-      autoApprove = true
+      autoApprove = true,
+      // Past-booking / full-payment fields
+      discount_amount = null,
+      discount_reason = null,
+      extra_charges: incomingExtraCharges = [],
+      mark_completed = false,
+      is_past_booking = false,
     } = body;
 
     console.log('=== PARSED FIELDS ===');
@@ -519,22 +525,63 @@ async function POSTHandler(
       const bookingNumber = `BK-${dateStr}-${sequenceNumber.toString().padStart(3, '0')}`;
 
       // Step 3: Create booking (without created_by column)
-      const remainingPayment = calculatedTotalAmount - finalAdvancePayment;
-      
+      // Determine status: past bookings that are fully paid → 'completed'
+      const finalRemainingPayment = Math.max(0, calculatedTotalAmount - finalAdvancePayment);
+      let bookingStatus: string;
+      if (mark_completed && finalRemainingPayment === 0) {
+        bookingStatus = 'completed';
+      } else if (autoApprove) {
+        bookingStatus = 'approved';
+      } else {
+        bookingStatus = 'pending';
+      }
+
       const bookingData: any = {
         booking_number: bookingNumber,
         booking_date: bookingDate,
         total_hours: calculatedTotalHours,
         total_amount: calculatedTotalAmount,
         advance_payment: finalAdvancePayment,
-        remaining_payment: remainingPayment,
+        remaining_payment: finalRemainingPayment,
         advance_payment_method: advancePaymentMethod || null,
         advance_payment_proof: advancePaymentProof || null,
-        status: autoApprove ? 'approved' : 'pending',
+        status: bookingStatus,
         customer_id: customerId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      // Extra charges totals (calculated upfront so we can stamp on bookings row)
+      const validExtraChargesPreCalc = Array.isArray(incomingExtraCharges)
+        ? incomingExtraCharges.filter((ec: any) => ec && Number(ec.amount) > 0)
+        : [];
+      const totalExtraChargesAmount = validExtraChargesPreCalc.reduce(
+        (sum: number, ec: any) => sum + Number(ec.amount),
+        0
+      );
+
+      // Include discount if provided
+      if (discount_amount && Number(discount_amount) > 0) {
+        bookingData.discount_amount = Number(discount_amount);
+      }
+
+      // For past bookings: stamp extra charges total, JSONB copy, and payment flags
+      if (totalExtraChargesAmount > 0) {
+        bookingData.total_extra_charges = totalExtraChargesAmount;
+        bookingData.extra_charges = validExtraChargesPreCalc.map((ec: any) => ({
+          category: ec.category || 'other',
+          amount: Number(ec.amount),
+        }));
+      }
+
+      // Mark fully paid / completed fields
+      if (finalRemainingPayment === 0) {
+        bookingData.is_fully_paid = true;
+        bookingData.advance_payment_date = new Date().toISOString();
+        if (bookingStatus === 'completed') {
+          bookingData.completed_at = new Date().toISOString();
+        }
+      }
 
       // Only add admin_notes if provided
       if (adminNotes) {
@@ -592,7 +639,27 @@ async function POSTHandler(
       const slotResults = await Promise.all(slotPromises);
       console.log('Slots created:', slotResults.length);
 
-      // Step 5: Create notification for admin (only if notifications table exists)
+      // Step 5a: Insert extra charges if provided (past booking / full payment flow)
+      const validExtraCharges = validExtraChargesPreCalc;
+
+      if (validExtraCharges.length > 0) {
+        const extraChargeRows = validExtraCharges.map((ec: any) => ({
+          booking_id: bookingId,
+          category: ec.category || 'other',
+          amount: Number(ec.amount),
+          created_at: new Date().toISOString(),
+        }));
+        const { error: ecError } = await supabase
+          .from('extra_charges')
+          .insert(extraChargeRows);
+        if (ecError) {
+          console.warn('Extra charges insertion warning:', ecError.message);
+        } else {
+          console.log('Extra charges created:', extraChargeRows.length);
+        }
+      }
+
+      // Step 5b: Create notification for admin (only if notifications table exists)
       try {
         const { error: notificationError } = await supabase.from('notifications').insert({
           customer_id: customerId,

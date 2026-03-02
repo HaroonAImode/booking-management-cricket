@@ -1,0 +1,34 @@
+now i want to add 1 more feature in this like currenty for admin in admin portal in bookings page 
+
+admin can mannually add booking 
+
+but want to add 1 more feature like admin can also be able to book a slot that is previosusly gone or can say 
+admin can add a booking details for past bookings 
+
+like many time admin dont have internet so he cant be able to add mannual booking so this is issue for admin
+
+
+so hope you understand the problem
+
+and i want to solve this 
+
+like i means admin can see the past unbooked slots and can add person detailas and amount and in this he enters all details at once 
+
+like not like booking get created with only advance booking then we are adding oremaing payment and details 
+
+so i want like admin can enter all the details at once 
+
+like selected past unbooked slot , or multiple slots in a sequence and then it auto shows total amount based on slots and day or night time and after that ti also show option to add extra charges or add discount etc 
+
+
+so make this feature professiaonlly and alos keep the user interface of this form on mobile screen and desktpp screen good and user friendly 
+
+and in booking page it should show this booking in sequence 
+
+hoep you understand all details
+
+now give me sql queries if needed additon in database 
+
+and also if want to verify anything from database like any details to implement this perfectly then also can give me these queries i can run this for you and share ths outputs then you can implement this feature proeprly 
+
+and a new button in booking page to add this 

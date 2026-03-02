@@ -71,6 +71,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconFilterOff,
+  IconHistory,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -80,6 +81,7 @@ import * as XLSX from 'xlsx';
 import BookingDetailsModal from '@/components/BookingDetailsModal';
 import PaymentProofModal from '@/components/PaymentProofModal';
 import ManualBookingModal from '@/components/ManualBookingModal';
+import PastBookingModal from '@/components/PastBookingModal';
 import CompletePaymentModal from '@/components/CompletePaymentModal';
 import EditBookingModal from '@/components/EditBookingModal';
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -162,6 +164,7 @@ export default function AdminBookingsPage() {
   const [detailsModalOpened, setDetailsModalOpened] = useState(false);
   const [paymentModalOpened, setPaymentModalOpened] = useState(false);
   const [manualBookingOpened, setManualBookingOpened] = useState(false);
+  const [pastBookingOpened, setPastBookingOpened] = useState(false);
   const [completePaymentOpened, setCompletePaymentOpened] = useState(false);
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -944,6 +947,20 @@ export default function AdminBookingsPage() {
                   <Text hiddenFrom="sm">Add</Text>
                 </Button>
               )}
+
+              {isAdmin && (
+                <Button
+                  leftSection={<IconHistory size={16} />}
+                  size="sm"
+                  variant="light"
+                  color="indigo"
+                  onClick={() => setPastBookingOpened(true)}
+                  style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                >
+                  <Text visibleFrom="sm">Past Booking</Text>
+                  <Text hiddenFrom="sm">Past</Text>
+                </Button>
+              )}
               
               <Menu shadow="md">
                 <Menu.Target>
@@ -1599,6 +1616,12 @@ export default function AdminBookingsPage() {
       <ManualBookingModal
         opened={manualBookingOpened}
         onClose={() => setManualBookingOpened(false)}
+        onSuccess={fetchBookings}
+      />
+
+      <PastBookingModal
+        opened={pastBookingOpened}
+        onClose={() => setPastBookingOpened(false)}
         onSuccess={fetchBookings}
       />
 
