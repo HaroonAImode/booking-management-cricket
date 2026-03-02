@@ -40,6 +40,7 @@ import {
   ScrollArea,
   Modal,
   Box,
+  Grid,
   ThemeIcon,
   HoverCard,
 } from '@mantine/core';
@@ -895,7 +896,7 @@ export default function AdminBookingsPage() {
       px={{ base: 'xs', sm: 'sm' }}
       className="animate-fade-in"
     >
-      <Stack gap={{ base: 'md', sm: 'xl' }}>
+      <Stack gap="md">
         {/* Header */}
         <Stack gap="xs">
           <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -1026,33 +1027,39 @@ export default function AdminBookingsPage() {
             </Group>
           </Group>
 
-          {/* Direct Status Filter Buttons */}
+          {/* Direct Status Filter Buttons — horizontal scroll on mobile, no wrapping */}
           {isAdmin && (
-            <Group gap="xs" mt="md" mb={-8}>
-              {[
-                { value: 'all', label: 'All' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'completed', label: 'Completed' },
-                { value: 'cancelled', label: 'Cancelled' },
-              ].map((btn) => (
-                <Button
-                  key={btn.value}
-                  size="xs"
-                  variant={statusFilter === btn.value ? 'filled' : 'light'}
-                  color={
-                    btn.value === 'pending' ? 'orange' :
-                    btn.value === 'approved' ? 'green' :
-                    btn.value === 'completed' ? 'blue' :
-                    btn.value === 'cancelled' ? 'red' : 'gray'
-                  }
-                  onClick={() => setStatusFilter(btn.value)}
-                  style={{ fontWeight: 600, minWidth: 70, fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}
-                >
-                  {btn.label}
-                </Button>
-              ))}
-            </Group>
+            <Box
+              mt="md"
+              mb={-8}
+              style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
+            >
+              <Group gap="xs" wrap="nowrap" style={{ minWidth: 'max-content' }}>
+                {[
+                  { value: 'all',       label: 'All' },
+                  { value: 'pending',   label: 'Pending' },
+                  { value: 'approved',  label: 'Approved' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ].map((btn) => (
+                  <Button
+                    key={btn.value}
+                    size="xs"
+                    variant={statusFilter === btn.value ? 'filled' : 'light'}
+                    color={
+                      btn.value === 'pending'   ? 'orange' :
+                      btn.value === 'approved'  ? 'green'  :
+                      btn.value === 'completed' ? 'blue'   :
+                      btn.value === 'cancelled' ? 'red'    : 'gray'
+                    }
+                    onClick={() => setStatusFilter(btn.value)}
+                    style={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+              </Group>
+            </Box>
           )}
         </Stack>
 
@@ -1115,15 +1122,17 @@ export default function AdminBookingsPage() {
 
         {/* Filters */}
         <Paper withBorder p={{ base: 'xs', sm: 'sm' }}>
-          <Stack gap="sm">
-            <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+          <Stack gap="xs">
+
+            {/* Row 1: Search + Clear */}
+            <Group gap="xs" wrap="nowrap">
               <TextInput
-                placeholder="Search by booking #, customer, phone..."
+                placeholder="Search booking #, customer, phone…"
                 leftSection={<IconSearch size={16} />}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.currentTarget.value)}
                 size="sm"
-                style={{ flex: '1 1 200px', minWidth: 200 }}
+                style={{ flex: 1, minWidth: 0 }}
               />
               <Button
                 variant="outline"
@@ -1131,89 +1140,98 @@ export default function AdminBookingsPage() {
                 leftSection={<IconFilterOff size={16} />}
                 onClick={handleClearFilters}
                 size="sm"
+                style={{ flexShrink: 0 }}
               >
-                <Text visibleFrom="sm">Clear Filters</Text>
-                <Text hiddenFrom="sm">Clear</Text>
+                Clear
               </Button>
             </Group>
-            <Group wrap="wrap">
-              {isAdmin && (
-                <Select
-                  placeholder="Status"
-                  leftSection={<IconFilter size={16} />}
-                  data={[
-                    { value: 'all', label: 'All Statuses' },
-                    { value: 'pending', label: 'Pending' },
-                    { value: 'approved', label: 'Approved' },
-                    { value: 'completed', label: 'Completed' },
-                    { value: 'cancelled', label: 'Cancelled' },
-                  ]}
-                  value={statusFilter}
-                  onChange={(value) => setStatusFilter(value || 'all')}
-                  style={{ flex: '1 1 120px', minWidth: 120 }}
+
+            {/* Row 2: Status + Payment selects (2-col on all sizes) */}
+            {isAdmin && (
+              <Grid gutter="xs">
+                <Grid.Col span={6}>
+                  <Select
+                    placeholder="Status"
+                    leftSection={<IconFilter size={14} />}
+                    data={[
+                      { value: 'all',       label: 'All Statuses' },
+                      { value: 'pending',   label: 'Pending' },
+                      { value: 'approved',  label: 'Approved' },
+                      { value: 'completed', label: 'Completed' },
+                      { value: 'cancelled', label: 'Cancelled' },
+                    ]}
+                    value={statusFilter}
+                    onChange={(v) => setStatusFilter(v || 'all')}
+                    size="sm"
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Select
+                    placeholder="Payment"
+                    leftSection={<IconFilter size={14} />}
+                    data={[
+                      { value: 'all',     label: 'All Payments' },
+                      { value: 'paid',    label: 'Paid' },
+                      { value: 'pending', label: 'Pending' },
+                    ]}
+                    value={paymentFilter}
+                    onChange={(v) => setPaymentFilter(v || 'all')}
+                    size="sm"
+                  />
+                </Grid.Col>
+              </Grid>
+            )}
+
+            {/* Row 3: From Date + To Date (2-col on all sizes) */}
+            <Grid gutter="xs">
+              <Grid.Col span={6}>
+                <DatePickerInput
+                  placeholder="From Date"
+                  leftSection={<IconCalendarEvent size={14} />}
+                  value={dateFrom}
+                  onChange={(v) => setDateFrom(v && typeof v !== 'string' ? v : null)}
+                  clearable
                   size="sm"
+                  maxDate={dateTo || undefined}
                 />
-              )}
-              {isAdmin && (
-                <Select
-                  placeholder="Payment"
-                  leftSection={<IconFilter size={16} />}
-                  data={[
-                    { value: 'all', label: 'All' },
-                    { value: 'paid', label: 'Paid' },
-                    { value: 'pending', label: 'Pending' },
-                  ]}
-                  value={paymentFilter}
-                  onChange={(value) => setPaymentFilter(value || 'all')}
-                  style={{ flex: '1 1 120px', minWidth: 120 }}
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <DatePickerInput
+                  placeholder="To Date"
+                  leftSection={<IconCalendarEvent size={14} />}
+                  value={dateTo}
+                  onChange={(v) => setDateTo(v && typeof v !== 'string' ? v : null)}
+                  clearable
                   size="sm"
+                  minDate={dateFrom || undefined}
                 />
-              )}
-              <DatePickerInput
-                placeholder="From Date"
-                leftSection={<IconCalendarEvent size={16} />}
-                value={dateFrom}
-                onChange={(value) => setDateFrom(value && typeof value !== 'string' ? value : null)}
-                clearable
-                style={{ flex: '1 1 140px', minWidth: 140 }}
-                size="sm"
-                maxDate={dateTo || undefined}
-              />
-              <DatePickerInput
-                placeholder="To Date"
-                leftSection={<IconCalendarEvent size={16} />}
-                value={dateTo}
-                onChange={(value) => setDateTo(value && typeof value !== 'string' ? value : null)}
-                clearable
-                style={{ flex: '1 1 140px', minWidth: 140 }}
-                size="sm"
-                minDate={dateFrom || undefined}
-              />
+              </Grid.Col>
+            </Grid>
+
+            {/* Row 4: Today + Refresh */}
+            <Group gap="xs">
               <Button
                 variant="light"
                 color="cyan"
-                leftSection={<IconCalendarEvent size={16} />}
-                onClick={() => {
-                  const today = new Date();
-                  setDateFrom(today);
-                  setDateTo(today);
-                }}
+                leftSection={<IconCalendarEvent size={14} />}
+                onClick={() => { const t = new Date(); setDateFrom(t); setDateTo(t); }}
                 size="sm"
-                style={{ flex: '0 0 auto', fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                style={{ flex: 1 }}
               >
-                <Text visibleFrom="sm">Today</Text>
+                Today
               </Button>
               <Button
                 variant="light"
-                leftSection={<IconRefresh size={16} />}
+                leftSection={<IconRefresh size={14} />}
                 onClick={fetchBookings}
                 loading={loading}
                 size="sm"
-                style={{ flex: '0 0 auto', fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
+                style={{ flex: 1 }}
               >
-                <Text visibleFrom="sm">Refresh</Text>
+                Refresh
               </Button>
             </Group>
+
           </Stack>
         </Paper>
 

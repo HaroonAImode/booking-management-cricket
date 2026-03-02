@@ -11,7 +11,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Stack,
@@ -116,8 +116,13 @@ export default function PastBookingModal({
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountReason, setDiscountReason] = useState('');
-  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
+  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([
+    { category: 'mineral water', amount: 0 },
+  ]);
   const [notes, setNotes] = useState('');
+
+  // Track the last auto-synced total so we know when admin manually changed amount
+  const autoSyncedTotalRef = useRef(0);
 
   // Reset everything when modal opens
   useEffect(() => {
@@ -130,7 +135,8 @@ export default function PastBookingModal({
       setPaymentMethod('cash');
       setDiscountAmount(0);
       setDiscountReason('');
-      setExtraCharges([]);
+      setExtraCharges([{ category: 'mineral water', amount: 0 }]);
+      autoSyncedTotalRef.current = 0;
       setNotes('');
     }
   }, [opened]);
@@ -232,9 +238,14 @@ export default function PastBookingModal({
   const finalTotal = Math.max(0, subtotal - discountAmount + totalExtraCharges);
   const balance = finalTotal - amountReceived;
 
-  // Auto-update amount received whenever finalTotal changes
+  // Auto-sync amountReceived to finalTotal ONLY when the admin hasn't manually
+  // overridden it (i.e. it still equals our last auto-synced value).
   useEffect(() => {
-    setAmountReceived(finalTotal);
+    if (amountReceived === autoSyncedTotalRef.current) {
+      setAmountReceived(finalTotal);
+    }
+    autoSyncedTotalRef.current = finalTotal;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalTotal]);
 
   // ─── Extra Charges Helpers ─────────────────────────────────────────────────
@@ -769,64 +780,105 @@ export default function PastBookingModal({
               </Grid>
 
               {/* Extra Charges */}
-              <Box>
-                <Group justify="space-between" mb="xs">
-                  <Text size="sm" fw={500}>
-                    Extra Charges (Optional)
-                  </Text>
+              <Paper withBorder p="sm" radius="sm">
+                <Group justify="space-between" mb="sm">
+                  <Group gap={6}>
+                    <Text size="sm" fw={600}>
+                      Extra Charges
+                    </Text>
+                    {totalExtraCharges > 0 && (
+                      <Badge size="sm" color="orange" variant="filled">
+                        Rs {totalExtraCharges.toLocaleString()}
+                      </Badge>
+                    )}
+                  </Group>
                   <Button
                     size="xs"
                     variant="light"
+                    color="orange"
                     leftSection={<IconPlus size={12} />}
                     onClick={addExtraCharge}
                   >
-                    Add Charge
+                    Add Row
                   </Button>
                 </Group>
-                <Stack gap={6}>
-                  {extraCharges.map((ec, idx) => (
-                    <Grid gutter="xs" key={idx} align="center">
-                      <Grid.Col span={{ base: 5, sm: 5 }}>
-                        <Select
-                          placeholder="Category"
-                          data={[
-                            { value: 'mineral water', label: 'Mineral Water' },
-                            { value: 'ball', label: 'Ball' },
-                            { value: 'tape', label: 'Tape' },
-                            { value: 'other', label: 'Other' },
-                          ]}
-                          value={ec.category}
-                          onChange={(v) =>
-                            updateExtraCharge(idx, 'category', v || 'other')
-                          }
-                          size="xs"
-                        />
-                      </Grid.Col>
-                      <Grid.Col span={{ base: 5, sm: 5 }}>
-                        <NumberInput
-                          placeholder="Amount (Rs)"
-                          min={0}
-                          value={ec.amount}
-                          onChange={(v) =>
-                            updateExtraCharge(idx, 'amount', Number(v) || 0)
-                          }
-                          size="xs"
-                        />
-                      </Grid.Col>
-                      <Grid.Col span={{ base: 2, sm: 2 }}>
-                        <ActionIcon
-                          color="red"
-                          variant="light"
-                          size="sm"
-                          onClick={() => removeExtraCharge(idx)}
-                        >
-                          <IconTrash size={12} />
-                        </ActionIcon>
-                      </Grid.Col>
-                    </Grid>
-                  ))}
+
+                <Stack gap={8}>
+                  {extraCharges.length === 0 ? (
+                    <Text size="xs" c="dimmed" ta="center" py={4}>
+                      No extra charges — click &quot;Add Row&quot; to add water,
+                      ball, tape, etc.
+                    </Text>
+                  ) : (
+                    extraCharges.map((ec, idx) => (
+                      <Grid gutter="xs" key={idx} align="center">
+                        {/* Category */}
+                        <Grid.Col span={{ base: 5, sm: 5 }}>
+                          <Select
+                            placeholder="Category"
+                            data={[
+                              { value: 'mineral water', label: '💧 Mineral Water' },
+                              { value: 'ball', label: '🏏 Ball' },
+                              { value: 'tape', label: '🩹 Tape' },
+                              { value: 'other', label: '📦 Other' },
+                            ]}
+                            value={ec.category}
+                            onChange={(v) =>
+                              updateExtraCharge(idx, 'category', v || 'other')
+                            }
+                            size="xs"
+                          />
+                        </Grid.Col>
+
+                        {/* Amount */}
+                        <Grid.Col span={{ base: 5, sm: 5 }}>
+                          <NumberInput
+                            placeholder="Amount (Rs)"
+                            min={0}
+                            value={ec.amount === 0 ? '' : ec.amount}
+                            onChange={(v) =>
+                              updateExtraCharge(idx, 'amount', Number(v) || 0)
+                            }
+                            leftSection={
+                              <Text size="xs" c="dimmed">
+                                Rs
+                              </Text>
+                            }
+                            size="xs"
+                          />
+                        </Grid.Col>
+
+                        {/* Remove */}
+                        <Grid.Col span={{ base: 2, sm: 2 }}>
+                          <ActionIcon
+                            color="red"
+                            variant="light"
+                            size="sm"
+                            title="Remove this charge"
+                            onClick={() => removeExtraCharge(idx)}
+                          >
+                            <IconTrash size={12} />
+                          </ActionIcon>
+                        </Grid.Col>
+                      </Grid>
+                    ))
+                  )}
                 </Stack>
-              </Box>
+
+                {/* Running total inside the box */}
+                {totalExtraCharges > 0 && (
+                  <Group
+                    justify="flex-end"
+                    mt="xs"
+                    pt="xs"
+                    style={{ borderTop: '1px solid #ffe8cc' }}
+                  >
+                    <Text size="xs" c="orange.7" fw={600}>
+                      Extra total: Rs {totalExtraCharges.toLocaleString()}
+                    </Text>
+                  </Group>
+                )}
+              </Paper>
 
               <Divider />
 
@@ -877,7 +929,7 @@ export default function PastBookingModal({
                 <Grid.Col span={{ base: 12, sm: 6 }}>
                   <NumberInput
                     label="Amount Received"
-                    description="How much the customer paid"
+                    description="Auto-filled from total. Edit here if partial payment."
                     placeholder="Enter amount received"
                     required
                     min={0}
