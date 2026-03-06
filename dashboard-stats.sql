@@ -140,21 +140,46 @@ CREATE OR REPLACE FUNCTION get_monthly_summary()
 RETURNS TABLE (
   month_name TEXT,
   total_bookings INTEGER,
-  total_revenue NUMERIC, -- Booking value
-  total_received NUMERIC, -- Actually received (ADDED)
+  total_revenue NUMERIC, -- Booking value (approved + completed only)
+  total_received NUMERIC, -- Actually received (approved + completed only)
   total_hours INTEGER,
-  average_booking_value NUMERIC
+  average_booking_value NUMERIC,
+  month_cash NUMERIC,      -- Cash received that month
+  month_online NUMERIC,    -- All online (easypaisa + sadapay) received that month
+  month_easypaisa NUMERIC, -- Easypaisa received that month
+  month_sadapay NUMERIC    -- SadaPay received that month
 ) AS $$
 BEGIN
   RETURN QUERY
   SELECT 
     TO_CHAR(b.created_at, 'Month') AS month_name,
     COUNT(*)::INTEGER AS total_bookings,
-    COALESCE(SUM(b.total_amount), 0) AS total_revenue,
-    -- Actually received (advance + remaining_payment_amount) - FIXED
-    COALESCE(SUM(b.advance_payment + COALESCE(b.remaining_payment_amount, 0)), 0) AS total_received,
+    -- Booking value: only count approved/completed bookings
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.total_amount ELSE 0 END), 0) AS total_revenue,
+    -- Actually received: only count approved/completed
+    COALESCE(SUM(CASE WHEN b.status IN ('approved', 'completed') THEN b.advance_payment + COALESCE(b.remaining_payment_amount, 0) ELSE 0 END), 0) AS total_received,
     COALESCE(SUM(b.total_hours), 0)::INTEGER AS total_hours,
-    COALESCE(AVG(b.total_amount), 0) AS average_booking_value
+    COALESCE(AVG(CASE WHEN b.status IN ('approved', 'completed') THEN b.total_amount END), 0) AS average_booking_value,
+    -- Cash per month (approved/completed only)
+    COALESCE(
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.advance_payment_method = 'cash' THEN b.advance_payment ELSE 0 END) +
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.remaining_payment_method = 'cash' THEN COALESCE(b.remaining_payment_amount, 0) ELSE 0 END),
+    0) AS month_cash,
+    -- Online (easypaisa + sadapay) per month
+    COALESCE(
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.advance_payment_method IN ('easypaisa', 'sadapay') THEN b.advance_payment ELSE 0 END) +
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.remaining_payment_method IN ('easypaisa', 'sadapay') THEN COALESCE(b.remaining_payment_amount, 0) ELSE 0 END),
+    0) AS month_online,
+    -- Easypaisa per month
+    COALESCE(
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.advance_payment_method = 'easypaisa' THEN b.advance_payment ELSE 0 END) +
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.remaining_payment_method = 'easypaisa' THEN COALESCE(b.remaining_payment_amount, 0) ELSE 0 END),
+    0) AS month_easypaisa,
+    -- SadaPay per month
+    COALESCE(
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.advance_payment_method = 'sadapay' THEN b.advance_payment ELSE 0 END) +
+      SUM(CASE WHEN b.status IN ('approved', 'completed') AND b.remaining_payment_method = 'sadapay' THEN COALESCE(b.remaining_payment_amount, 0) ELSE 0 END),
+    0) AS month_sadapay
   FROM bookings b
   WHERE b.created_at >= DATE_TRUNC('year', CURRENT_DATE)
   GROUP BY TO_CHAR(b.created_at, 'Month'), EXTRACT(MONTH FROM b.created_at)
@@ -325,9 +350,19 @@ BEGIN
   FROM bookings 
   WHERE status IN ('approved', 'completed');
   
-  -- Estimate Easypaisa vs SadaPay split
-  v_easypaisa_payments := ROUND(v_online_payments * 0.7, 2);
-  v_sadapay_payments := ROUND(v_online_payments * 0.3, 2);
+  -- Real Easypaisa payments (advance + remaining)
+  SELECT 
+    COALESCE(SUM(CASE WHEN advance_payment_method = 'easypaisa' THEN advance_payment ELSE 0 END), 0) +
+    COALESCE(SUM(CASE WHEN remaining_payment_method = 'easypaisa' THEN COALESCE(remaining_payment_amount, 0) ELSE 0 END), 0)
+  INTO v_easypaisa_payments
+  FROM bookings WHERE status IN ('approved', 'completed');
+
+  -- Real SadaPay payments (advance + remaining)
+  SELECT 
+    COALESCE(SUM(CASE WHEN advance_payment_method = 'sadapay' THEN advance_payment ELSE 0 END), 0) +
+    COALESCE(SUM(CASE WHEN remaining_payment_method = 'sadapay' THEN COALESCE(remaining_payment_amount, 0) ELSE 0 END), 0)
+  INTO v_sadapay_payments
+  FROM bookings WHERE status IN ('approved', 'completed');
   
   SELECT json_build_object(
     'revenue', json_build_object(

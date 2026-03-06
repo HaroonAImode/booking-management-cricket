@@ -90,10 +90,14 @@ interface DashboardData {
   monthly_summary: Array<{
     month_name: string;
     total_bookings: number;
-    total_revenue: number; // Booking value
+    total_revenue: number; // Booking value (approved + completed only)
     total_received: number; // Actually received that month
     total_hours: number;
     average_booking_value: number;
+    month_cash: number;
+    month_online: number;
+    month_easypaisa: number;
+    month_sadapay: number;
   }>;
   daily_bookings_chart: Array<{
     booking_date: string;
@@ -315,10 +319,10 @@ export default function AdminDashboardPage() {
     }
     
     return {
-      totalCash: totalCash,
-      totalOnline: totalOnline,
-      totalEasypaisa: totalEasypaisa,
-      totalSadaPay: totalSadaPay,
+      totalCash: month.month_cash || 0,
+      totalOnline: month.month_online || 0,
+      totalEasypaisa: month.month_easypaisa || 0,
+      totalSadaPay: month.month_sadapay || 0,
       totalPaid: month.total_received || 0,
       totalBookingValue: month.total_revenue || 0
     };
