@@ -152,6 +152,8 @@ export default function HomePage() {
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
+          paddingTop: 'clamp(60px, 8vw, 100px)',
+          paddingBottom: 'clamp(40px, 6vw, 80px)',
         }}
       >
         {/* Background Image */}
@@ -296,21 +298,32 @@ export default function HomePage() {
               <Box
                 mt={{ base: 'lg', sm: 'xl' }}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(255, 255, 255, 0.06)',
                   borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid rgba(245, 184, 0, 0.2)',
+                  padding: '24px',
+                  border: '1px solid rgba(245, 184, 0, 0.3)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
                 }}
               >
-                <Text
-                  size="sm"
-                  c="#F5B800"
-                  fw={700}
-                  mb="md"
-                  style={{ letterSpacing: '0.05em' }}
-                >
-                  GET IN TOUCH
-                </Text>
+                <Group gap="xs" mb="lg" align="center">
+                  <Box
+                    style={{
+                      width: '3px',
+                      height: '18px',
+                      background: '#F5B800',
+                      borderRadius: '2px',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text
+                    size="sm"
+                    c="#F5B800"
+                    fw={800}
+                    style={{ letterSpacing: '0.1em' }}
+                  >
+                    GET IN TOUCH
+                  </Text>
+                </Group>
                 
                 <SimpleGrid
                   cols={{ base: 1, sm: 3 }}
