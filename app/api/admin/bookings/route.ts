@@ -35,6 +35,7 @@ async function GETHandler(
         customer:customers(*),
         extra_charges
       `)
+      .order('booking_date', { ascending: false })
       .order('created_at', { ascending: false });
 
     // Apply status filter

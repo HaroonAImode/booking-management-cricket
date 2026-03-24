@@ -479,8 +479,34 @@ export default function AdminBookingsPage() {
           remaining_payment: booking.remaining_payment || 0,
           discount_amount: booking.discount_amount || 0,
         }));
+
+        const getAppointmentDateMs = (booking: any) => {
+          const slotDates = Array.isArray(booking.slots)
+            ? booking.slots
+                .map((s: any) => Date.parse(s?.slot_date || ''))
+                .filter((t: number) => Number.isFinite(t))
+            : [];
+
+          if (slotDates.length > 0) {
+            return Math.min(...slotDates);
+          }
+
+          const bookingDateMs = Date.parse(booking.booking_date || '');
+          return Number.isFinite(bookingDateMs) ? bookingDateMs : 0;
+        };
+
+        const sortedBookings = [...safeBookings].sort((a, b) => {
+          const dateDiff = getAppointmentDateMs(b) - getAppointmentDateMs(a);
+          if (dateDiff !== 0) return dateDiff;
+
+          const createdA = Date.parse(a.created_at || '');
+          const createdB = Date.parse(b.created_at || '');
+          const safeCreatedA = Number.isFinite(createdA) ? createdA : 0;
+          const safeCreatedB = Number.isFinite(createdB) ? createdB : 0;
+          return safeCreatedB - safeCreatedA;
+        });
         
-        setBookings(safeBookings);
+        setBookings(sortedBookings);
         setSummary(result.summary);
       } else {
         notifications.show({
